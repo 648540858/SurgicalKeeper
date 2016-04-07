@@ -1,0 +1,86 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+
+<title>医疗科室维护</title>
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/bootstrap/css/bootstrap.min.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/include/manager/statistics/css/wxUser.css" />
+</head>
+<body>
+	
+	<div class="center_data" id="tempPatsList">	
+		<h4>&nbsp;&nbsp;微信用户信息统计</h4>
+		<div style="width: 100%">
+			<div class="center_btn1"  >
+				<div class="center_btn_1" >
+					<b>省：</b> 
+					<select class="sheng" >
+					</select>
+					<b>市：</b> 
+					<select class="shi">
+					<option value='NULL'>所有地区</option>
+					</select>
+				</div>
+				<div class="center_btn_2" >	
+					<b> 开始查询时间：</b><input type="text" class="sTime">
+					<b> 结束查询时间：</b><input type="text" class="eTime">
+				</div>
+				<div class="center_btn_3" style="">
+				<b>用户姓名：</b> 
+					<input type="text" class="queryContent">
+				</div>
+				<div class="center_btn_4" >
+					<button  class="btn_query" >查询</button>
+				</div>
+			</div>
+		
+	</div>
+	
+<div class="center_table"id='center_table' >
+ <table class="table table-hover">
+   <thead>
+     <tr>
+       <th>用户名</th>
+       <th>性别</th>
+       <th>省级地区</th>
+       <th>市级地区</th>
+       <th>介绍人</th>
+       <th>关注时间</th>
+     </tr>
+   </thead>
+   <tbody id="content" ></tbody>
+	<script id="list" type="text/html">
+ 		{{each ROOT as value i}}
+     		<tr>
+				<td>{{value.name}}</td>
+				<td>{{value.sex}}</td>
+				<td>{{value.province}}</td>
+				<td>{{value.city}}</td>
+				<td>{{value.doc}}</td>
+				<td>{{value.cTime}}</td>
+		{{/each}}
+   </script>
+ </table>
+<div class="pCount">
+		<b>关注总数:</b><font color="red" id="count_info"></font>
+</div>
+ </div>
+</div>
+
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/jquery/jquery.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/artTemplate/artTemplate.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/js/bootstrap-datetimepicker.zh-CN.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/js/commonUtils.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/statistics/js/wxUser.js"></script>
+
+<script type="text/javascript">
+	var root="<%=request.getContextPath()%>";
+	var codeArray=${applicationScope.APPLICATION_SYSTEM_CODE_VAR};
+</script>
+</body>
+</html>

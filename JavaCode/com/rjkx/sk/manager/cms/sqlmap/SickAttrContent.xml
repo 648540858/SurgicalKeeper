@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SickAttrContent">
+	
+	<select id="listSickAttrContent" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_r_sickness_attr._id AS sickContentId,
+			_rjkx_sickness_attr._name AS sickAttrName,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_r_sickness_attr._status) AS sickContentStatus,
+			_rjkx_r_sickness_attr._ltime AS sickContentCtime 
+		FROM _rjkx_r_sickness_attr 
+			INNER JOIN _rjkx_sickness_attr ON _rjkx_r_sickness_attr._attr_id=_rjkx_sickness_attr._id 
+		WHERE _rjkx_r_sickness_attr._sickness_id=#{sickId}
+	</select>
+	
+	<select id="getSickAttrContent" parameterType="dto" resultType="dto">
+		SELECT
+			_attr_id AS sickAttrid,
+			_status AS sickContentStatus,
+			_content AS sickAttrcontent 
+		FROM _rjkx_r_sickness_attr  
+		WHERE _id=#{sickContentId}
+	</select>
+	
+	<insert id="addSickAttrContent" parameterType="dto">
+		INSERT INTO _rjkx_r_sickness_attr(_attr_id,_sickness_id,_content,_status,_ltime) 
+		VALUES(#{sickAttrid},#{sickId},#{sickAttrcontent},#{sickContentStatus},NOW())
+	</insert>
+	
+	<update id="editSickAttrContent" parameterType="dto">
+		UPDATE _rjkx_r_sickness_attr SET
+			_attr_id = #{sickAttrid},
+			_content = #{sickAttrcontent},
+			_status = #{sickContentStatus} 
+		WHERE _id = #{sickContentId}
+	</update>
+	
+	<delete id="delSickAttrContent" parameterType="dto">
+		DELETE FROM _rjkx_r_sickness_attr WHERE _id = #{sickContentId}
+	</delete>
+	
+</mapper>

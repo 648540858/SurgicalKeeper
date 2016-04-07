@@ -1,0 +1,8 @@
+@charset "utf-8";
+
+.center_data{width:100%;top:0;left:0;}
+.center_btn{width:98%;top:0;left:10px;}
+.center_btn_1{float:left;width:50%;height:auto;top:0;left:0;margin-left:5px;}
+.center_btn_2{float:right;width:auto;height:auto;top:0;left:0;}
+.center_table{float:left;height:auto;width:97%;top:0;left:0px;font-size: 12px;}
+#input_query{width:200px}

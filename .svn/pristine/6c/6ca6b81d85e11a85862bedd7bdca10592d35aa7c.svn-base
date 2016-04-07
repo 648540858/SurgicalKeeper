@@ -1,0 +1,6 @@
+#-------------------system properties------------
+sys.var.user.id=opId
+sys.var.user.type=opType
+sys.var.user.name=opName
+sys.var.kingeditor.fileDir=/home/myhome/webapps
+sys.var.kingeditor.saveDir=http://attched.yiyuan591.com

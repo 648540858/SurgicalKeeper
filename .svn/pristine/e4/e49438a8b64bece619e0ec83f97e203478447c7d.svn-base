@@ -1,0 +1,76 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>了解病情 选对医生</title>
+<c:set var="root"
+	value="${pageContext.request.contextPath}/resources/wx" />
+<c:set var="ctx" value="${pageContext.request.contextPath}" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, minimum-scale=1.0 , maximum-scale=1.0, user-scalable=0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" type="text/css" href="${root}/css/style.css">
+<script type="text/javascript" src="${root}/js/jquery-1.10.1.min.js"></script>
+<script type="text/javascript">
+	$(function() {
+		$("#ceng").click(function() {
+			if ($(".add_ceng").is(":hidden")) {
+				$(".add_ceng,.cover").fadeIn();
+			} else {
+				$(".add_ceng,.cover").fadeOut();
+			}
+		});
+		$(".cover").click(function() {
+			$(this).fadeOut();
+			$(".add_ceng").fadeOut();
+		});
+
+	});
+	function addPatientInfo(patientId){
+		if(patientId != 0){
+			$('#patientId').val(patientId);
+			$('#toAddPatient').submit();
+		}else{
+			$('#patientId').val(null);
+			$('#toAddPatient').submit();
+		}
+		
+	}
+</script>
+
+
+
+</head>
+<body class="body_bgone">
+	<header class="success_head header_bg1"> 就诊人管理 </header>
+	<div class="doc_cengone">
+		<ul>
+			<c:forEach var="patient" items="${patientList}" varStatus="status">
+				<c:choose>
+					<c:when test="${status.index == 0 }">
+						<li class="hover" onclick="addPatientInfo('${patient.patientId}')"><a href="#">${patient.tureName}</a></li>
+					</c:when>
+					<c:otherwise>
+						<li onclick="addPatientInfo('${patient.patientId}')"><a href="#">${patient.tureName}</a></li>
+					</c:otherwise>
+				</c:choose>
+			</c:forEach>
+			<li onclick="addPatientInfo(0)"><a href="#" >添加就诊人</a></li>
+		</ul>
+	</div>
+	<form action="${ctx}/wxItf/toAddPatient.freda" method="post" id="toAddPatient">
+		<input type="hidden" id="vipInTreatment" name="vipInTreatment" value="${pDto.vipInTreatment}"/>
+		<input type="hidden" id="patientId" name="patientId" />
+		<input type="hidden" id="miCity" name="miCity" value="${pDto.miCity}"/>
+		<input type="hidden" id="seeCity" name="seeCity" value="${pDto.seeCity}"/>
+		<input type="hidden" id="loginId" name="loginId" value="${pDto.loginId}"/>
+		<input type="hidden" name="appToken" id="appToken" value="123" />
+		<input type="hidden" id="mycenter" name="mycenter" value="${pDto.mycenter}"/>
+	</form>
+
+</body>
+</html>

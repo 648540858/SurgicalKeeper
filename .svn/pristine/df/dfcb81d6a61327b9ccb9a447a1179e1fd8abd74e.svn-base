@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Hospital_Dept">
+	
+	<select id="listHospital" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_hospital._id AS hospId,
+			_rjkx_hospital._area_id AS cityId,
+			_rjkx_area._area_name AS cityName,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='HOS_TYPE' and _code=_rjkx_hospital._type_id) AS hospTypeName,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='HOS_LEVEL' and _code=_rjkx_hospital._h_l_id) AS hospLevelName,
+			_rjkx_hospital._name AS hospName,
+			_rjkx_hospital._desc AS hospDesc,
+			_rjkx_hospital._address AS hospAddr,
+			_rjkx_hospital._telephone AS hospTel,
+			_rjkx_hospital._logo AS hospLogo,
+			_rjkx_hospital._email AS hospEmail,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' and _code=_rjkx_hospital._status) AS hospStatus,
+			_rjkx_hospital._ctime AS hospCtime,
+			_rjkx_hospital._utime AS hospUtime
+		FROM _rjkx_hospital
+			INNER JOIN _rjkx_area ON _rjkx_area._id = _rjkx_hospital._area_id
+		WHERE
+			_rjkx_hospital._area_id = #{cityId}
+			<if test="queryContent != null and queryContent!=''">
+				AND _rjkx_hospital._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="getHospital" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS hospId,
+			_type_id AS hospType,
+			_h_l_id AS hospLevel,
+			_name AS hospName,
+			_desc AS hospDesc,
+			_address AS hospAddr,
+			_telephone AS hospTel,
+			_logo AS hospLogo,
+			_email AS hospEmail,
+			_status AS hospStatus
+		FROM _rjkx_hospital 
+		WHERE
+			_id = #{hospId}
+	</select>
+	
+	<insert id="addHospital" parameterType="dto">
+		INSERT INTO _rjkx_hospital(_area_id,_type_id,_name,_desc,_address,_telephone,_h_l_id,_logo,_email,_ctime,_utime,_status) 
+		VALUES(#{cityId},#{hospType},#{hospName},#{hospDesc},#{hospAddr},#{hospTel},#{hospLevel},#{hospLogo},#{hospEmail},NOW(),NOW(),#{hospStatus})
+	</insert>
+	
+	<update id="editHospital" parameterType="dto">
+		UPDATE _rjkx_hospital 
+		SET
+			_area_id = #{cityId},
+			_type_id = #{hospType},
+			_name = #{hospName},
+			_desc = #{hospDesc},
+			_address = #{hospAddr},
+			_telephone = #{hospTel},
+			_h_l_id = #{hospLevel},
+			_logo = #{hospLogo},
+			_email = #{hospEmail},
+			_status = #{hospStatus},
+			_utime = NOW() 
+		WHERE
+			_id = #{hospId}
+	</update>
+	
+	<delete id="delHospital" parameterType="dto">
+		DELETE FROM _rjkx_hospital WHERE _id = #{hId}
+	</delete>
+	
+	<select id="listHosDept" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS hdId,
+			_name AS hdName,
+			_desc AS hdDesc,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='HOS_DEPT_TYPE' AND _code=_rjkx_hospital_department._type) AS hdType,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_hospital_department._status) AS hdStatus,
+			_ctime AS hdCtime
+		FROM _rjkx_hospital_department
+		WHERE
+			1=1
+			<if test="queryContent != null and queryContent != ''">
+				AND _name LIKE '%${queryContent}%'
+			</if>
+		LIMIT ${start},${limit}
+	</select>
+	
+	<select id="listHosDeptCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_hospital_department
+		WHERE
+			1=1
+			<if test="queryContent != null">
+				AND _name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="hosDept" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS hdId,
+			_name AS hdName,
+			_desc AS hdDesc,
+			_type AS hdType,
+			_status AS hdStatus,
+			_ctime AS hdCtime
+		FROM _rjkx_hospital_department
+		WHERE _id = #{hdId}
+	</select>
+	
+	<insert id="addHosDept" parameterType="dto">
+		INSERT INTO _rjkx_hospital_department(_name,_desc,_type,_status,_ctime) 
+		VALUES(#{hdName},#{hdDesc},#{hdType},#{hdStatus},NOW())
+	</insert>
+	
+	<update id="editHosDept" parameterType="dto">
+		UPDATE _rjkx_hospital_department
+		SET
+			_name = #{hdName},
+			_desc = #{hdDesc},
+			_type = #{hdType},
+			_status = #{hdStatus}
+		WHERE
+			_id = #{hdId}
+	</update>
+	
+	<delete id="delHosDept" parameterType="dto">
+		DELETE FROM _rjkx_hospital_department WHERE _id = #{id}
+	</delete>
+	
+	<delete id="delDeptToHosByHos" parameterType="dto">
+		DELETE FROM _rjkx_r_hospital_dep WHERE _hospital_id = #{hId}
+	</delete>
+	
+</mapper>

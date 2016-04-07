@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ParamsV2">
+	
+	<!-- LIST -->
+	<select id="listParams" parameterType="dto" resultType="dto">
+		SELECT
+			_pid AS pId,
+			_key AS pKey,
+			_value AS pValue,
+			_desc AS pDesc 
+		FROM _rjkx_sys_param
+	</select>
+	
+	<select id="getParams" parameterType="dto" resultType="dto">
+		SELECT _pid AS pId,
+			_key AS pKey,
+			_value AS pValue,
+			_desc AS pDesc 
+		FROM _rjkx_sys_param 
+		WHERE _pid=#{pId}
+	</select>
+	
+	<!-- ADD -->
+	<insert id="addParams" parameterType="dto">
+		INSERT INTO _rjkx_sys_param(_key,_value,_desc) 
+		VALUES(#{pKey},#{pValue},#{pDesc})
+	</insert>
+	
+	<!-- EDIT -->
+	<update id="editParams" parameterType="dto">
+		UPDATE _rjkx_sys_param SET
+			_key = #{pKey},
+			_value = #{pValue},
+			_desc = #{pDesc}
+		WHERE _pid = #{pId}
+	</update>
+	
+	<!-- DELETE -->
+	<delete id="delParams" parameterType="dto">
+		DELETE FROM _rjkx_sys_param WHERE _pid = #{pId}
+	</delete>
+	
+</mapper>

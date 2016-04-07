@@ -1,0 +1,235 @@
+package com.rjkx.sk.admin.basic.service.impl;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.rjkx.sk.admin.basic.service.DoctorServiceItf;
+import com.rjkx.sk.admin.basic.utils.BasicDataUtils;
+import com.rjkx.sk.admin.core.web.AdminBaseServiceImpl;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.datastructure.impl.BaseDto;
+/**
+ * DOCTOR SERVICE
+  * @ClassName: DoctorServiceImpl
+  * @Description:
+  * @author yiyuan-Rally
+  * @date 2015年10月19日 下午1:44:34 
+  * @version V1.0
+ */
+@Service(value="doctorServiceImpl")
+public class DoctorServiceImpl extends AdminBaseServiceImpl implements DoctorServiceItf
+{
+	
+	private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+	/*
+	  * <p>Title: addDoctor</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.basic.service.impl.DoctorServiceItf#addDoctor(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void addDoctor(Dto pDto)
+	{
+		super.getFredaDao().insert("Doctor.addDoctor", pDto);
+	}
+	/*
+	  * <p>Title: editDoctor</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.basic.service.impl.DoctorServiceItf#editDoctor(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void editDoctor(Dto pDto)
+	{
+		super.getFredaDao().update("Doctor.editDoctor", pDto);
+	}
+	/*
+	  * <p>Title: delDoctor</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.basic.service.impl.DoctorServiceItf#delDoctor(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void delDoctor(Dto pDto)
+	{
+		String[] ids = pDto.getAsString("ids").split(",");
+		
+		for(String id : ids)
+		{
+			pDto.put("id", id);
+			
+			super.getFredaDao().delete("Doctor.delDoctor", pDto);
+		}
+	}
+
+	/*
+	  * <p>Title: listSchByDocAndDate</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.basic.service.impl.DoctorServiceItf#listSchByDocAndDate(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Dto listSchByDocAndDate(Dto pDto) 
+	{	
+		pDto.put("sTime", BasicDataUtils.formatTimeStrForSch(pDto.getAsString("start")));
+		
+		pDto.put("eTime", BasicDataUtils.formatTimeStrForSch(pDto.getAsString("end")));
+		
+		return new BaseDto("evts",super.getFredaDao().queryForList("Doctor.listSchByDocAndDate", pDto));
+	}
+
+	/*
+	  * <p>Title: addSch</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.basic.service.impl.DoctorServiceItf#addSch(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void addSch(Dto pDto) throws ParseException 
+	{
+		pDto.put("schId", System.nanoTime());
+		
+		//Date b = BasicDataUtils.dateStrToDate(pDto.getAsString("startTime"));
+		
+		Date e = BasicDataUtils.dateStrToDate(pDto.getAsString("endTime"));
+		
+		Date sub = BasicDataUtils.dateStrToDate(pDto.getAsString("startTime"));
+
+		Date addStart = null;
+		
+		Date addEnd = null;
+		
+		
+		boolean falg = true;
+		
+		while(falg)
+		{
+			addStart = sub;
+			
+			addEnd = BasicDataUtils.dateAdd15Min(sub);
+			
+			if(addEnd.before(e) || addEnd.equals(e))
+			{
+				sub = addEnd;
+				
+				pDto.put("stime", BasicDataUtils.getDateStr(addStart));
+				
+				pDto.put("etime", BasicDataUtils.getDateStr(addEnd));
+				
+				super.getFredaDao().insert("Doctor.addSch", pDto);
+			}
+			else
+			{
+				falg = false;
+			}
+		}
+		
+	}
+
+	/*
+	  * <p>Title: editSch</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.basic.service.impl.DoctorServiceItf#editSch(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void editSch(Dto pDto) throws ParseException 
+	{
+		this.delSch(pDto);
+		
+		this.addSch(pDto);
+		
+	}
+
+	/*
+	  * <p>Title: delSch</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.basic.service.impl.DoctorServiceItf#delSch(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void delSch(Dto pDto) 
+	{
+		super.getFredaDao().delete("Doctor.delSch", pDto);
+	}
+
+	/*
+	  * <p>Title: addSchForMonth</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.basic.service.impl.DoctorServiceItf#addSchForMonth(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void addSchForMonth(Dto pDto) throws ParseException 
+	{
+		Calendar calendar = Calendar.getInstance();
+		
+		pDto.put("docId", pDto.getAsString("docIdAddSch"));
+		
+		String[] weeks = pDto.getAsString("weekStr").split(",");
+		
+		for(int j=0;j<weeks.length;j++)//循环所选星期
+		{
+			int i = 0;
+			
+			while (i <= calendar.getActualMaximum(Calendar.DATE)) //循环本月天数
+			{
+				calendar.set(Calendar.MONTH, pDto.getAsInteger("month"));
+				
+				calendar.set(Calendar.YEAR, pDto.getAsInteger("year"));
+				
+				calendar.set(Calendar.DATE, i);
+				
+				if(calendar.get(Calendar.DAY_OF_WEEK) == Integer.parseInt(weeks[j]))//判断是否为所选星期
+				{	
+					if(pDto.getAsInteger("timeType") == 1)
+					{
+						pDto.put("sHour", 10);
+						
+						pDto.put("eHour", 12);
+					}
+					else
+					{
+						pDto.put("sHour", 15);
+						
+						pDto.put("eHour", 17);
+					}
+					calendar.set(pDto.getAsInteger("year"), pDto.getAsInteger("month"), i, pDto.getAsInteger("sHour"), 0, 0);
+					
+					pDto.put("startTime", SDF.format(calendar.getTime()));
+					
+					calendar.set(pDto.getAsInteger("year"), pDto.getAsInteger("month"), i, pDto.getAsInteger("eHour"), 0, 0);
+					
+					pDto.put("endTime", SDF.format(calendar.getTime()));
+					
+					this.addSch(pDto);//添加当天时间
+					
+				}
+				i++;
+			}			
+		}
+		
+	}
+}

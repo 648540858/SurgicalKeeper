@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Doctor">
+	
+	<select id="listDoctor" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor._id AS docId,
+			_rjkx_hospital_department._name AS hdName,
+			_rjkx_doctor._hospital_name AS hName,
+			_rjkx_doctor._name AS docName,
+			_rjkx_doctor._sex AS docSex,
+			_rjkx_doctor._age AS docAge,
+			_rjkx_doctor._phone AS docPhone,
+			_rjkx_doctor._telephone AS docTel,
+			_rjkx_doctor._rank AS docRank,
+			_rjkx_doctor._dept_rank AS docDrank,
+			_rjkx_doctor._status AS docStatus,
+			_rjkx_doctor._ctime AS cTime,
+			_rjkx_doctor._utime AS uTime
+		FROM _rjkx_doctor
+		INNER JOIN _rjkx_hospital_department ON _rjkx_hospital_department._id = _rjkx_doctor._depid
+		WHERE
+			1=1
+			AND _rjkx_doctor._hospital_id = #{hId}
+			<if test="queryContent != null">
+				AND _rjkx_doctor._name LIKE '%${queryContent}%'			
+			</if>
+	</select>
+	
+	<select id="listDoctorCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_doctor
+		WHERE
+			1=1
+			AND _rjkx_doctor._hospital_id = #{hId}
+			<if test="queryContent != null">
+				AND _rjkx_doctor._name LIKE '%${queryContent}%'			
+			</if>
+	</select>
+	
+	<select id="loadDoctorInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor._id AS docId,
+			_rjkx_doctor._depid AS hdId,
+			_rjkx_doctor._hospital_id AS hId,
+			_rjkx_doctor._hospital_name AS hName,
+			_rjkx_doctor._name AS docName,
+			_rjkx_doctor._sex AS docSex,
+			_rjkx_doctor._age AS docAge,
+			_rjkx_doctor._phone AS docPhone,
+			_rjkx_doctor._telephone AS docTel,
+			_rjkx_doctor._email AS docEmail,
+			_rjkx_doctor._intro AS docIntro,
+			_rjkx_doctor._work_time AS docWtime,
+			_rjkx_doctor._good_at AS docGoodAt,
+			_rjkx_doctor._rank AS docRank,
+			_rjkx_doctor._icon AS docIcon,
+			_rjkx_doctor._dep_address AS docDaddr,
+			_rjkx_doctor._order_address AS docOrderAddr,
+			_rjkx_doctor._dept_rank AS docDrank,
+			_rjkx_doctor._status AS docStatus
+		FROM _rjkx_doctor
+		WHERE
+			_rjkx_doctor._id = #{docId}
+	</select>
+	
+	<insert id="addDoctor" parameterType="dto">
+		INSERT INTO _rjkx_doctor(
+			_rjkx_doctor._depid,
+			_rjkx_doctor._hospital_id,
+			_rjkx_doctor._hospital_name,
+			_rjkx_doctor._name,
+			_rjkx_doctor._password,
+			_rjkx_doctor._sex,
+			_rjkx_doctor._age,
+			_rjkx_doctor._phone,
+			_rjkx_doctor._telephone,
+			_rjkx_doctor._email,
+			_rjkx_doctor._intro,
+			_rjkx_doctor._work_time,
+			_rjkx_doctor._good_at,
+			_rjkx_doctor._rank,
+			_rjkx_doctor._icon,
+			_rjkx_doctor._dep_address,
+			_rjkx_doctor._order_address,
+			_rjkx_doctor._dept_rank,
+			_rjkx_doctor._status,
+			_rjkx_doctor._ctime,
+			_rjkx_doctor._utime
+		)VALUES(#{hdId},#{hId},#{hName},#{docName},#{docPwd},#{docSex},#{docAge},#{docPhone},#{docTel},
+		#{docEmail},#{docIntro},#{docWtime},#{docGoodAt},#{docRank},#{docIcon},#{docDaddr},#{docOrderAddr},
+		#{docDrank},#{docStatus},NOW(),NOW())
+	</insert>
+	
+	<update id="editDoctor" parameterType="dto">
+		UPDATE _rjkx_doctor SET 
+			_rjkx_doctor._depid = #{hdId},
+			_rjkx_doctor._name = #{docName},
+			_rjkx_doctor._password = #{docPwd},
+			_rjkx_doctor._sex = #{docSex},
+			_rjkx_doctor._age = #{docAge},
+			_rjkx_doctor._phone = #{docPhone},
+			_rjkx_doctor._telephone = #{docTel},
+			_rjkx_doctor._email = #{docEmail},
+			_rjkx_doctor._intro = #{docIntro},
+			_rjkx_doctor._work_time = #{docWtime},
+			_rjkx_doctor._good_at = #{docGoodAt},
+			_rjkx_doctor._rank = #{docRank},
+			_rjkx_doctor._icon = #{docIcon},
+			_rjkx_doctor._dep_address = #{docDaddr},
+			_rjkx_doctor._order_address = #{docOrderAddr},
+			_rjkx_doctor._dept_rank = #{docDrank},
+			_rjkx_doctor._status = #{docStatus},
+			_rjkx_doctor._utime = NOW()
+		WHERE
+			_rjkx_doctor._id = #{docId}
+	</update>
+	
+	<delete id="delDoctor" parameterType="dto">
+		DELETE FROM _rjkx_doctor WHERE _rjkx_doctor._id = #{id}
+	</delete>
+	
+	<select id="listHosDeptByHos" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_r_hospital_dep._dep_id AS code,
+			_rjkx_hospital_department._name AS name
+		FROM _rjkx_r_hospital_dep
+		INNER JOIN _rjkx_hospital_department ON _rjkx_hospital_department._id = _rjkx_r_hospital_dep._dep_id 
+		AND _rjkx_r_hospital_dep._hospital_id = #{hId}
+	</select>
+	
+	<select id="listSchByDocAndDate" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor_schedule._extend AS id,
+			_rjkx_doctor_schedule._schedule_type AS cid,
+			_rjkx_doctor_schedule._address AS title,
+			_rjkx_doctor_schedule._memo_start_time AS start,
+			_rjkx_doctor_schedule._memo_end_time AS end
+		FROM _rjkx_doctor_schedule
+		WHERE
+			_rjkx_doctor_schedule._doctor_id = #{docId}
+			AND _rjkx_doctor_schedule._memo_start_time <![CDATA[>=]]> #{sTime}
+			AND _rjkx_doctor_schedule._memo_end_time <![CDATA[<=]]> #{eTime}
+		GROUP BY _rjkx_doctor_schedule._extend 
+	</select>
+	
+	<insert id="addSch" parameterType="dto">
+		INSERT INTO _rjkx_doctor_schedule(
+			_rjkx_doctor_schedule._doctor_id,
+			_rjkx_doctor_schedule._address,
+			_rjkx_doctor_schedule._status,
+			_rjkx_doctor_schedule._extend,
+			_rjkx_doctor_schedule._schedule_type,
+			_rjkx_doctor_schedule._start_time,
+			_rjkx_doctor_schedule._end_time,
+			_rjkx_doctor_schedule._memo_start_time,
+			_rjkx_doctor_schedule._memo_end_time,
+			_rjkx_doctor_schedule._ctime,
+			_rjkx_doctor_schedule._utime
+		)VALUES(#{docId},#{addr},1,#{schId},#{type},#{stime},#{etime},#{startTime},#{endTime},NOW(),NOW())
+	</insert>
+	
+	<delete id="delSch" parameterType="dto">
+		DELETE FROM _rjkx_doctor_schedule WHERE _rjkx_doctor_schedule._extend = #{schId}
+	</delete>
+	
+</mapper>

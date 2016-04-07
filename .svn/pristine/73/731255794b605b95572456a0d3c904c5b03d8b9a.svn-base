@@ -1,0 +1,83 @@
+package com.rjkx.sk.itf.common.util;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.rjkx.sk.itf.common.po.AppTokenBean;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.ehcache.EhcacheHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+
+public class CommonItfUtils {
+	private static final String CACHE_NAME = "TOKEN_CACHE_NAME";
+	
+//	private static final String REQUEST_HEAD_VAR = "USER-AGENT-TYPE";
+
+	private static final String USER_AGENT_WX = "wx";
+
+	private static final String USER_AGENT_ANDROID = "android";
+
+	private static final String USER_AGENT_IOS = "ios";
+
+	/**
+	 * 获取 通讯过程中特定请求头部
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年11月23日 下午3:59:08
+	 * @param request
+	 * @return
+	 */
+	public static int getClientType(HttpServletRequest request) {
+		
+		String userAgent = request.getHeader("USER-AGENT-TYPE").toLowerCase();//request.getParameter(REQUEST_HEAD_VAR).toLowerCase();// 请求参数
+
+		int clentStr = -1;
+
+		if (userAgent.equals(USER_AGENT_WX)) {
+			clentStr = 1;
+		} else if (userAgent.equals(USER_AGENT_ANDROID)) {
+			clentStr = 2;
+		} else if (userAgent.equals(USER_AGENT_IOS)) {
+			clentStr = 3;
+		}
+		return clentStr;
+	}
+
+	/**
+	 * 获取TOKEN
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年11月24日 下午3:42:51
+	 * @param IMEIStr
+	 * @param timeStamp
+	 * @return
+	 */
+	public static String getToken(final String IMEIStr, final String timeStamp) {
+		String temp = FredaUtils.encryptBasedDes(IMEIStr + "|" + timeStamp);
+
+		/*if (temp.indexOf("=", temp.length() - 1) != -1) {
+			temp = temp.substring(0, temp.lastIndexOf("="));
+		}*/
+		return temp;
+	}
+	
+	public static void setEhcache(Dto pDto, HttpServletRequest request) {
+		EhcacheHelper.getInstance().removeElement(CACHE_NAME, pDto.getAsString("imeiStr"));
+
+		EhcacheHelper.getInstance().put(CACHE_NAME, pDto.getAsString("imeiStr"), 
+				new AppTokenBean(pDto.getAsString("timestamp"), pDto.getAsString("app_token"),
+						request.getRemoteAddr(), getClientType(request), pDto.getAsString("imeiStr")));// value
+	}
+	
+	public static AppTokenBean getEhcache(String imei) {
+		Object appTokenBean=EhcacheHelper.getInstance().get(CACHE_NAME, imei);
+		if(FredaUtils.isEmpty(appTokenBean)){
+			return null;
+		}else{
+			return (AppTokenBean)appTokenBean;
+		}
+	}
+	
+	public static void removeEhcache(String imeiStr){
+		EhcacheHelper.getInstance().removeElement(CACHE_NAME, imeiStr);
+	}
+}

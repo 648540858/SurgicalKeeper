@@ -1,0 +1,22 @@
+app.upload.other.dir=/home/myhome/webapps/dataupload/other
+app.upload.other.saveDir=http://attched.yiyuan591.com/dataupload/other
+
+app.hos.log.dir=/home/myhome/webapps/dataupload/hos/photo/
+app.hos.log.saveDir=http://attched.yiyuan591.com/dataupload/hos/photo
+
+app.doctor.photo.dir=/home/myhome/webapps/dataupload/doctor/photo/
+app.doctor.photo.saveDir=http://attched.yiyuan591.com/dataupload/doctor/photo
+
+app.lecture.pav.dir=/home/myhome/webapps/dataupload/lecture/photo/
+app.lecture.pav.saveDir=http://attched.yiyuan591.com/dataupload/lecture/photo
+
+app.doctor.qrcode.dir=/home/myhome/webapps/dataupload/doctor/qrcode/
+app.doctor.qrcode.saveDir=http://attched.yiyuan591.com/dataupload/doctor/qrcode/
+#----ping ++ ------
+pay.pingpp.apiKey=sk_live_eH4i98bnb180f54WvLarPWLC
+#--yiyuan591--app_iPKmrLWfzrX9GiLG
+pay.pingpp.appid=app_DSKOaLD4W94C5uHS
+
+#----APP AUTH-------
+auth.app.id=live_aSBKFzu787M=
+auth.app.pwd=wx_aSBKFzu787M=

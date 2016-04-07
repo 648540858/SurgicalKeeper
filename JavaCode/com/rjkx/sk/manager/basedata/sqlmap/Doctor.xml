@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DoctorV2">
+	<!-- 医生的操作 -->
+	<select id="listDoctor" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor._id AS docId,
+			_rjkx_doctor._name AS docName,
+			_rjkx_hospital_department._name AS docDeptname,
+			_rjkx_doctor._icon AS docIcon,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='SEX' AND _code=_rjkx_doctor._sex) AS docSex,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='DOC_RANK' AND _code=_rjkx_doctor._rank) AS docRank,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='DOC_DEPT_RANK' AND _code=_rjkx_doctor._dept_rank) AS docDeptrank,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_doctor._status) AS docStatus,
+			_rjkx_doctor._telephone AS docMobile,
+			_rjkx_doctor._qrcode AS docQrcode 
+		FROM
+			_rjkx_doctor LEFT JOIN _rjkx_hospital_department ON _rjkx_doctor._depid=_rjkx_hospital_department._id 
+		WHERE _hospital_id=#{hospId}  
+			<if test="queryContent != null and queryContent!=''">
+				AND _rjkx_doctor._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="getDoctor" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS docId,
+			_name AS docName,
+			_depid AS docDeptid,
+			_rank AS docRank,
+			_dept_rank AS docDeptrank,
+			_status AS docStatus,
+			_telephone AS docMobile,
+			_password AS docPwd,
+			_icon AS docIcon,
+			_age AS docAge,
+			_work_time AS docWorkyear,
+			_phone AS docPhone,
+			_dep_address AS docDeptaddress,
+			_order_address AS docOrderaddress,
+			_sex AS docSex,
+			_intro AS docIntro,
+			_good_at AS docGoodat,
+			_qrcode AS qrCode 
+		FROM
+			_rjkx_doctor 
+		WHERE _id=#{docId}
+	</select>
+	
+	<insert id="addDoctor" parameterType="dto">
+		INSERT INTO _rjkx_doctor(
+			_hospital_id,_name,_icon,_depid,_rank,_dept_rank,
+			_status,_telephone,_password,_age,_work_time,_phone,
+			_dep_address,_order_address,_sex,
+			_intro,_good_at,_ctime,_utime) 
+		VALUES(#{hospId},#{docName},#{docIcon},#{docDeptid},#{docRank},
+				#{docDeptrank},#{docStatus},#{docMobile},#{docPwd},#{docAge},
+				#{docWorkyear},#{docPhone},#{docDeptaddress},#{docOrderaddress},
+				#{docSex},#{docIntro},#{docGoodat},NOW(),NOW())
+	</insert>
+	
+	<update id="editDoctor" parameterType="dto">
+		UPDATE _rjkx_doctor 
+		SET
+			_name=#{docName},_depid=#{docDeptid},_rank=#{docRank},
+			_dept_rank=#{docDeptrank},_status=#{docStatus},_icon=#{docIcon},
+			_telephone=#{docMobile},_age=#{docAge},_work_time=#{docWorkyear},
+			_phone=#{docPhone},_dep_address=#{docDeptaddress},
+			_order_address=#{docOrderaddress},_password=#{docPwd},
+			_sex=#{docSex},_intro=#{docIntro},_good_at=#{docGoodat},
+			_utime = NOW()
+		WHERE
+			_id = #{docId}
+	</update>
+	
+	<delete id="delDoctor" parameterType="dto">
+		DELETE FROM _rjkx_doctor WHERE _id = #{docId}
+	</delete>
+	
+	<delete id="delDoctorSickness" parameterType="dto">
+		DELETE FROM _rjkx_r_doctor_sickness WHERE _doctor_id = #{docId}
+	</delete>
+	<!-- 更新二维码 -->
+	<update id="editDoctorQrcode" parameterType="dto">
+		UPDATE _rjkx_doctor 
+		SET
+			_qrcode=#{docQrcode},_utime = NOW()
+		WHERE
+			_id = #{docId}
+	</update>
+</mapper>

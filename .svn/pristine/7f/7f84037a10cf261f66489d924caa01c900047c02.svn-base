@@ -1,0 +1,297 @@
+package com.rjkx.sk.itf.weixin.utils;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.alibaba.fastjson.JSONObject;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+
+/**
+ * 微信公众平台工具类
+ * 
+ * @author rally
+ *
+ */
+public class WeiXinUtils {
+	private static final Log log = LogFactory.getLog(WeiXinUtils.class);
+	
+	private static volatile int num = 1; 
+
+	/**
+	 * 微信token校验
+	 * 
+	 * @param request
+	 * @param token
+	 * @return
+	 */
+	public static String checkToken(HttpServletRequest request) {
+		String signature = request.getParameter("signature");
+
+		String timestamp = request.getParameter("timestamp");
+
+		String nonce = request.getParameter("nonce");
+
+		String echostr = request.getParameter("echostr");
+
+		log.info("signature : " + signature);
+		log.info("timestamp : " + timestamp);
+		log.info("nonce : " + nonce);
+		log.info("echostr : " + echostr);
+
+		return checkToken(signature, timestamp, nonce, echostr, WeiXinCons.WX_TOKEN);
+	}
+
+	/**
+	 * 微信token校验
+	 * 
+	 * @param signature
+	 * @param timestamp
+	 * @param nonce
+	 * @param echostr
+	 * @param token
+	 * @return
+	 */
+	public static String checkToken(String signature, String timestamp, String nonce, String echostr, String token) {
+		if (FredaUtils.isNotEmpty(signature) && FredaUtils.isNotEmpty(timestamp) && FredaUtils.isNotEmpty(nonce)
+				&& FredaUtils.isNotEmpty(echostr) && FredaUtils.isNotEmpty(token)) {
+			StringBuilder sb = new StringBuilder();
+
+			String[] tmp = { token, timestamp, nonce };
+
+			Arrays.sort(tmp);
+
+			for (String s : tmp) {
+				sb.append(s);
+			}
+			String pwd = WeiXinMessageDigestUtils.getInstance().encipher(sb.toString());
+
+			if (signature.equals(pwd)) {
+				log.info("验证成功..允许接入!");
+
+				return echostr;
+			}
+		}
+		log.info("验证失败..拒绝接入!");
+		return null;
+	}
+
+	/**
+	 * 获取access_token
+	 * 
+	 * @return
+	 */
+	public static String getAccessToken() {
+		String access_token = null;
+
+		try {
+			String url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=" + WeiXinCons.WX_GRANT_TYPE + "&appid="
+
+			+ WeiXinCons.WX_APP_ID + "&secret=" + WeiXinCons.WX_APP_SECRET;
+
+			access_token = JsonHelper.parseSingleJson2Dto(WeiXinHttpUtils.get(url)).getAsString("access_token");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		log.info("获取ACCESS_TOKEN成功!");
+
+		return access_token;
+	}
+
+	/**
+	 * 获取Js_ticket
+	 * 
+	 * @return
+	 */
+	public static String getJsTicket(String token) {
+		String js_ticket = null;
+
+		try {
+			String url = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=" + token + "&type=jsapi";
+			js_ticket = JsonHelper.parseSingleJson2Dto(WeiXinHttpUtils.get(url)).getAsString("ticket");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		log.info("获取JS_TICKET成功!");
+
+		return js_ticket;
+	}
+
+	/**
+	 * 获取jsapi相关map
+	 * 
+	 * @param jsapi_ticket
+	 * @param url
+	 * @return
+	 */
+	public static Map<String, String> getJsSignMap(String jsapi_ticket, String url) {
+		Map<String, String> map = new HashMap<String, String>();
+
+		String nonce_str = UUID.randomUUID().toString();
+		String timestamp = Long.toString(System.currentTimeMillis() / 1000);
+		String s = "jsapi_ticket=" + jsapi_ticket + "&noncestr=" + nonce_str + "&timestamp=" + timestamp + "&url="
+				+ url;
+		String signature = WeiXinMessageDigestUtils.getInstance().encipher(s);
+
+		map.put("url", url);
+		map.put("jsapi_ticket", jsapi_ticket);
+		map.put("nonceStr", nonce_str);
+		map.put("timestamp", timestamp);
+		map.put("signature", signature);
+
+		log.info("MAP中的参数:");
+		log.info("url : " + url);
+		log.info("jsapi_ticket : " + jsapi_ticket);
+		log.info("nonceStr : " + nonce_str);
+		log.info("timestamp : " + timestamp);
+		log.info("signature : " + signature);
+
+		return map;
+	}
+
+	/**
+	 * 创建指定数量的随机字符串
+	 * 
+	 * @param numberFlag
+	 *            是否是数字
+	 * @param length
+	 * @return
+	 */
+	public static String createRandom(boolean numberFlag, int length) {
+		String retStr = "";
+		String strTable = numberFlag ? "1234567890" : "1234567890abcdefghijkmnpqrstuvwxyz";
+		int len = strTable.length();
+		boolean bDone = true;
+		do {
+			retStr = "";
+			int count = 0;
+			for (int i = 0; i < length; i++) {
+				double dblR = Math.random() * len;
+				int intR = (int) Math.floor(dblR);
+				char c = strTable.charAt(intR);
+				if (('0' <= c) && (c <= '9')) {
+					count++;
+				}
+				retStr += strTable.charAt(intR);
+			}
+			if (count >= 2) {
+				bDone = false;
+			}
+		} while (bDone);
+
+		return retStr;
+	}
+	/**
+	 * 根据code获取openid
+	 * @param code
+	 * @return
+	 * @throws IOException
+	 */
+	public static String getOpenID(String code) throws IOException{
+		String url = WeiXinCons.WX_BASE_API_URL + "sns/oauth2/access_token?appid=" + WeiXinCons.WX_APP_ID + "&secret=" + WeiXinCons.WX_APP_SECRET + "&code=" + code + "&grant_type=authorization_code";
+		JSONObject josnObject = CommonUtil.httpsRequest(url, "GET", null);
+		if(josnObject != null){
+			return josnObject.getString("openid");
+			
+		}else{
+			return null;
+		}
+	}
+	/**
+	 * 根据code获取accesstoken
+	 * @param code
+	 * @return
+	 * @throws IOException
+	 */
+	public static String getAccessToken(String code) throws IOException{
+		String url = WeiXinCons.WX_BASE_API_URL + "sns/oauth2/access_token?appid=" + WeiXinCons.WX_APP_ID + "&secret=" + WeiXinCons.WX_APP_SECRET + "&code=" + code + "&grant_type=authorization_code";
+		JSONObject josnObject = CommonUtil.httpsRequest(url, "GET", null);
+		if(josnObject != null){
+			return josnObject.getString("access_token");
+		}else{
+			return null;
+		}
+	}
+	
+	/**
+	 * 格式化时间月日
+	 * @param date
+	 * @return
+	 */
+	public static String formatDateTimeToMd(Date date){
+		
+		SimpleDateFormat time=new SimpleDateFormat("MM/dd");
+		
+		return time.format(date);
+		
+		
+	}
+	/**
+	 * 格式化时间十分
+	 * @param date
+	 * @return
+	 */
+	public static String formatDateTimeToHm(Date date){
+		
+		SimpleDateFormat time=new SimpleDateFormat("HH:mm");
+		
+		return time.format(date);
+		
+		
+	}
+	/**
+	 * 格式化时间星期
+	 * @param dt
+	 * @return
+	 */
+	public static String getWeekOfDate(Date dt) {
+        String[] weekDays = {"周日", "周一", "周二", "周三", "周四", "周五", "周六"};
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(dt);
+        int w = cal.get(Calendar.DAY_OF_WEEK) - 1;
+        if (w < 0)
+            w = 0;
+        return weekDays[w];
+    }
+	
+	
+	public static int getNum()
+	{
+		if(num > 99999)
+			num = 1;
+		return num++;
+	}
+	
+	
+	public static String getLocationCityId(String latitude,String longitude) throws IOException{
+		String url="http://api.map.baidu.com/geocoder/v2/?ak=t5rMjAYUtTma2RbFinDnG07t&callback=renderReverse&location="+latitude+","+longitude+"&output=json&pois=1";
+		String jsonstring=WeiXinHttpUtils.get(url);
+		JSONObject jsonobj=JSONObject.parseObject(jsonstring);
+		String city = jsonobj.getJSONObject("addressComponent").get("city").toString();
+		
+		return city;
+	}
+
+	public static String getMobileInfo(String mobile) throws IOException{
+		String url="http://apis.juhe.cn/mobile/get?phone="+mobile+"&key=67b74243fab5fe138f81f0487e8e0685";
+		String jsonstring=WeiXinHttpUtils.get(url);
+		JSONObject jsonobj=JSONObject.parseObject(jsonstring);
+		String city = jsonobj.getJSONObject("result").get("city").toString();
+		if(city.indexOf("市")<0){
+			city+="市";
+		}
+		return city;
+	}
+
+}

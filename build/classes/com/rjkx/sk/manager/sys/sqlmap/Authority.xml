@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AuthorityV2">
+
+	<select id="listRoleWithUser" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_role._rid AS id,
+			_rjkx_sys_role._name AS text,
+			1 AS leaf,
+			_rjkx_sys_user_role._uid AS uId
+		FROM _rjkx_sys_role 
+			LEFT JOIN _rjkx_sys_user_role ON _rjkx_sys_user_role._rid = _rjkx_sys_role._rid 
+										  AND _rjkx_sys_user_role._uid = #{uId}
+		WHERE
+			_rjkx_sys_role._state = 1
+	</select>
+	
+	<!-- 根据Role删除Menu绑定 -->
+	<delete id="delMenuToRoleByRole" parameterType="dto">
+		DELETE FROM _rjkx_sys_role_menu WHERE _rjkx_sys_role_menu._rid = #{roleId}
+	</delete>
+	
+	<!-- 根据User删除Role绑定 -->
+	<delete id="delUserToRoleByUser" parameterType="dto">
+		DELETE FROM _rjkx_sys_user_role WHERE _rjkx_sys_user_role._uid = #{uId}
+	</delete>
+	
+	<!-- 添加Menu和Role的绑定 -->
+	<insert id="addMenuToRole" parameterType="dto">
+		INSERT INTO _rjkx_sys_role_menu(_mid,_rid) 
+		VALUES(#{mId},#{roleId})
+	</insert>
+	
+	<!-- 添加User和Role的绑定 -->
+	<insert id="addUserToRole" parameterType="dto">
+		INSERT INTO _rjkx_sys_user_role(_rid,_uid) 
+		VALUES(#{roleId},#{uId})
+	</insert>
+	
+	<!-- 菜单树带角色绑定 -->
+	<select id="listMenuWithRole" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_menu._mid AS id,
+			_rjkx_sys_menu._parentid AS parentid,
+			_rjkx_sys_menu._name AS text,
+			_rjkx_sys_menu._leaf AS leaf,
+			_rjkx_sys_menu._icon AS icon,
+			_rjkx_sys_role_menu._rid AS rId
+		FROM _rjkx_sys_menu
+			LEFT JOIN _rjkx_sys_role_menu ON _rjkx_sys_role_menu._mid = _rjkx_sys_menu._mid 
+				AND _rjkx_sys_role_menu._rid = #{roleId}
+		WHERE
+			_rjkx_sys_menu._state = 1
+			<if test="pId == null or pId==''">
+				AND _rjkx_sys_menu._parentid ='1'
+				ORDER BY _rjkx_sys_menu._sortno,_rjkx_sys_menu._mid ASC
+			</if>
+			<if test="pId != null and pId!=''">
+				AND _rjkx_sys_menu._parentid = #{pId}
+				ORDER BY _rjkx_sys_menu._sortno,_rjkx_sys_menu._mid ASC
+			</if>
+		
+	</select>
+</mapper>

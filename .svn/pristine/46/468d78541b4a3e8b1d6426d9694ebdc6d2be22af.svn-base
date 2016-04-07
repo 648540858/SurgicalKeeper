@@ -1,0 +1,206 @@
+package com.rjkx.sk.itf.weixin.service.impl;
+
+import static com.rjkx.sk.itf.weixin.utils.WeiXinUtils.createRandom;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.rjkx.sk.itf.common.web.WeiXinItfBaseServiceImpl;
+import com.rjkx.sk.itf.weixin.service.WeiXinItfServiceItf;
+import com.rjkx.sk.itf.weixin.utils.WeiXinUtils;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.ehcache.EhcacheHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+/**
+ * WEI XIN SERVICE
+ * @author rally
+ *
+ */
+@Service(value="weiXinItfServiceImpl")
+public class WeiXinItfServiceImpl extends WeiXinItfBaseServiceImpl implements WeiXinItfServiceItf
+{
+	private static final String EHCACHE_WX_CODE_TO_OPENID = "EHCACHE_WX_CODE_TO_OPENID"; 
+	/*
+	  * <p>Title: enrollCourse</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.itf.weixin.service.impl.WeiXinItfServiceItf#enrollCourse(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public int enrollCourse(Dto pDto)
+	{
+		if(((Integer)super.getFredaDao().queryForObject("WeiXin.getEnRollCount", pDto)) > 0)
+		{
+			return 2;
+		}
+		else
+		{
+			if(super.getFredaDao().insert("WeiXin.addEnRoll", pDto) >= 1)
+			{
+				return 1;
+			}
+		}
+		return 0;
+	}
+	
+	/**
+	 * 添加患者
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean addPatient(Dto pDto) 
+	{
+		String password = FredaUtils.encryptBasedDes(createRandom(true, 6));
+		pDto.put("password", password);
+		super.getFredaDao().insert("WeiXin.addPatient", pDto);
+		
+		return true;
+	}
+	
+	/**
+	 * 添加病情
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean addPatientSickness(Dto pDto) 
+	{
+		super.getFredaDao().insert("WeiXin.addPatientSickness", pDto);
+		
+		return true;
+
+	}
+	/**
+	 * 添加病情疾病关系
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean addPatientSicknessRelationSickness(Dto pDto) 
+	{
+		super.getFredaDao().insert("WeiXin.addPatientSicknessRelationSickness", pDto);
+		
+		return true;
+
+	}
+	/**
+	 * 添加用户注册信息
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean addPatientInfo(Dto pDto)
+	
+	{
+		pDto.put("parentId", pDto.getAsString("loginId"));
+		if(StringUtils.isNotBlank(pDto.getAsString("loginId")) && StringUtils.isBlank(pDto.getAsString("patientId"))){
+			addPatient(pDto);
+			
+		}
+		
+		if(StringUtils.isNotBlank(pDto.getAsString("loginId")) && StringUtils.isNotBlank(pDto.getAsString("patientId"))){
+			editPatient(pDto);
+		}
+			
+		addPatientSickness(pDto);	
+		String sickNessIds = pDto.getAsString("sickNessIds");
+		if(sickNessIds != null && sickNessIds != ""){
+			String [] sickNessIdList = sickNessIds.split(",");
+			for(String sickNessId : sickNessIdList ){
+				pDto.put("sicknessId", sickNessId);
+				addPatientSicknessRelationSickness(pDto);
+			}
+			
+		}
+		
+		return true;
+		
+	}
+	/**
+	 * 用户Binding
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean addPatientBinding(Dto pDto) 
+	{
+		super.getFredaDao().insert("WeiXin.addBinding", pDto);
+		
+		return true;
+	}
+	/**
+	 * 编辑用户Binding
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void editPatientBinding(Dto pDto) {
+		
+		super.getFredaDao().update("WeiXin.editBindingInfo", pDto);
+		
+	}
+	/**
+	 * 完善用户信息
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean editPatient(Dto pDto) {
+		
+		super.getFredaDao().update("WeiXin.editPatient", pDto);
+		
+		return true;
+	}
+	/**
+	 * 记录VIP会诊
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean addVIPConsultation(Dto pDto) {
+
+		super.getFredaDao().insert("WeiXin.addVIPConsultation", pDto);
+		
+		return true;
+	}
+	/**
+	 * 提交意见反馈
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean addFeedback(Dto pDto) {
+		
+		super.getFredaDao().insert("WeiXin.addFeedback", pDto);
+		
+		return true;
+	}
+
+	@Override
+	public String getOpenID(String code) {
+		String openId="";
+		
+		Object wxOpenId = EhcacheHelper.getInstance().get(EHCACHE_WX_CODE_TO_OPENID, code);
+		if(FredaUtils.isNotEmpty(wxOpenId)){
+			openId=wxOpenId.toString().trim();
+		}else{
+			try{
+				openId=WeiXinUtils.getOpenID(code);
+				EhcacheHelper.getInstance().put(EHCACHE_WX_CODE_TO_OPENID, code, openId);
+			}catch(Exception e){
+				openId="123457890";
+			}
+		}
+		return openId;
+	}
+	/**
+	 * 提交医生评价
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public boolean addDoctorReview(Dto pDto) {
+		super.getFredaDao().insert("WeiXin.addDoctorReview", pDto);
+		
+		return true;
+	}
+	
+}

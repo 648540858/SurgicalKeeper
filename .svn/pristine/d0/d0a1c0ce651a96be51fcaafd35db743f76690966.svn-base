@@ -1,0 +1,690 @@
+$(function(){
+	//页面初始化
+	initPage();
+	queryApptOrder();
+	fanye_fun(function(){
+		queryApptOrder();
+	});
+	$(".modal-body").css("height",$(document.body).height()*0.60);
+	alert($(document.body).height());
+	//绑定查询按钮事件"
+	$("#btn_query").click(function(){
+		$("#page_now").val(1);
+		queryApptOrder();
+	});
+	
+	//填写病患详情弹窗
+	$("#btn-edit1").click(function(){
+		detailInit();
+		getdetail();
+	});
+	$("#btn-edit2").click(function(){
+		edit_appt();
+	});
+	//给查看按钮绑定事件，激活弹窗
+	$("#btn_view").click(function(){
+		loadOrder();
+	});
+	
+	//城市树
+	$("#detail_area").click(function(){
+		cityTreeInit();
+		cityTreeshow();
+	});
+	
+	//更改预约信息医生选择输入框事件
+	$("#doc_name").click(function(){
+		choose_doc();
+	});
+	
+	
+	//发送预约短信
+	$("#btn-sendSms").click(function(){
+		sendApptSms();
+	});
+	//审核通过按钮绑定事件
+	$("#btn-verifyOrder").click(function(){
+		verifyOrder();
+	});
+	
+	//取消订单
+	$("#btn-cancelOrder").click(function(){
+		cancelOrder();
+	});
+	//关闭详情页面执行一次查询
+	$("#btn-closePage").click(function(){
+		$("#page_now").val(1);
+		queryApptOrder();
+	});
+	/*//翻页
+$("#prevPage").click(function(){
+		var curpage=Number($("#pageNum").text());
+		if(curpage<2)
+			return;
+		curpage--;
+		$("#pageNum").text(curpage);
+		var total=Number($("#pageTotal").text());
+		changeTotal(total,curpage);
+		queryApptOrder();
+	});
+	$("#nextPage").click(function(){
+		var curpage=Number($("#pageNum").text());
+		var total=Number($("#pageTotal").text());
+		if(curpage>=total)
+			return;
+		curpage++;
+		$("#pageNum").text(curpage);
+		changeTotal(total,curpage);
+		queryApptOrder();
+	});*/
+	
+});
+var orderStatus=0;//订单状态
+var orderId="0";//订单id
+var pId=0;//患者id
+var docId=0;
+var docName="";
+//页面初始化
+initPage=function(){
+	//添加状态下来列表
+	$("#orderStatus option").remove();
+	var id_arr=getCodeArray('ORDER_STATE');
+	for(var i=0;i<id_arr.length;i++) {
+		$("#orderStatus").append("<option value='"+id_arr[i].code+"'>"+id_arr[i].name+"</option>");
+	};
+	//开始时间添加日期选择
+     $("#appt_sTime").datetimepicker({
+        language:  'zh-CN',
+        format: "yyyy-mm-dd hh:ii:ss",
+        showMeridian: true,
+       	todayHighlight:true,
+        autoclose: true,
+        todayBtn: true,
+        minuteStep:10
+        
+    });
+    //结束时间时间添加日期选择
+     $("#appt_eTime").datetimepicker({
+        language:  'zh-CN',
+        format: "yyyy-mm-dd hh:ii:ss",
+        showMeridian: true,
+       	todayHighlight:true,
+        autoclose: true,
+        todayBtn: true,
+        minuteStep:10
+    });
+      //初始化医生树结构
+    docTreeInit();
+    //初始化星级评分
+    $('#satisfaction').raty({ 
+    starHalf      : root+'/resources/jquery_raty/lib/img/star-half.png',
+    starOff       : root+'/resources/jquery_raty/lib/img/star-off.png',
+    starOn        : root+'/resources/jquery_raty/lib/img/star-on.png',
+    number        : 5,
+	numberMax     : 20,
+	score         : 5,
+	half    : true
+    });
+   
+    
+    //给出生日期添加日期选择
+    $("#birthday").datetimepicker({
+       language:  'zh-CN',
+       format: "yyyy-mm-dd",
+       startDate:"1900-01-01",
+      // endDate: new Date(),
+       startView:4,//默认打开显示年
+       minView:2,//默认显示到天
+       showMeridian: true,
+      	todayHighlight:true,
+       autoclose: true
+   });
+};
+//加载订单
+loadOrder=function(){
+	orderStatus=0;//订单状态
+	oId="0";//订单id
+	pId=0;
+	docId=0;
+	docName="";
+	//回显清空内容
+	clearContent();
+	$("#remark").val("");
+	var ids=getCheckId("grup");
+	
+	if(ids.length==0){
+		alert("未选择要编辑的属性！！！");
+	}else if(ids.indexOf(",")>0){
+		alert("请选择单个进行编辑");
+	}else if($.isNumeric(Number(ids)) ){
+		sendAjax(root+"/apptOrder/listApptOrderAll.do",{
+			oId:ids},
+			function(data){
+				//设置回显的值
+				//订单信息
+				$("#oNum").html(data.orderId);
+				$("#oId").val(data.apptId);
+				$("#oPay").html(data.amount+"元");
+				if(data.oPayType==1){
+					$("#oPayType").html("余额支付");
+				}else if(data.oPayType==2){
+					$("#oPayType").html("微信支付");
+				};
+				$('#oStatus').html(getCodeText('ORDER_STATE',data.orderStatus));
+				$("#cTime").html(data.cTime);
+				$('#finishTime').html(data.finishTime);
+				//用户信息
+				$('#patMobile2').html(data.patMobile2);
+				$('#patMobile').html(data.patMobile);
+				$('#patName').html(data.patName);
+				pId=data.pId;
+				//预约信息
+				$('#docName').html(data.docName);
+				$('#apptAddress').html(data.address);
+				$('#apptTime').html(data.sTime+"至"+data.eTime);
+				$('#apptDesc').html(data.msg);
+				
+				//退款信息信息
+				if(data.orderStatus==7){
+					$('#refundTime').html(data.finishTime);
+					$('#refund').html(data.refund);
+					if(data.refundType==1){
+						$('#refundType').html("退款至“余额支付”");
+					}else if(data.refundType==2){
+						$('#refundType').html("退款至“微信钱包”");
+					}
+				};
+				//回访信息
+				/*$('#satisfaction').html(data.oNeedPayTotal);
+				$('#remark').html(data.oPayTotal);*/
+				
+				orderStatus=data.orderStatus;
+				
+				orderId=data.apptId;
+				if (orderStatus==5) {
+					sendAjax(root+"/apptOrder/listApptAppr.do",{
+							oId:orderId},
+								function(data){
+									$("#apprDoc").html(data.docName);
+									var Level=data.apprLevel;
+									  $('#apprLevel').raty({ 
+									    starHalf      : root+'/resources/jquery_raty/lib/img/star-half.png',
+									    starOff       : root+'/resources/jquery_raty/lib/img/star-off.png',
+									    starOn        : root+'/resources/jquery_raty/lib/img/star-on.png',
+									    number        : 5,
+										numberMax     : 20,
+										score         : Level,
+										half    : false
+									    });
+									$("#apprContent").html(data.apprContent);
+									if(data.getGift!=null){
+									$("#getGift").html("是");
+										sendAjax(root+"/apptOrder/listApptGift.do",{
+												giftId:data.getGift},
+													function(data){
+														$("#giftType").html("<img src=\""+root+"/"+data.giftType+"\" width=60 height=60 title=\""+data.giftTitle+"\"/>" );
+														$("#giftPrice").html(data.giftPrice);
+														$("#gift_cTime").html(data.gift_cTime);
+												    }
+											);
+									}else if(data.getGift==null){
+									$("#getGift").html("否");
+									}
+									
+									
+							    }
+						);
+				}
+				$("#modal_addEdit").modal({backdrop: 'static', keyboard: false});
+			}
+		);
+	}
+};
+
+//列表查询
+queryApptOrder=function(){
+	   
+	/*var limit=10;
+	var page=Number($("#pageNum").text());
+	var start=limit*(page-1);*/
+	limit=10;
+	var page=$("#page_now").val();
+	var start=limit*(page-1);
+	var url=root+"/apptOrder/listApptOrder.do";
+	orderStatus=$("#orderStatus").val();
+	sendAjax(url,{
+		limit:limit,
+		page:page,
+		start:start,
+		orderStatus:orderStatus},
+			function(data){
+				templateHtml("list",data,"content");
+				$("#allContent").html(data.TOTALCOUNT);
+				table_checked();
+				$("#total").val(data.TOTALCOUNT);
+				fanye_chageCss();
+		   }
+	);
+};
+
+
+docTreeInit=function(){
+	if(orderStatus>3){
+		return;
+	}
+	var setting = {
+		async : {
+			enable : true,
+			url : getUrl
+		},
+		data : {
+			simpleData : {
+				enable : true
+			}
+		},
+		view : {
+			showIcon : true,
+			showLine: true
+		},
+		callback : {
+			onClick : treeClick
+		// 单机触发的事件
+		}
+	};
+	sendAjax(root+"/commonAdminTree/doctorTree.do",{pId:'c-1'},
+		function(data){
+			$.fn.zTree.init($("#docTree"), setting, [ {
+				"id" : "1",
+				"name" : '北京瑞吉康星',
+				"isParent" : true,
+				"leaf" : 0,
+				children : data
+			} ]);
+		}
+	);
+};
+
+function getUrl(treeId, treeNode) {
+	var param = "pId=" + treeNode.id;
+	return root + "/commonAdminTree/doctorTree.do?" + param;
+};
+
+treeClick=function(e,treeId,treeNode,clickFlag){
+	if(treeNode.leaf==1){
+		docId=treeNode.id.substr(2);
+		docName=treeNode.name;
+		$("#doc_name").val(docName);
+		$("#doc_name_id").val(docId);
+	}else{
+		docId=0;
+		docName="";
+	}
+};
+
+//更改预约信息弹窗设置
+edit_appt=function(){
+	var order_States=$('#oStatus').html();
+	if(orderStatus==4||orderStatus==5||orderStatus==6||orderStatus==7){
+		alert("\""+order_States+"\"状态下无法更改预约信息");
+	}else{
+		 $("#edit_appt").dialog({
+		          title       : "更改预约信息",
+		         dialogClass : "modal-sm",
+		 		  buttons: {
+		              "关闭": function() {
+		                  $(this).dialog("close");},
+		              "提交": function() {
+		             	var appt_sTime=$("#appt_sTime").val();
+						var	appt_eTime=$("#appt_eTime").val();
+						var doc_id=$("#doc_name_id").val();
+						var	address=$("#area").val();
+						var appt_remark=$("#appt_remark").val();
+							if(doc_id==""&&address==""&&appt_sTime==""&&appt_eTime==""&&appt_remark==""){
+								alert("未进行任何更改！");
+								 $(this).dialog("close");
+							}else if(appt_sTime==""&&appt_eTime!=""){
+								alert("请选择预约开始时间！");
+							}else if(appt_eTime==""&&appt_sTime!=""){
+								alert("请选择预约结束时间！");
+							}else if(((appt_sTime!=null&&appt_eTime!="")&&appt_eTime<appt_sTime)||
+									 ((appt_sTime!=null&&appt_eTime!="")&&appt_eTime==appt_sTime)){
+								alert("预约结束时间必须大于开始时间！");
+							}else{
+								sendAjax(root+"/apptOrder/updateAppt.do",{
+			                  			oId:$("#oId").val(),
+										doc_id:$("#doc_name_id").val(),
+										address:$("#area").val(),
+										appt_sTime:$("#appt_sTime").val(),
+										appt_eTime:$("#appt_eTime").val(),
+										appt_remark:$("#appt_remark").val(),
+										opInfo:"更改预约信息"},
+										function(data){
+											if(data.bflag==1){
+												alert(data.msg);
+												loadOrder();
+											}else{
+												alert(data.msg);
+											}
+										}
+									);
+								$(this).dialog("close");
+								
+							}
+		             }
+		             }
+		});
+ 	}
+};
+//发送预约短信
+sendApptSms=function(){
+	sendAjax(root+"/apptOrder/sendApptSms.do",{
+						oId:orderId},
+						function(data){
+							if(data.bflag==1){
+								alert("预约短信发送成功！");
+								loadOrder();
+							}else{
+								alert("预约短信发送失败！！");
+							}
+						}
+					);
+};
+
+//医生选择弹窗设置
+choose_doc=function(){
+	$("#docTree").dialog({
+          title       : "更改医生",
+         dialogClass : "modal-sm",
+         buttons: {
+        	 
+              "确定": function() {
+                  $(this).dialog("close");
+              }
+          }
+      });
+};
+
+//填写病患详情弹窗设置
+getdetail=function(){
+	
+	$("#patient_detail").dialog({
+         title       : "病患详情",
+         backdrop: "static",
+         buttons: {
+        	 "关闭": function() {
+                 $(this).dialog("close");},
+              "确定": function() {
+            	  detailSubmit();
+              }
+          }
+      });
+};
+
+detailInit=function(){
+	sendAjax(root+"/apptOrder/detaillist.do",{
+			oId:orderId,
+			pId:pId},
+		function(data){
+				if(data!=null){
+				if(data.pGender==1){
+					$("input[name='detail_gender']:eq(0)").attr("checked",'checked');
+				}else if(data.pGender==2){
+					$("input[name='detail_gender']:eq(1)").attr("checked",'checked');
+				};
+				
+				$("#username").val(data.pName);
+				
+				$("#birthday").val(data.Birth);
+				$("#detail_area").val(data.areaName);
+				$("#detail_area_id").val(data.area);
+				$("#detail_ethnic").val(data.ethnic);
+				$("#source").val(data.source);
+				
+				$("input[name='readme_surgery_is']:checked").val(data.surgety);
+				if(data.surgety=="0"){
+					$("input[name='readme_surgery_is']:eq(0)").attr("checked",'checked');
+				}else if(data.surgety=="1"){
+					$("input[name='readme_surgery_is']:eq(1)").attr("checked",'checked');
+				};
+				$("#diagnose").val(data.diagnose);
+				$("#detail_history").val(data.history);
+				$("#sick_desc").val(data.pDesc);
+				}
+				
+		}
+);
+	
+};
+cityTreeInit=function(){
+	
+	var setting={
+			async: {
+				enable: true,
+				type:"post",
+				contentType: "application/x-www-form-urlencoded",
+				url: root+"/apptOrder/listCity.do",
+				autoParam: ["city_id"]
+				},
+			data: {
+				key: {
+					name: "text"
+				}
+			},
+			
+			view:{
+				expandSpeed: "fast",
+				selectedMulti: true,
+				showIcon: true,
+				showLine: true,
+				showTitle: false
+			},
+			callback:{
+				onClick: getcity
+			}
+		};
+		
+		var t = $("#cityTree");
+		t = $.fn.zTree.init(t, setting);
+	
+};
+
+cityTreeshow=function(){
+	
+	$("#cityTree").dialog({
+        title       : "选择城市",
+       dialogClass : "modal-sm"
+      
+    });
+};
+
+getcity=function(e,treeId,treeNode,clickFlag){
+	
+	if(treeNode.leaf==1){
+		city_id=treeNode.city_id;
+		city_name=treeNode.text;
+		
+		$("#detail_area").val(city_name);
+		
+		$("#detail_area_id").val(city_id);
+		
+		$("#cityTree").dialog("close");
+	}
+};
+//订单审核通过
+verifyOrder=function(){
+	
+	var order_States=$('#oStatus').html();
+	if(orderStatus!=2){
+		alert("\""+order_States+"\"状态下无法审核订单");
+	}else{
+		sendAjax(root+"/apptOrder/verifyOrder.do",{
+	                  			oId:$("#oId").val(),
+	                  			opInfo:"订单确认提交"},
+								function(data){
+									if(data.bflag==1){
+										alert(data.msg);
+										loadOrder();
+									}else{
+										alert(data.msg);
+									}
+								}
+				);
+		
+	}
+
+};
+//取消订单并退款
+cancelOrder=function(){
+	var order_States=$('#oStatus').html();
+	if(orderStatus==4||orderStatus==5||orderStatus==6||orderStatus==7){
+		alert("\""+order_States+"\"状态下无法取消订单");
+	}else{
+	sendAjax(root+"/apptOrder/getRefundInfo.do",{
+                  			oId:$("#oId").val(),
+                  			opInfo:"取消订单并退款"},
+							function(data){
+							if(data.payType==null&&orderStatus==1){
+									sendAjax(root+"/apptOrder/cancelOrder.do",{
+													oId:orderId,
+													cId:docId,
+													refund:1,
+													oStatus:orderStatus},
+													function(data){
+														if(data.bflag==1){
+															alert(data.msg);
+															loadOrder();
+														}else{
+															alert(data.msg);
+														}
+													}
+												);
+								}
+								if(data.payType==1){
+									sendAjax(root+"/apptOrder/addRefundToBalance.do",{
+										mainUserId:data.mainUserId,
+										oPayAmount:data.amount,
+										oPayType:1,
+										oId:orderId,
+										cId:docId,
+										oStatus:orderStatus},
+										function(data){
+											if(data.bflag==1){
+												alert(data.msg);
+												loadOrder();
+											}else{
+												alert(data.msg);
+											}
+										}
+									);
+								}
+								if(data.payType==2){
+									var refoundAmount=data.amount;
+									sendAjax(root+"/pingpp/refundOrder.do",{
+										ch_id:data.outOrderNum,
+										amount:data.amount,
+										description:'精准预约取消订单'},
+											function(data){
+												if(data.bflag==1){
+													sendAjax(root+"/apptOrder/cancelOrder.do",{
+													oId:orderId,
+													cId:docId,
+													refund:1,
+													oPayType:2,
+													oPayAmount:refoundAmount,
+													oStatus:orderStatus},
+													function(data){
+														if(data.bflag==1){
+															alert(data.msg);
+															loadOrder();
+														}else{
+															alert(data.msg);
+														}
+													}
+												);
+											}else{
+												alert("退款失败，请重试！");
+												}
+											
+										}
+									);
+								}
+		}
+	);
+};
+};
+
+//填写患者详情提交
+detailSubmit=function(){
+	sendAjax(root+"/apptOrder/detailSubmit.do",{
+		pId:pId,
+		pGender:$("input[name='detail_gender']:checked").val(),
+		pBirth:$("#birthday").val(),
+		pAreaId:$("#detail_area_id").val(),
+		pEthnic:$("#detail_ethnic").val(),
+		pSource:$("#source").val(),
+		oId:orderId,
+		pSurgery:$("input[name='readme_surgery_is']:checked").val(),
+		pDiagnose:$("#diagnose").val(),
+		pHistory:$("#detail_history").val(),
+		pDesc:$("#sick_desc").val(),
+		pCategory:1//1：精准预约  2：vip会诊
+		},
+		function(data){
+			if(data.bflag==1){
+				alert(data.msg);
+				loadOrder();
+			}else{
+				alert(data.msg);
+			}
+		}
+	);
+};
+
+clearContent=function(){
+	$("#oNum").html();
+				$("#oId").val();
+				$("#oPay").html();
+				$("#oPayType").html();
+				$('#oStatus').html();
+				$("#cTime").html();
+				$('#finishTime').html();
+				
+				$('#refundTime').html();
+				$('#refund').html();
+				$('#refundType').html();
+				
+				$('#patMobile2').html();
+				$('#patMobile').html();
+				$('#patName').html();
+				
+				$("#apprDoc").html();
+			  	$('#apprLevel').raty({ 
+				    starHalf      : root+'/resources/jquery_raty/lib/img/star-half.png',
+				    starOff       : root+'/resources/jquery_raty/lib/img/star-off.png',
+				    starOn        : root+'/resources/jquery_raty/lib/img/star-on.png',
+				    number        : 5,
+					numberMax     : 20,
+					score         : 0,
+					half    : false
+				    });
+				$("#apprContent").html();
+				$("#getGift").html("未知");
+				$("#giftType").html();
+				$("#giftPrice").html();
+				$("#gift_cTime").html();
+				
+				$('#patMobile2').html();
+				$('#patMobile').html();
+				$('#patName').html();
+				//预约信息
+				$('#docName').html();
+				$('#apptAddress').html();
+				$('#apptTime').html();
+				$('#apptDesc').html();
+				
+				//退款信息信息
+				$('#refundTime').html();
+				$('#refund').html();
+				$('#refundType').html();
+				$('#refundType').html();
+};

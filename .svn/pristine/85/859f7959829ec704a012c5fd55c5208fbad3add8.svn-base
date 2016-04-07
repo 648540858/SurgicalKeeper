@@ -1,0 +1,16 @@
+package com.rjkx.sk.admin.om.utils;
+/**
+ * 
+  * @ClassName: VipCons
+  * @Description: TODO
+  * @author yiyuan-Rally
+  * @date 2016年1月15日 上午9:32:57 
+  * @version V1.0
+ */
+public class VipCons 
+{	
+	public static final String WX_PAY_PAGE = "http://wx.yiyuan591.com/WxPro/wx/ghyy_vipcon_pay.jsp";
+	
+	public static final String WX_MSG_TEMP_ID = "CRFAPVN3BTacIlA3Y1w_NDv0oXYmxPa26Kqi0g9uWGw";
+	
+}

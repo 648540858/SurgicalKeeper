@@ -1,0 +1,75 @@
+package com.rjkx.sk.admin.setting.service.impl;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.rjkx.sk.admin.core.web.AdminBaseServiceImpl;
+import com.rjkx.sk.admin.setting.service.MenuServiceItf;
+import com.rjkx.sk.system.datastructure.Dto;
+
+/**
+ * MENU
+  * @ClassName: MenuServiceImpl
+  * @Description: TODO
+  * @author yiyuan-Rally
+  * @date 2015年9月22日 下午2:36:38 
+  * @version V1.0
+ */
+@Service(value="menuServiceImpl")
+public class MenuServiceImpl extends AdminBaseServiceImpl implements MenuServiceItf
+{
+	/*
+	  * <p>Title: addMenu</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.setting.service.impl.MenuServiceItf#addMenu(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void addMenu(Dto pDto)
+	{
+		pDto.put("leaf", 0);
+		
+		super.getFredaDao().insert("Menu.addMenu", pDto);
+		
+		super.getFredaDao().update("Menu.editLeaf", pDto);
+	}
+	/*
+	  * <p>Title: editMenu</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.setting.service.impl.MenuServiceItf#editMenu(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void editMenu(Dto pDto)
+	{
+		super.getFredaDao().update("Menu.editMenu", pDto);
+	}
+	/*
+	  * <p>Title: delMenu</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.setting.service.impl.MenuServiceItf#delMenu(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void delMenu(Dto pDto)
+	{
+		pDto.put("leaf", 1);
+		
+		if(((Integer)super.getFredaDao().queryForObject("Menu.listMenuCount", pDto)) <= 2)
+		{
+			super.getFredaDao().update("Menu.editLeaf", pDto);
+		}
+		super.getFredaDao().delete("Menu.delMenu", pDto);
+	}
+}

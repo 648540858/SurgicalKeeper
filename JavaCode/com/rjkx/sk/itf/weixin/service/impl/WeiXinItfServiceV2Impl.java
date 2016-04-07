@@ -1,0 +1,833 @@
+package com.rjkx.sk.itf.weixin.service.impl;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.rjkx.sk.itf.common.web.WeiXinItfBaseServiceImpl;
+import com.rjkx.sk.itf.weixin.pojo.BaseMessage;
+import com.rjkx.sk.itf.weixin.pojo.MenuEvent;
+import com.rjkx.sk.itf.weixin.pojo.QRCodeEvent;
+import com.rjkx.sk.itf.weixin.pojo.TemplateData;
+import com.rjkx.sk.itf.weixin.pojo.TextMessage;
+import com.rjkx.sk.itf.weixin.pojo.Token;
+import com.rjkx.sk.itf.weixin.pojo.UserInfo;
+import com.rjkx.sk.itf.weixin.pojo.UserList;
+import com.rjkx.sk.itf.weixin.pojo.UserLocation;
+import com.rjkx.sk.itf.weixin.pojo.WxTemplate;
+import com.rjkx.sk.itf.weixin.service.WeiXinItfServiceV2Itf;
+import com.rjkx.sk.itf.weixin.utils.MessageUtil;
+import com.rjkx.sk.itf.weixin.utils.WeiXinCons;
+import com.rjkx.sk.itf.weixin.utils.WeiXinTokenThread;
+import com.rjkx.sk.itf.weixin.utils.WeiXinUtils;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.datastructure.ResultDataBean;
+import com.rjkx.sk.system.datastructure.impl.BaseDto;
+import com.rjkx.sk.system.ehcache.EhcacheHelper;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+
+/***
+ * V2.0
+  * @ClassName: WeiXinItfServiceV2Impl
+  * @Description:
+  * @author yiyuan-LiChun
+  * @date 2016年3月1日 上午8:20:00 
+  * @version V1.0
+ */
+@Service(value = "weiXinItfServiceV2Impl")
+public class WeiXinItfServiceV2Impl extends WeiXinItfBaseServiceImpl implements WeiXinItfServiceV2Itf {
+	private static final String EHCACHE_WX_CODE_TO_OPENID = "EHCACHE_WX_CODE_TO_OPENID";
+
+	public static final String SYNCHRONIZED_LOCK = "SYN_LOCK";
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Dto getMainUserId(Dto pDto) {
+		Dto rDto = new BaseDto();
+		try {
+//			rDto.put("wxOpenId", "oO03ywJIcufs0UGPWuCHMik0KDRI");
+			Object wxOpenId = EhcacheHelper.getInstance().get(EHCACHE_WX_CODE_TO_OPENID, pDto.getAsString("wxCode"));
+
+			if (FredaUtils.isNotEmpty(wxOpenId)) {
+				rDto.put("wxOpenId", wxOpenId.toString());
+			} else {
+				String openId="";
+				Token accessToken=WeiXinUtils.getAccessTokenByCode(WeiXinCons.WX_APP_ID, WeiXinCons.WX_APP_SECRET, pDto.getAsString("wxCode"));
+				if(accessToken!=null)
+					openId=accessToken.getOpenid();
+				EhcacheHelper.getInstance().put(EHCACHE_WX_CODE_TO_OPENID, pDto.getAsString("wxCode"), openId);
+				rDto.put("wxOpenId", openId);
+			}
+			rDto.put("id", rDto.getAsString("wxOpenId"));
+			
+			int cityId=0;
+			Dto dtoTemp = (Dto) super.getFredaDao().queryForObject("WxV2.getMainUserIdByOpenId", rDto);
+			if(FredaUtils.isNotEmpty(dtoTemp)){
+				rDto.put("mainUserId", dtoTemp.getAsLong("id"));
+				cityId = dtoTemp.getAsInteger("areaId");
+			}
+			rDto.remove("id");
+			if (cityId < 0)
+				cityId = 2;// 地市不确定时，默认为北京
+			rDto.put("cityId", cityId);
+			rDto.setSuccess(true);
+
+			return rDto;
+		} catch (Exception e) {
+			e.printStackTrace();
+			rDto.setSuccess(false);
+			return rDto;
+		}
+	}
+
+	@Override
+	public void editReadCount(Dto pDto) {
+		super.getFredaDao().update("WxV2.editReadCount", pDto);
+	}
+
+	@Override
+	public boolean enrollLec(Dto pDto) {
+		if (((Integer) super.getFredaDao().queryForObject("WxV2.queryEnrollCount", pDto)) >= 1) {
+			return false;
+		} else {
+			super.getFredaDao().insert("WxV2.addEnrollLec", pDto);
+
+			return true;
+		}
+	}
+
+	@Override
+	public boolean dianCanForLec(Dto pDto) {
+		if (((Integer) super.getFredaDao().queryForObject("WxV2.queryDianZanCount", pDto)) >= 1) {
+			super.getFredaDao().delete("WxV2.addDianZanLec", pDto);
+
+			return false;
+		} else {
+			super.getFredaDao().insert("WxV2.delDianZanLec", pDto);
+
+			return true;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public String createUser(Dto pDto) {
+		if (((Integer) super.getFredaDao().queryForObject("WxV2.queryMainUserCount", pDto)) >= 1) {
+			return null;
+		} else {
+			pDto.put("userPwd", FredaUtils.encryptBasedDes(pDto.getAsString("msgCode")));
+			int cityId = -1;
+			// 根据手机号查询地市和地市id
+			String cityName = "";
+			try {
+				cityName = WeiXinUtils.getMobileInfo(pDto.getAsString("mobile"));
+				pDto.put("cityName", cityName);
+
+				Dto rdto = (Dto) super.getFredaDao().queryForObject("WeiXin.findCityId", pDto);
+				if (FredaUtils.isNotEmpty(rdto) && rdto != null) {
+					cityId = rdto.getAsInteger("cityId");
+				}
+			} catch (Exception e) {
+			}
+			pDto.put("cityId", cityId);
+			super.getFredaDao().insert("WxV2.addMainUser", pDto);
+
+			return pDto.getAsString("userId");
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
+	public boolean addSicknessPat(Dto pDto) throws Exception {
+		this.setDtoParamsCodeToUtf8(pDto);
+
+		String[] sIds = pDto.getAsString("sIds").split(",");
+
+		if (((Integer) super.getFredaDao().queryForObject("WxV2.queryCountForAddPat", pDto)) > 0) {
+			return false;
+		}
+		// 增加就诊人主数据..
+		super.getFredaDao().insert("WxV2.addPatForMainUser", pDto);
+		// 添加病情数据..
+		super.getFredaDao().insert("WxV2.addSickInfoForPat", pDto);
+		// 添加关联疾病数据..
+		for (String sId : sIds) {
+			pDto.put("sId", sId);
+			super.getFredaDao().insert("WxV2.addSicksForSickInfo", pDto);
+		}
+		return true;
+	}
+
+	/**
+	 * 将虽有参数编码转变成UTF-8
+	 * 
+	 * @param pDto
+	 * @throws UnsupportedEncodingException
+	 */
+	private void setDtoParamsCodeToUtf8(Dto pDto) throws UnsupportedEncodingException {
+		/*
+		 * Iterator it = pDto.keySet().iterator();
+		 * 
+		 * while (it.hasNext()) { String key = (String)it.next();
+		 * 
+		 * String value = pDto.getAsString(key);
+		 * 
+		 * pDto.put(key, new String(value.getBytes("ISO-8859-1"),"UTF-8")); }
+		 */
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Dto myCenterInit(Dto pDto) throws Exception {
+		Dto rDto = (Dto) super.getFredaDao().queryForObject("WxV2.getMainUserInfo", pDto);
+
+		rDto.put("orderCountList", this.arrangeOrderCountList(super.getFredaContext().getOrderService().orderQuery(pDto).getData()));
+
+		return rDto;
+	}
+
+	/**
+	 * 整理List
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月8日 上午10:50:01
+	 * @param orderCountList
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private List<?> arrangeOrderCountList(List<?> orderCountList) {
+		List<Dto> data = new ArrayList<Dto>();
+
+		for (int i = 1; i <= 4; i++) {
+			Dto row = new BaseDto("orderStatus", i);
+
+			row.put("orderCount", this.getOrderCount(i, orderCountList));
+
+			data.add(row);
+		}
+		return data;
+	}
+
+	/**
+	 * 从LIst中获取结果..如果没有则为0
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月8日 上午10:50:10
+	 * @param orderStatus
+	 * @return
+	 */
+	private int getOrderCount(int orderStatus, List<?> orderCountList) {
+		int count = 0;
+
+		for (Object obj : orderCountList) {
+			Dto row = (Dto) obj;
+
+			if (row.getAsInteger("orderStatus") == orderStatus) {
+				count = row.getAsInteger("orderCount");
+			}
+		}
+		return count;
+	}
+
+	@Override
+	public void delPat(Dto pDto) {
+		super.getFredaDao().update("WxV2.delPat", pDto);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Dto zzQueryPageDataInit(Dto pDto) {
+		Dto rDto = new BaseDto();
+
+		rDto.put("sickList", super.getFredaDao().queryForList("WxV2.listSickness"));
+
+		rDto.put("hosDeptList", super.getFredaDao().queryForList("WxV2.listHosDept"));
+
+		rDto.put("hosList", super.getFredaDao().queryForList("WxV2.listHosByCity", pDto));
+
+		return rDto;
+	}
+
+	@Override
+	public ResultDataBean queryDoc(Dto pDto) throws Exception {
+		ResultDataBean data = null;
+
+		if (pDto.getAsInteger("queryType") == 1) {
+			data = super.getFredaDao().queryForPage("WxV2.queryTJDoc", "WxV2.queryTJDocCount", pDto);
+		} else if (pDto.getAsInteger("queryType") == 2) {
+			data = super.getFredaDao().queryForPage("WxV2.queryZZDoc", "WxV2.queryZZDocCount", pDto);
+		} else {
+			data = super.getFredaDao().queryForPage("WxV2.queryQDoc", "WxV2.queryQDocCount", pDto);
+		}
+		return data;
+	}
+
+	@Override
+	public Dto loadDocAndSch(Dto pDto) {
+		Dto rDto = (Dto) super.getFredaDao().queryForObject("WxV2.loadDocInfo", pDto);
+
+//		rDto.put("dateAndWeekList", this.getWeekInfo());
+
+//		rDto.put("schList", super.getFredaDao().queryForList("WxV2.queryDocSch", pDto));
+
+		return rDto;
+	}
+
+	/**
+	 * 将今天起一个星期的日期\星期几压入一个LIST中..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月10日 上午11:21:48
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public List<?> getWeekInfo() {
+		String[] weekDays = { "日", "一", "二", "三", "四", "五", "六" };
+
+		Calendar cal = Calendar.getInstance();
+
+		int w = cal.get(Calendar.DAY_OF_WEEK) - 1, d = cal.get(Calendar.DAY_OF_MONTH), monthTotal = cal.getActualMaximum(Calendar.DATE);
+
+		if (w < 0)
+			w = 0;
+
+		List<Dto> data = new ArrayList<Dto>();
+
+		for (int i = 0; i < 7; i++) {
+			int a = w + i, day = d + i;
+			Dto row = new BaseDto();
+			// 判断
+			if (a > 6)
+				a = a - 7;
+			if (day > monthTotal)
+				day = day - monthTotal;
+
+			row.put("day", day);
+			row.put("weekNum", a);
+			row.put("weekCh", weekDays[a]);
+
+			data.add(row);
+		}
+		return data;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public synchronized boolean createOrder(Dto pDto) {
+		/*if (((Integer) super.getFredaDao().queryForObject("WxV2.isUseForSch", pDto)) > 0) {
+			return false;
+		}*/
+		// 查总价,前100名，首单10元
+//		if (((Dto) super.getFredaDao().queryForObject("WxV2.getPatOrderCount", null)).getAsLong("orderCount") <= 100) {
+//			pDto.put("amount", 10);
+//		} else {
+			pDto.put("amount", ((Dto) super.getFredaDao().queryForObject("WxV2.getSchAmount", pDto)).getAsString("price"));
+//		}
+		// 查患者病情
+		pDto.put("psId", ((Dto) super.getFredaDao().queryForObject("WxV2.getPatPsId", pDto)).getAsString("psId"));
+
+		try {
+			return super.getFredaContext().getOrderService().orderCreate(pDto);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	@Override
+	public boolean addVipConsultation(Dto pDto) throws UnsupportedEncodingException {
+		this.setDtoParamsCodeToUtf8(pDto);
+
+		if (((Integer) super.getFredaDao().queryForObject("WxV2.isJustAddVip", pDto)) > 0) {
+			return false;
+		} else {
+			super.getFredaDao().insert("WxV2.addVipConsultation", pDto);
+
+			return true;
+		}
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
+	public void editBalance(Dto pDto) {
+		super.getFredaDao().update("WxV2.editBalance", pDto);
+
+		String amount = pDto.getAsString("balanceAdd").replaceAll(" ", "");
+
+		if (FredaUtils.isEmpty(pDto.getAsInteger("type"))) {
+			super.getFredaContext().getLogService().addCapitalLog(pDto.getAsInteger("mainUserId"), "", 1, Double.parseDouble(amount), "充值提现");
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public boolean payOrderToNext(Dto pDto) {
+		pDto.put("orderState", 2);// 设置走向..支付成功..
+
+		try {
+			boolean falg = super.getFredaContext().getOrderService().orderToNext(pDto);
+
+			super.getFredaContext().getLogService().addCapitalLog(pDto.getAsInteger("opId"), "", 2, Double.parseDouble("-" + pDto.getAsString("amount")), pDto.getAsString("orderId"));
+
+			return falg;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	@Override
+	public boolean payBalance(Dto pDto) {
+		if (Double.parseDouble((String) super.getFredaDao().queryForObject("WxV2.getBalance", pDto)) >= Double.parseDouble(pDto.getAsString("amount"))) {
+			// 修改余额..
+			super.getFredaDao().update("WxV2.editBalance", pDto);
+
+			return true;
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public boolean refundToNext(Dto pDto) {
+		pDto.put("orderState", 7);//
+
+		try {
+			boolean falg = super.getFredaContext().getOrderService().orderToNext(pDto);
+
+			super.getFredaContext().getLogService().addCapitalLog(pDto.getAsInteger("opId"), "", 3, Double.parseDouble(pDto.getAsString("refund")), pDto.getAsString("orderId"));
+
+			return falg;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public boolean pingFenToNext(Dto pDto) {
+		pDto.put("orderState", 5);// 设置走向流程结束.
+
+		try {
+			this.setDtoParamsCodeToUtf8(pDto);
+
+			boolean falg = super.getFredaContext().getOrderService().orderToNext(pDto);
+
+			if (FredaUtils.isNotEmpty(pDto.getAsString("giftId"))) {
+				super.getFredaContext().getLogService().addCapitalLog(pDto.getAsInteger("opId"), "", 4, Double.parseDouble("-" + pDto.getAsString("gAmount")), pDto.getAsString("orderId"));
+			}
+			return falg;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean addFeedBack(Dto pDto) {
+		if (((Integer) super.getFredaDao().queryForObject("WxV2.queryFeedBack", pDto)) == 0) {
+			super.getFredaDao().insert("WxV2.addFeedBack", pDto);
+
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
+	public boolean firstFenXiangAndAddBalance(Dto pDto) {
+		Double amount = (Double) super.getFredaDao().queryForObject("WxV2.isBack", pDto);
+
+		if (amount != 0) {
+			amount = 5.0;// 固定返5元
+			pDto.put("balanceAdd", "+ " + amount);// 次处amount是订单的综合..后续将修改这里..改返还规则..不返还则修改成-1
+
+			pDto.put("back", amount);
+
+			super.getFredaDao().update("WxV2.editBalance", pDto);
+
+			super.getFredaDao().update("WxV2.editOrderBack", pDto);
+
+			super.getFredaContext().getLogService().addCapitalLog(pDto.getAsInteger("mainUserId"), "", 5, amount, pDto.getAsString("orderId"));
+
+			return true;
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
+	public boolean editSicknessPat(Dto pDto) throws Exception {
+		String[] sIds = pDto.getAsString("sIds").split(",");
+
+		this.setDtoParamsCodeToUtf8(pDto);
+		// 修改信息
+		super.getFredaDao().update("WxV2.editPat", pDto);
+		// 修改描述
+		super.getFredaDao().update("WxV2.editPatSic", pDto);
+		// 删除关联
+		super.getFredaDao().delete("WxV2.delRps", pDto);
+		// 添加关联疾病数据..
+		for (String sId : sIds) {
+			pDto.put("sId", sId);
+
+			super.getFredaDao().insert("WxV2.addSicksForSickInfo", pDto);
+		}
+		return true;
+	}
+
+	@Override
+	public Dto getVipOrderPayInfo(Dto pDto) {
+		return (Dto) super.getFredaDao().queryForObject("WxV2.getVipOrderPayInfo", pDto);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
+	public boolean payVipCallBack(Dto pDto) {
+		int payMode = pDto.getAsInteger("payMode");
+
+		switch (payMode) {
+		case 1:
+			pDto.put("nextStatus", 3);
+			break;
+
+		case 3:
+			pDto.put("nextStatus", 4);
+			break;
+
+		default:
+			break;
+		}
+		// 更新支付成功后的信息.并记录支付日志
+		if (super.getFredaDao().update("WxV2.editVipOder", pDto) > 0)// 更新信息
+		{
+			super.getFredaDao().insert("WxV2.addVipPayLog", pDto);// 添加支付日志
+
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public void clearUserOpenId() {
+		super.getFredaDao().delete("WxV2.clearUserOpenId");
+	}
+
+	@Override
+	public void addUserOpenId(Dto pDto) {
+		super.getFredaDao().insert("WxV2.addUserOpenId", pDto);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public String processMessage(Dto pDto) {
+		// 事件
+		if (pDto.getAsString("MsgType").equals(MessageUtil.REQ_MESSAGE_TYPE_EVENT)) {
+			// 回复文本消息
+			TextMessage textMessage = new TextMessage();
+			textMessage.setFromUserName(pDto.getAsString("ToUserName"));
+			textMessage.setToUserName(pDto.getAsString("FromUserName"));
+			textMessage.setCreateTime(new Date().getTime());
+			textMessage.setMsgType(MessageUtil.REQ_MESSAGE_TYPE_TEXT);
+
+			if (pDto.getAsString("Event").equals(MessageUtil.EVENT_TYPE_CLICK)) {// 菜单点击
+				MenuEvent menuEvent = new MenuEvent();
+				menuEvent.setEventKey(pDto.getAsString("EventKey"));
+				if (menuEvent.getEventKey().equals("online")) {// 在线客服
+					textMessage.setContent("点击左下角小键盘输入文字或语音即可联系客服（值班时间：每天9:00~17:00）");
+				}else{
+					return "";
+				}
+			} else if (pDto.getAsString("Event").equals(MessageUtil.EVENT_TYPE_SCAN)) {// 二维码扫描
+				QRCodeEvent qrcodeEvent = new QRCodeEvent();
+				qrcodeEvent.setFromUserName(textMessage.getToUserName());
+				qrcodeEvent.setTicket(pDto.getAsString("Ticket"));
+				qrcodeEvent.setEventKey(pDto.getAsString("EventKey").replace("qrscene_", ""));
+				
+				pDto.put("openId", textMessage.getToUserName());//用户openId
+				pDto.put("docId", qrcodeEvent.getEventKey());//医生id
+				if (super.getFredaDao().queryForList("WxV2.findUserOpenId", pDto).size() < 1) {
+					UserInfo userInfo=WeiXinUtils.getUserInfo(WeiXinTokenThread.ACCESS_TOKEN, pDto.getAsString("openId"));
+					if(userInfo!=null){
+						pDto.put("nickname", userInfo.getNickname());
+						pDto.put("sex", userInfo.getSex());
+						pDto.put("city", userInfo.getCity());
+						pDto.put("province", userInfo.getProvince());
+						pDto.put("country", userInfo.getCountry());
+						pDto.put("subscribe_time", FredaUtils.getDateTime(userInfo.getSubscribe_time()*1000L));
+						pDto.put("headimgurl", userInfo.getHeadimgurl());
+						if(userInfo.getUnionid()!=null&&userInfo.getUnionid().length()>0)
+							pDto.put("unionid", userInfo.getUnionid());
+						else
+							pDto.put("unionid", "");
+						pDto.put("remark", userInfo.getRemark());
+						try{
+							super.getFredaDao().insert("WxV2.addUserOpenId", pDto);
+						}catch(Exception e){
+							pDto.put("nickname", "");
+							super.getFredaDao().insert("WxV2.addUserOpenId", pDto);
+						}
+					}
+				}
+				textMessage.setContent("");
+				
+				sendDocTemplateMsg(textMessage.getToUserName(),qrcodeEvent.getEventKey());
+				
+				return "";
+			} else if (pDto.getAsString("Event").equals(MessageUtil.EVENT_TYPE_SUBSCRIBE)) {// 关注
+				pDto.put("openId", textMessage.getToUserName());
+				if (super.getFredaDao().queryForList("WxV2.findUserOpenId", pDto).size() < 1) {
+					if (FredaUtils.isNotEmpty(pDto.getAsString("Ticket"))) {// 有二维码扫描
+						pDto.put("docId",pDto.getAsString("EventKey").replace("qrscene_", ""));
+					}else{
+						pDto.put("docId", 0);//无推荐者
+					}
+					UserInfo userInfo=WeiXinUtils.getUserInfo(WeiXinTokenThread.ACCESS_TOKEN, pDto.getAsString("openId"));
+					if(userInfo!=null){
+						pDto.put("nickname", userInfo.getNickname());
+						pDto.put("sex", userInfo.getSex());
+						pDto.put("city", userInfo.getCity());
+						pDto.put("province", userInfo.getProvince());
+						pDto.put("country", userInfo.getCountry());
+						pDto.put("subscribe_time", FredaUtils.getDateTime(userInfo.getSubscribe_time()*1000L));
+						pDto.put("headimgurl", userInfo.getHeadimgurl());
+						if(userInfo.getUnionid()!=null&&userInfo.getUnionid().length()>0)
+							pDto.put("unionid", userInfo.getUnionid());
+						else
+							pDto.put("unionid", "");
+						pDto.put("remark", userInfo.getRemark());
+						try{
+							super.getFredaDao().insert("WxV2.addUserOpenId", pDto);
+						}catch(Exception e){
+							pDto.put("nickname", "");
+							super.getFredaDao().insert("WxV2.addUserOpenId", pDto);
+						}
+					}
+				}
+
+				if (FredaUtils.isNotEmpty(pDto.getAsString("Ticket"))) {// 二维码扫描
+					QRCodeEvent qrcodeEvent = new QRCodeEvent();
+					qrcodeEvent.setFromUserName(textMessage.getToUserName());
+					qrcodeEvent.setTicket(pDto.getAsString("Ticket"));
+					qrcodeEvent.setEventKey(pDto.getAsString("EventKey").replace("qrscene_", ""));
+					
+					textMessage.setContent("欢迎关注!\r\n“医愿”是中国首家以“了解病情、找对医生”为核心的互联网医疗平台。为骨科患者提供国内国外知名专家会诊、手术、住院、康复等中高端服务。\r\n了解病情(骨科医愿)、精准预约、VIP会诊、功能说明，请点击<a href=\""+WeiXinCons.WX_SAFE_DOMAIN+"/WxPro/wx/line_list.html\">【开始使用】</a>");
+					//发送医生推荐消息
+					MyMsgThread mm=new MyMsgThread(textMessage.getToUserName(),pDto.getAsString("EventKey"));
+					mm.start();
+				} else {// 普通关注
+					textMessage.setContent("欢迎关注!\r\n“医愿”是中国首家以“了解病情、找对医生”为核心的互联网医疗平台。为骨科患者提供国内国外知名专家会诊、手术、住院、康复等中高端服务。\r\n了解病情(骨科医愿)、精准预约、VIP会诊、功能说明，请点击<a href=\""+WeiXinCons.WX_SAFE_DOMAIN+"/WxPro/wx/line_list.html\">【开始使用】</a>");
+				}
+			} else if (pDto.getAsString("Event").equals(MessageUtil.EVENT_TYPE_UNSUBSCRIBE)) {// 取消关注
+				pDto.put("openId", textMessage.getToUserName());
+				super.getFredaDao().delete("WxV2.delUserOpenId", pDto);
+				return "";
+			}else if (pDto.getAsString("Event").equals(MessageUtil.EVENT_TYPE_LOCATION)) {//用户位置上报
+				UserLocation userLocation=new UserLocation();
+				userLocation.setLatitude(pDto.getAsString("Latitude"));
+				userLocation.setLongitude(pDto.getAsString("Longitude"));
+				userLocation.setPrecision(pDto.getAsString("Precision"));
+				return "";
+			}else{
+				return "";
+			}
+			return MessageUtil.messageToXml(textMessage);
+		} else {
+			BaseMessage baseMessage = new BaseMessage();
+			baseMessage.setFromUserName(pDto.getAsString("ToUserName"));
+			baseMessage.setToUserName(pDto.getAsString("FromUserName"));
+			baseMessage.setCreateTime(new Date().getTime());
+			baseMessage.setMsgType(MessageUtil.RESP_MESSAGE_TYPE_TRANSFER_CUSTOMER_SERVICE);
+			return MessageUtil.messageToXml(baseMessage);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private boolean sendDocTemplateMsg(String openId,String qrCodeKey){
+		String mainUserId="";
+		String url="";
+		StringBuilder sb=new StringBuilder();
+		
+		Dto pDto=new BaseDto();
+		pDto.put("id", openId);
+		//获取用户主id
+		Dto rDto=((Dto)super.getFredaDao().queryForObject("WxV2.getMainUserIdByOpenId",pDto));
+		if(FredaUtils.isNotEmpty(rDto)){
+			mainUserId=rDto.getAsString("id");
+		}
+		//获取医生信息
+		pDto.put("docId", qrCodeKey);
+		rDto=((Dto)super.getFredaDao().queryForObject("WxV2.loadDocInfo",pDto));
+		if(FredaUtils.isNotEmpty(rDto)){
+			if(mainUserId.length()<1){
+				url=WeiXinCons.WX_SAFE_DOMAIN+"/WxPro/wx/BindAndDoc.jsp?wxOpenId="+openId+"&docId="+qrCodeKey;
+			}else{
+				url=WeiXinCons.WX_SAFE_DOMAIN+"/WxPro/wx/ghyy_docInfo.jsp?wxOpenId="+openId+"&docId="+qrCodeKey;
+				url+="&schType=1&mainUserId="+mainUserId;
+			}
+			sb.append("您好，欢迎你使用医愿平台，快速精准预约以下医生：\r");
+			sb.append("医生："+rDto.getAsString("docName")+"\r");
+			sb.append("医院："+rDto.getAsString("hosName")+"\r\n");
+			sb.append("<a href=\""+url+"\">>>>点击此处立即精准预约</a>");
+			
+			WxTemplate t = new WxTemplate();  
+            t.setUrl(url);
+            t.setTouser(openId);  
+            t.setTopcolor("#000000");  
+            t.setTemplate_id(WeiXinUtils.TEMPLATEMESSAGE_ID_DOCSCAN);
+            Map<String,TemplateData> m = new HashMap<String,TemplateData>();  
+            
+            TemplateData first = new TemplateData();
+            first.setColor("#173177");  
+            first.setValue("您好，欢迎你使用医愿平台，快速精准预约以下医生：");  
+            m.put("first", first);
+            TemplateData td1 = new TemplateData();
+            td1.setColor("#173177");  
+            td1.setValue(rDto.getAsString("docName"));
+            m.put("keyword1", td1);
+            TemplateData td2 = new TemplateData();
+            td2.setColor("#173177");  
+            td2.setValue(rDto.getAsString("hosName"));
+            m.put("keyword2", td2);
+            TemplateData tdr = new TemplateData();
+            tdr.setColor("#173177");  
+            tdr.setValue("点击这里立即精确预约");
+            m.put("remark", tdr);
+            t.setData(m);
+			
+			return WeiXinUtils.sendTemplateMsg(WeiXinTokenThread.ACCESS_TOKEN,JsonHelper.encodeObject2Json(t));
+		}else{
+			if(mainUserId.length()<1){
+				url=WeiXinCons.WX_SAFE_DOMAIN+"/WxPro/wx/BindAndDoc.jsp?wxOpenId="+openId+"&docId=0";
+			}else{
+				url=WeiXinCons.WX_SAFE_DOMAIN+"/WxPro/wx/ghyy_docInfo.jsp?wxOpenId="+openId+"&docId=0";
+				url+="&schType=1&mainUserId="+mainUserId;
+			}
+			sb.append("您好，欢迎你使用医愿平台，快速精准预约以下医生：\r");
+			sb.append("医生：专家智能推荐\r");
+			sb.append("医院：专家智能推荐\r\n");
+			sb.append("<a href=\""+url+"\">>>>点击这里立即精准预约</a>");
+			
+			WxTemplate t = new WxTemplate();  
+            t.setUrl(url);
+            t.setTouser(openId);  
+            t.setTopcolor("#000000");  
+            t.setTemplate_id(WeiXinUtils.TEMPLATEMESSAGE_ID_DOCSCAN);
+            Map<String,TemplateData> m = new HashMap<String,TemplateData>();  
+            
+            TemplateData first = new TemplateData();
+            first.setColor("#173177");  
+            first.setValue("您好，欢迎你使用医愿平台，快速精准预约以下医生：");  
+            m.put("first", first);
+            TemplateData td1 = new TemplateData();
+            td1.setColor("#173177");  
+            td1.setValue("专家推荐");
+            m.put("keyword1", td1);
+            TemplateData td2 = new TemplateData();
+            td2.setColor("#173177");  
+            td2.setValue("专家推荐");
+            m.put("keyword2", td2);
+            TemplateData tdr = new TemplateData();
+            tdr.setColor("#173177");  
+            tdr.setValue("点击这里立即精确预约");
+            m.put("remark", tdr);
+            t.setData(m);
+            
+			return WeiXinUtils.sendTemplateMsg(WeiXinTokenThread.ACCESS_TOKEN,JsonHelper.encodeObject2Json(t));
+		}
+//		Dto dto=new BaseDto();
+//		dto.put("touser", openId);
+//		dto.put("msgtype", "text");
+//		Dto dtoc=new BaseDto();
+//		dtoc.put("content", sb.toString().trim());
+//		dto.put("text", dtoc);
+//		return WeiXinUtils.sendKfMsg(WeiXinTokenThread.ACCESS_TOKEN, JsonHelper.encodeObject2Json(dto));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void getWxUserList() {
+		String nextOpenId = "";
+		while (true) {
+			UserList userList=WeiXinUtils.getUserList(WeiXinTokenThread.ACCESS_TOKEN, nextOpenId);
+			nextOpenId=userList.getNextOpenId();
+			// this.clearUserOpenId();
+			Dto pDto = new BaseDto();
+			pDto.put("docId", 0);//无推荐者
+			for (int i = 0; i < userList.getCount(); i++) {
+				pDto.put("openId", userList.getOpenIdList().get(i).toString());
+				if (super.getFredaDao().queryForList("WxV2.findUserOpenId", pDto).size() < 1) {
+					UserInfo userInfo=WeiXinUtils.getUserInfo(WeiXinTokenThread.ACCESS_TOKEN, pDto.getAsString("openId"));
+					if(userInfo==null)
+						continue;
+					pDto.put("nickname", userInfo.getNickname());
+					pDto.put("sex", userInfo.getSex());
+					pDto.put("city", userInfo.getCity());
+					pDto.put("province", userInfo.getProvince());
+					pDto.put("country", userInfo.getCountry());
+					pDto.put("subscribe_time", FredaUtils.getDateTime(userInfo.getSubscribe_time()*1000L));
+					pDto.put("headimgurl", userInfo.getHeadimgurl());
+					if(userInfo.getUnionid()!=null&&userInfo.getUnionid().length()>0)
+						pDto.put("unionid", userInfo.getUnionid());
+					else
+						pDto.put("unionid", "");
+					pDto.put("remark", userInfo.getRemark());
+					try{
+						this.addUserOpenId(pDto);
+					}catch(Exception e){
+						pDto.put("nickname", "");
+						this.addUserOpenId(pDto);
+					}
+				}
+			}
+			if(nextOpenId.length()<5)
+				break;
+		}
+	}
+	
+	class MyMsgThread extends Thread{
+		private String wxOpenId="";
+		private String wxCodeKey="";
+		
+	    public MyMsgThread(String openId,String qrCodeKey){//定义带参数的构造函数,达到初始化线程内变量的值
+	       this.wxOpenId=openId;
+	       this.wxCodeKey=qrCodeKey;
+	    }
+	    @Override
+	    public void run(){
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			sendDocTemplateMsg(this.wxOpenId,this.wxCodeKey);
+		}
+	}
+	
+	@Override
+	public String bindDoc(Dto pDto) throws Exception {
+		List<?> data= super.getFredaDao().queryForList("WxV2.queryDOCCount", pDto);
+		
+		if (data.size()==1) {
+			super.getFredaDao().update("WxV2.bindDoc", pDto);
+			return ((Dto)data.get(0)).getAsString("docId");
+		}
+		return null;
+	}
+}

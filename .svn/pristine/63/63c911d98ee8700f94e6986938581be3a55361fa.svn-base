@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="MsgPush">
+	
+	<insert id="addPushMsg" parameterType="dto">
+		INSERT INTO corp_users_pushmsg(clientid,clienttype,tagname,title,msg,stime) 
+		VALUES(#{clientid},#{clienttype},#{tagname},#{title},#{msg},NOW());
+	</insert>
+	
+	<select id="queryUserClientid" parameterType="dto" resultType="dto">
+		SELECT clientid,client_type AS clienttype 
+		FROM _rjkx_user_app 
+		WHERE user_id=#{toid} AND user_type=#{totype}
+	</select>
+	
+	<select id="queryClientid" parameterType="dto" resultType="dto">
+		SELECT clientid,client_type AS clienttype 
+		FROM _rjkx_user_app 
+		WHERE clientid=#{clientid}
+	</select>
+</mapper>

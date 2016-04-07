@@ -1,0 +1,105 @@
+package com.rjkx.sk.itf.common.service.impl;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.stereotype.Service;
+
+import com.rjkx.sk.itf.common.po.AppTokenBean;
+import com.rjkx.sk.itf.common.service.AppAuthTokenServiceItf;
+import com.rjkx.sk.itf.common.util.CommonItfUtils;
+import com.rjkx.sk.itf.common.web.WeiXinItfBaseServiceImpl;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.ehcache.EhcacheHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.utils.WebUtil;
+
+/**
+ * 
+  * @ClassName: AppAuthTokenServiceImpl
+  * @Description: TODO
+  * @author yiyuan-Rally
+  * @date 2015年11月24日 下午3:44:18 
+  * @version V1.0
+ */
+@Service(value="appAuthTokenServiceImpl")
+public class AppAuthTokenServiceImpl extends WeiXinItfBaseServiceImpl implements AppAuthTokenServiceItf 
+{
+	private static final String CACHE_NAME = "TOKEN_CACHE_NAME";
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Dto getToken(HttpServletRequest request)
+	{
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+		
+		String appId = pDto.getAsString("appId"),
+			   appPwd = pDto.getAsString("appPwd"),
+			   imeiStr = pDto.getAsString("imeiStr");
+		
+		if(FredaUtils.isEmpty(appId) && !appId.equals(appProperties.getValue("auth.app.id")))//判断APPID准确性
+		{
+			this.setErrorMsg(pDto, "appId is Error!");
+			
+			return pDto;
+		}
+		if(FredaUtils.isEmpty(appPwd) && !appPwd.equals(appProperties.getValue("auth.app.pwd")))//判断APPPWD准确性
+		{
+			this.setErrorMsg(pDto, "appPwd is Error!");
+			
+			return pDto;
+		}
+		if(FredaUtils.isEmpty(imeiStr))//判断IMEIStr是否存在
+		{
+			this.setErrorMsg(pDto, "imeiStr is Error!");
+			
+			return pDto;
+		}
+		pDto.clear();
+		
+		pDto.setSuccess(true);
+		
+		pDto.put("timestamp", FredaUtils.getCurrentTime("yymmddHHmmss"));
+		
+		pDto.put("app_token", CommonItfUtils.getToken(imeiStr,pDto.getAsString("timestamp")));
+		
+		pDto.put("IMEIStr", imeiStr);
+		
+		this.setEhcache(pDto, request);
+		
+		return pDto;
+	}
+	/**
+	 * SET ERROR
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月24日 下午5:15:47
+	  * @param pDto
+	  * @param errorMsg
+	 */
+	private void setErrorMsg(Dto pDto,String errorMsg)
+	{
+		pDto.clear();
+		
+		pDto.setSuccess(false);
+		
+		pDto.setMsg(errorMsg);
+	}
+	/**
+	 * 装入容器中
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月25日 上午8:36:26
+	  * @param pDto
+	  * @param request
+	 */
+	private void setEhcache(Dto pDto , HttpServletRequest request)
+	{
+		EhcacheHelper.getInstance().removeElement(CACHE_NAME, pDto.getAsString("IMEIStr"));
+		
+		EhcacheHelper.getInstance().put(CACHE_NAME, pDto.getAsString("IMEIStr"),//Key
+				
+				new AppTokenBean(pDto.getAsString("timestamp"), pDto.getAsString("app_token"), 
+						
+						request.getRemoteAddr(), CommonItfUtils.getClientType(request) , pDto.getAsString("IMEIStr")));//value
+	}
+}

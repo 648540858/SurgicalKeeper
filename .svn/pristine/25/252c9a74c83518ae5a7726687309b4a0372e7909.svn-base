@@ -1,0 +1,912 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="WxV2">
+
+	<select id="getMainUserIdByOpenId" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient._id AS id,
+			IFNULL((SELECT _id FROM _rjkx_area WHERE _id=_rjkx_patient._area_id AND _status=1),-1) AS areaId 
+		FROM _rjkx_patient
+		WHERE
+			_rjkx_patient._parent_id = -1
+			AND _rjkx_patient._openid = #{id}
+		LIMIT 1
+	</select>
+
+	<select id="listSickness" resultType="dto">
+		SELECT
+			_rjkx_sickness._id AS sId,
+			_rjkx_sickness._name AS sName
+		FROM _rjkx_sickness
+		WHERE
+			_rjkx_sickness._type_id = 1
+			AND _rjkx_sickness._status = 1
+	</select>
+	
+	<select id="listSicknessSub" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness_sub._id AS ssId,
+			_rjkx_sickness_sub._name AS ssName,
+			_rjkx_sickness_sub._parentid AS ssPId,
+			_rjkx_sickness_sub._leaf AS ssLeaf
+		FROM _rjkx_sickness_sub
+		WHERE
+			_rjkx_sickness_sub._s_id = #{sId}
+			AND _rjkx_sickness_sub._status = 1
+		ORDER BY _rjkx_sickness_sub._parentid ASC,_rjkx_sickness_sub._sortno ASC
+	</select>
+	
+	<select id="listSicknessAttr" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness_attr._id AS aId,
+			_rjkx_sickness_attr._name AS aName,
+			_rjkx_sickness_attr._icon AS aIcon
+		FROM _rjkx_r_sickness_attr
+		INNER JOIN _rjkx_sickness_attr ON _rjkx_sickness_attr._id = _rjkx_r_sickness_attr._attr_id
+		WHERE
+			_rjkx_r_sickness_attr._sickness_id = #{ssId}
+			AND _rjkx_r_sickness_attr._status = 1
+		ORDER BY _rjkx_sickness_attr._sortno ASC
+	</select>
+	
+	<select id="getAttrContent" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_r_sickness_attr._content AS aContent
+		FROM _rjkx_r_sickness_attr
+		WHERE
+			_rjkx_r_sickness_attr._attr_id = #{aId}
+			AND _rjkx_r_sickness_attr._sickness_id = #{ssId}
+	</select>
+	
+	<select id="listLec" resultType="dto">
+		SELECT
+			_rjkx_doctor_lecture._id AS lId,
+			_rjkx_doctor_lecture._start_time AS lSTime,
+			_rjkx_doctor_lecture._speakers AS lSperker,
+			_rjkx_doctor_lecture._favicon AS lPhoto,
+			_rjkx_doctor_lecture._title AS lCompany,
+			COUNT(_rjkx_doctor_lecture_enroll._id) AS lEnrollCount
+		FROM _rjkx_doctor_lecture
+		LEFT JOIN _rjkx_doctor_lecture_enroll ON _rjkx_doctor_lecture_enroll._lecture_id = _rjkx_doctor_lecture._id
+		WHERE
+			_rjkx_doctor_lecture._status = 1
+		GROUP BY _rjkx_doctor_lecture._id
+		ORDER BY _rjkx_doctor_lecture._start_time DESC
+	</select>
+	
+	<update id="editReadCount" parameterType="dto">
+		UPDATE _rjkx_doctor_lecture SET 
+			_rjkx_doctor_lecture._read_count = _rjkx_doctor_lecture._read_count + 1 
+		WHERE
+			_rjkx_doctor_lecture._id = #{lId}
+	</update>
+	
+	<select id="loadLecInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor_lecture._speakers AS lSp,
+			_rjkx_doctor_lecture._title AS lTitle,
+			_rjkx_doctor_lecture._start_time AS lSTime,
+			_rjkx_doctor_lecture._end_time AS lETime,
+			_rjkx_doctor_lecture._content AS lContent,
+			_rjkx_doctor_lecture._read_count AS lReadCount,
+			_rjkx_doctor_lecture._company AS lCom,
+			_rjkx_doctor_lecture._media_url AS lMedia,
+			COUNT(_rjkx_doctor_lecture_praise._id) AS pCount
+		FROM _rjkx_doctor_lecture
+		LEFT JOIN _rjkx_doctor_lecture_praise ON _rjkx_doctor_lecture_praise._lecture_id = _rjkx_doctor_lecture._id
+		WHERE
+			_rjkx_doctor_lecture._id = #{lId}
+		GROUP BY _rjkx_doctor_lecture._id
+	</select>
+	
+	<select id="queryEnrollCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_doctor_lecture_enroll
+		WHERE
+			_rjkx_doctor_lecture_enroll._lecture_id = #{lId}
+			AND _rjkx_doctor_lecture_enroll._patient_id = #{patId}
+	</select>
+	
+	<insert id="addEnrollLec" parameterType="dto">
+		INSERT INTO _rjkx_doctor_lecture_enroll(
+			_rjkx_doctor_lecture_enroll._lecture_id,
+			_rjkx_doctor_lecture_enroll._patient_id,
+			_rjkx_doctor_lecture_enroll._ctime
+		)VALUES(#{lId},#{patId},NOW())
+	</insert>
+	
+	<select id="queryDianZanCount" parameterType="dto">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_doctor_lecture_praise
+		WHERE
+			_rjkx_doctor_lecture_praise._lecture_id = #{lId}
+			AND _rjkx_doctor_lecture_praise._patient_id = #{patId}
+	</select>
+	
+	<insert id="addDianZanLec" parameterType="dto">
+		INSERT INTO _rjkx_doctor_lecture_praise(
+			_rjkx_doctor_lecture_praise._lecture_id,
+			_rjkx_doctor_lecture_praise._patient_id,
+			_rjkx_doctor_lecture_praise._status
+		)VALUES(#{lId},#{patId},1)
+	</insert>
+	
+	<delete id="delDianZanLec" parameterType="dto">
+		DELETE FROM _rjkx_doctor_lecture_praise 
+		WHERE 
+			_rjkx_doctor_lecture_praise._patient_id = #{patId} 
+			AND _rjkx_doctor_lecture_praise._lecture_id = #{lId}
+	</delete>
+	
+	<select id="queryMainUserCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_patient
+		WHERE
+			_rjkx_patient._parent_id = -1
+			AND _rjkx_patient._mobile = #{mobile}
+			AND _rjkx_patient._loginname = #{mobile}
+	</select>
+	
+	<insert id="addMainUser" parameterType="dto" useGeneratedKeys="true" keyProperty="userId"> 
+		INSERT INTO _rjkx_patient(
+			_rjkx_patient._area_id,
+			_rjkx_patient._parent_id,
+			_rjkx_patient._relation,
+			_rjkx_patient._loginname,
+			_rjkx_patient._turename,
+			_rjkx_patient._password,
+			_rjkx_patient._sex,
+			_rjkx_patient._mobile,
+			_rjkx_patient._status,
+			_rjkx_patient._available_balance,
+			_rjkx_patient._openid,
+			_rjkx_patient._ctime
+		) VALUES(#{cityId},-1,"本人",#{mobile},"未填写",#{userPwd},3,#{mobile},1,0,#{wxOpenId},NOW())
+	</insert>
+	
+	<select id="queryCountForAddPat" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_patient
+		WHERE
+			_rjkx_patient._parent_id = #{mainUserId}
+			AND _rjkx_patient._identity_id = #{patIdCard}
+			AND _rjkx_patient._status = 1
+	</select>
+	
+	<insert id="addPatForMainUser" parameterType="dto" useGeneratedKeys="true" keyProperty="patId">
+		INSERT INTO _rjkx_patient(
+			_rjkx_patient._area_id,
+			_rjkx_patient._parent_id,
+			_rjkx_patient._turename,
+			_rjkx_patient._sex,
+			_rjkx_patient._age,
+			_rjkx_patient._mobile,
+			_rjkx_patient._identity_id,
+			_rjkx_patient._status,
+			_rjkx_patient._ctime
+		) VALUES(-1,#{mainUserId},#{patName},#{patSex},#{patAge},#{patMobile},#{patIdCard},1,NOW())
+	</insert>
+	
+	<insert id="addSickInfoForPat" parameterType="dto" useGeneratedKeys="true" keyProperty="psId">
+		INSERT INTO _rjkx_patient_sickness(
+			_rjkx_patient_sickness._patient_id,
+			_rjkx_patient_sickness._desc,
+			_rjkx_patient_sickness._ctime
+		) VALUES(#{patId},#{userSDesc},NOW())
+	</insert>
+	
+	<insert id="addSicksForSickInfo" parameterType="dto">
+		INSERT INTO _rjkx_r_p_s_sickness(
+			_rjkx_r_p_s_sickness._p_s_id,
+			_rjkx_r_p_s_sickness._sickness_id
+		) VALUES(#{psId},#{sId})
+	</insert>
+	
+	<select id="getMainUserInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient._id AS uId,
+			_rjkx_patient._turename AS uName,
+			_rjkx_patient._mobile AS uMobile,
+			_rjkx_patient._available_balance AS uBlance
+		FROM _rjkx_patient
+		WHERE
+			_rjkx_patient._parent_id = -1
+			AND _rjkx_patient._id = #{patientId}
+	</select>
+	
+	<select id="listMyPats" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient._id AS patId,
+			_rjkx_patient._turename AS patName
+		FROM _rjkx_patient
+		WHERE
+			_rjkx_patient._parent_id = #{mainUserId}
+			AND _rjkx_patient._status = 1
+	</select>
+	
+	<update id="delPat" parameterType="dto">
+		UPDATE _rjkx_patient SET _rjkx_patient._status = 0 WHERE _rjkx_patient._id = #{patId}
+	</update>
+	
+	<select id="listPatDedical" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor._name AS docName,
+			_rjkx_order_schedule._address AS schAddr,
+			SUBSTR(_rjkx_order_schedule._start_time FROM 6 FOR 5) AS schTime,
+			_rjkx_patient_sickness._desc AS schDesc
+		FROM _rjkx_patient_order
+			INNER JOIN _rjkx_order_schedule ON _rjkx_order_schedule._id = _rjkx_patient_order._subscribe_id
+			INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_order_schedule._doctor_id
+			LEFT JOIN _rjkx_patient_sickness ON _rjkx_patient_sickness._id = _rjkx_order_schedule._p_s_id
+		WHERE
+			_rjkx_patient_order._patient_id2 = #{mainUserId}
+			AND _rjkx_patient_order._patient_id = #{patId}
+		ORDER BY _rjkx_order_schedule._start_time DESC
+	</select>
+	
+	<select id="listOrderList" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._id AS oId,
+			_rjkx_patient_order._order_id AS oNum,
+			_rjkx_patient_order._order_status AS oStatus,
+			_rjkx_doctor._id AS docId,
+			_rjkx_doctor._name AS docName,
+			_rjkx_doctor._icon AS docPhtot,
+			_rjkx_doctor._hospital_name AS docHosName,
+			_rjkx_order_schedule._id AS schId,
+			_rjkx_order_schedule._address AS schAddr,
+			_rjkx_order_schedule._start_time AS schStime,
+			_rjkx_patient._turename AS patName
+		FROM _rjkx_patient_order
+		INNER JOIN _rjkx_order_schedule ON _rjkx_order_schedule._id = _rjkx_patient_order._subscribe_id
+		INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_order_schedule._doctor_id
+		INNER JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_patient_order._patient_id
+		WHERE
+			_rjkx_patient_order._patient_id2 = #{mainUserId}
+			AND _rjkx_patient_order._order_status = #{orderStatus}
+		ORDER BY _rjkx_order_schedule._start_time DESC
+	</select>
+	
+	<select id="listAllUCity" resultType="dto">
+		SELECT
+			_rjkx_area._id AS cityId,
+			_rjkx_area._area_name AS cityName
+		FROM _rjkx_area
+		WHERE
+			_rjkx_area._leaf = 1
+			AND _rjkx_area._status = 1
+		ORDER BY _rjkx_area._level ASC,_rjkx_area._id ASC
+	</select>
+	
+	<select id="listHosDept" resultType="dto">
+		SELECT
+			_rjkx_hospital_department._id AS hdId,
+			_rjkx_hospital_department._name AS hdName
+		FROM _rjkx_hospital_department
+		WHERE
+			_rjkx_hospital_department._status = 1
+	</select>
+	
+	<select id="listHosByCity" resultType="dto">
+		SELECT
+			_rjkx_hospital._id AS hosId,
+			_rjkx_hospital._name AS hosName
+		FROM _rjkx_hospital
+		WHERE
+			_rjkx_hospital._area_id = #{cityId}
+			AND _rjkx_hospital._status = 1
+	</select>
+	
+	<select id="queryZZDoc" parameterType="dto" resultType="dto">
+		SELECT DISTINCT
+			_rjkx_doctor._id AS docId,
+			_rjkx_doctor._name AS docName,
+			/*_rjkx_doctor_schedule._schedule_type*/1 AS schType,
+			_rjkx_doctor._icon AS docPhoto,
+			_rjkx_doctor._hospital_name AS hosName,
+			_rjkx_hospital_department._name AS docDept,
+			_rjkx_sys_code._text AS docRank
+		FROM _rjkx_doctor
+		/*INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor_schedule._doctor_id = _rjkx_doctor._id 
+										AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> NOW()
+										AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> ADDDATE(CURDATE(),INTERVAL 7 DAY) 
+										AND _rjkx_doctor_schedule._schedule_type = 1
+		INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor._id 
+											AND _rjkx_r_doctor_sickness._sickness_id IN ('{sIds}')*/
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id 
+								AND _rjkx_hospital._status = 1
+								AND _rjkx_hospital._area_id = #{cityId} 
+		INNER JOIN _rjkx_hospital_department ON  _rjkx_hospital_department._id = _rjkx_doctor._depid
+		LEFT JOIN _rjkx_sys_code ON _rjkx_sys_code._code = _rjkx_doctor._rank 
+								AND _rjkx_sys_code._list = 'DOC_RANK'
+		/*LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id*/
+		WHERE
+			_rjkx_doctor._status = 1
+			/*AND _rjkx_order_schedule._id IS NULL
+			AND _rjkx_doctor._depid IN ('{dIds}')
+			AND _rjkx_doctor._hospital_id IN ('{hosIds}')*/ 
+		ORDER BY _rjkx_doctor._hospital_id
+	</select>
+	
+	<select id="queryZZDocCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT COUNT(1) FROM (
+			SELECT DISTINCT
+				_rjkx_doctor._id AS docId
+			FROM _rjkx_doctor
+			/*INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor_schedule._doctor_id = _rjkx_doctor._id 
+											AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> NOW()
+											AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> ADDDATE(CURDATE(),INTERVAL 7 DAY)  
+											AND _rjkx_doctor_schedule._schedule_type = 1 
+			INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor._id 
+												AND _rjkx_r_doctor_sickness._sickness_id IN ('{sIds}')*/
+			INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+									AND _rjkx_hospital._status = 1 
+									AND _rjkx_hospital._area_id = #{cityId} 
+			INNER JOIN _rjkx_hospital_department ON  _rjkx_hospital_department._id = _rjkx_doctor._depid
+			LEFT JOIN _rjkx_sys_code ON _rjkx_sys_code._code = _rjkx_doctor._rank 
+									AND _rjkx_sys_code._list = 'DOC_RANK'
+			/*LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id*/
+			WHERE
+				_rjkx_doctor._status = 1
+				/*AND _rjkx_order_schedule._id IS NULL
+				AND _rjkx_doctor._depid IN ('{dIds}')
+				AND _rjkx_doctor._hospital_id IN ('{hosIds}')*/) ta
+	</select>
+	
+	<select id="queryTJDoc" parameterType="dto" resultType="dto">
+		SELECT DISTINCT
+			_rjkx_doctor._id AS docId,
+			_rjkx_doctor._name AS docName,
+			/*_rjkx_doctor_schedule._schedule_type*/1 AS schType,
+			_rjkx_doctor._icon AS docPhoto,
+			_rjkx_doctor._hospital_name AS hosName,
+			_rjkx_hospital_department._name AS docDept,
+			_rjkx_sys_code._text AS docRank
+		FROM _rjkx_doctor 
+		/*INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor_schedule._doctor_id = _rjkx_doctor._id 
+										AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> NOW()
+										AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> ADDDATE(CURDATE(),INTERVAL 7 DAY) 
+										AND _rjkx_doctor_schedule._schedule_type = 1
+		INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor._id*/
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id 
+								AND _rjkx_hospital._status = 1
+								AND _rjkx_hospital._area_id = #{cityId} 
+		INNER JOIN _rjkx_hospital_department ON  _rjkx_hospital_department._id = _rjkx_doctor._depid
+		LEFT JOIN _rjkx_sys_code ON _rjkx_sys_code._code = _rjkx_doctor._rank 
+								AND _rjkx_sys_code._list = 'DOC_RANK'
+		/*LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id 
+		INNER JOIN 
+			(SELECT DISTINCT
+				_rjkx_patient_sickness._hope_stime,
+				_rjkx_patient_sickness._hope_etime,
+				_rjkx_r_p_s_sickness._sickness_id
+			FROM _rjkx_patient
+			INNER JOIN _rjkx_patient_sickness ON _rjkx_patient_sickness._patient_id = _rjkx_patient._id
+			INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_r_p_s_sickness._p_s_id = _rjkx_patient_sickness._id
+			WHERE
+				_rjkx_patient._id = 0) temp ON _rjkx_r_doctor_sickness._sickness_id=temp._sickness_id 
+												AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> temp._hope_stime 
+												AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> temp._hope_etime*/
+		WHERE
+			_rjkx_doctor._status = 1
+			/*AND _rjkx_order_schedule._id IS NULL*/ 
+		ORDER BY _rjkx_doctor._hospital_id
+	</select>
+	
+	<select id="queryTJDocCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT COUNT(1) FROM (SELECT DISTINCT
+			_rjkx_doctor._id
+		FROM _rjkx_doctor 
+		/*INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor_schedule._doctor_id = _rjkx_doctor._id 
+										AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> NOW()
+										AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> ADDDATE(CURDATE(),INTERVAL 7 DAY) 
+										AND _rjkx_doctor_schedule._schedule_type = 1
+		INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor._id*/
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+								AND _rjkx_hospital._status = 1 
+								AND _rjkx_hospital._area_id = #{cityId} 
+		INNER JOIN _rjkx_hospital_department ON  _rjkx_hospital_department._id = _rjkx_doctor._depid
+		LEFT JOIN _rjkx_sys_code ON _rjkx_sys_code._code = _rjkx_doctor._rank 
+								AND _rjkx_sys_code._list = 'DOC_RANK'
+		/*LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id 
+		INNER JOIN 
+			(SELECT DISTINCT
+				_rjkx_patient_sickness._hope_stime,
+				_rjkx_patient_sickness._hope_etime,
+				_rjkx_r_p_s_sickness._sickness_id
+			FROM _rjkx_patient
+			INNER JOIN _rjkx_patient_sickness ON _rjkx_patient_sickness._patient_id = _rjkx_patient._id
+			INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_r_p_s_sickness._p_s_id = _rjkx_patient_sickness._id
+			WHERE
+				_rjkx_patient._id = 0) temp ON _rjkx_r_doctor_sickness._sickness_id=temp._sickness_id 
+												AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> temp._hope_stime 
+												AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> temp._hope_etime*/
+		WHERE
+			_rjkx_doctor._status = 1
+			/*AND _rjkx_order_schedule._id IS NULL*/) ta
+	</select>
+	
+	<select id="queryQDoc" parameterType="dto" resultType="dto">
+		SELECT DISTINCT
+			_rjkx_doctor._id AS docId,
+			_rjkx_doctor._name AS docName,
+			/*_rjkx_doctor_schedule._schedule_type*/1 AS schType,
+			_rjkx_doctor._icon AS docPhoto,
+			_rjkx_doctor._hospital_name AS hosName,
+			_rjkx_hospital_department._name AS docDept,
+			_rjkx_sys_code._text AS docRank
+		FROM _rjkx_doctor
+		/*INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor_schedule._doctor_id = _rjkx_doctor._id 
+										AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> NOW()
+										AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> ADDDATE(CURDATE(),INTERVAL 7 DAY)
+										AND _rjkx_doctor_schedule._schedule_type = 1*/
+		LEFT JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor._id 
+		LEFT JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_doctor_sickness._sickness_id
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id 
+								AND _rjkx_hospital._status = 1
+								AND _rjkx_hospital._area_id = #{cityId}
+		INNER JOIN _rjkx_hospital_department ON  _rjkx_hospital_department._id = _rjkx_doctor._depid
+		LEFT JOIN _rjkx_sys_code ON _rjkx_sys_code._code = _rjkx_doctor._rank 
+								AND _rjkx_sys_code._list = 'DOC_RANK'
+		/*LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id*/
+		WHERE
+			_rjkx_doctor._status = 1
+			/*AND _rjkx_order_schedule._id IS NULL*/
+			AND (_rjkx_hospital_department._name LIKE '%${queryContent}%'
+			OR _rjkx_hospital._name LIKE '%${queryContent}%'
+			OR _rjkx_doctor._name LIKE '%${queryContent}%'
+			OR _rjkx_sickness._name LIKE '%${queryContent}%') 
+		ORDER BY _rjkx_doctor._hospital_id
+	</select>
+	
+	<select id="queryQDocCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT COUNT(1) FROM (
+			SELECT DISTINCT
+			_rjkx_doctor._id AS docId
+		FROM _rjkx_doctor
+		/*INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor_schedule._doctor_id = _rjkx_doctor._id 
+										AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> NOW()
+										AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> ADDDATE(CURDATE(),INTERVAL 7 DAY)
+										AND _rjkx_doctor_schedule._schedule_type = 1*/
+		LEFT JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor._id 
+		LEFT JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_doctor_sickness._sickness_id
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id 
+								AND _rjkx_hospital._status = 1
+								AND _rjkx_hospital._area_id = #{cityId}
+		INNER JOIN _rjkx_hospital_department ON  _rjkx_hospital_department._id = _rjkx_doctor._depid
+		LEFT JOIN _rjkx_sys_code ON _rjkx_sys_code._code = _rjkx_doctor._rank 
+								AND _rjkx_sys_code._list = 'DOC_RANK'
+		/*LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id*/
+		WHERE
+			_rjkx_doctor._status = 1
+			/*AND _rjkx_order_schedule._id IS NULL*/
+			AND (_rjkx_hospital_department._name LIKE '%${queryContent}%'
+			OR _rjkx_hospital._name LIKE '%${queryContent}%'
+			OR _rjkx_doctor._name LIKE '%${queryContent}%'
+			OR _rjkx_sickness._name LIKE '%${queryContent}%')
+		) ta
+	</select>
+	
+	<select id="loadDocIntro" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor._intro AS docIntro,
+			_rjkx_doctor._good_at AS docGoodAt
+		FROM _rjkx_doctor
+		WHERE
+			_rjkx_doctor._id = #{docId}
+	</select>
+	
+	<select id="loadDocInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor._name AS docName,
+			_rjkx_doctor._hospital_name AS hosName,
+			_rjkx_sys_code._text AS docRank,
+			_rjkx_hospital_department._name AS hosDeptName,
+			_rjkx_doctor._icon AS docPhoto
+		FROM _rjkx_doctor
+		INNER JOIN _rjkx_hospital_department ON  _rjkx_hospital_department._id = _rjkx_doctor._depid
+		LEFT JOIN _rjkx_sys_code ON _rjkx_sys_code._code = _rjkx_doctor._rank AND _rjkx_sys_code._list = 'DOC_RANK'
+		WHERE
+			_rjkx_doctor._id = #{docId}
+	</select>
+	
+	<select id="queryDocSch" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor_schedule._id AS schId,
+			DAYOFMONTH(_rjkx_doctor_schedule._start_time) AS schDay,
+			TIME_FORMAT(_rjkx_doctor_schedule._start_time,"%H:%i") AS schTime
+		FROM _rjkx_doctor_schedule
+		LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id
+		WHERE
+			_rjkx_doctor_schedule._schedule_type = #{schType}
+			AND _rjkx_doctor_schedule._doctor_id = #{docId}
+			AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> NOW()
+			AND _rjkx_doctor_schedule._start_time <![CDATA[<=]]> ADDDATE(CURDATE(),INTERVAL 7 DAY)
+			AND _rjkx_order_schedule._id IS NULL
+		ORDER BY _rjkx_doctor_schedule._start_time ASC
+	</select>
+	
+	<select id="loadSchAddr" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor_schedule._id AS schId,
+			CONCAT(DATE_FORMAT(_rjkx_doctor_schedule._start_time,'%Y/%m/%d'),'(',
+			(CASE DAYOFWEEK(_rjkx_doctor_schedule._start_time)  
+				WHEN 1 THEN '周日' 
+				WHEN 2 THEN '周一' 
+				WHEN 3 THEN '周二' 
+				WHEN 4 THEN '周三' 
+				WHEN 5 THEN '周四' 
+				WHEN 6 THEN '周五' 
+				WHEN 7 THEN '周六' END),') ',TIME_FORMAT(_rjkx_doctor_schedule._start_time,'%H:%i')) AS schTime,
+			_rjkx_doctor_schedule._address AS schAddr
+		FROM _rjkx_doctor_schedule
+		WHERE
+			_rjkx_doctor_schedule._id = #{schId}
+	</select>
+	<!-- 后期需要性能优化,那么将PSID从OrderSch表中删除..不加此字段.. -->
+	<select id="getPatPsId" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_sickness._id AS psId
+		FROM _rjkx_patient_sickness
+		WHERE	
+			_rjkx_patient_sickness._patient_id = #{patId}
+		ORDER BY _rjkx_patient_sickness._ctime DESC
+		LIMIT 1
+	</select>
+	
+	<select id="getSchAmount" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_order_price._price AS price
+		FROM _rjkx_order_price
+		WHERE
+			_rjkx_order_price._type = #{schType}
+			AND _rjkx_order_price._status = 1
+	</select>
+	
+	<select id="getPatOrderCount" parameterType="dto" resultType="dto">
+		SELECT count(1) AS orderCount FROM _rjkx_patient_order
+	</select>
+	
+	<select id="isUseForSch" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_order_schedule
+		INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor_schedule._id = _rjkx_order_schedule._schedule_id 
+		AND _rjkx_doctor_schedule._id = #{schId}
+	</select>
+	
+	<select id="loadPatInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_sickness._id AS sId,
+			_rjkx_patient._parent_id AS patId,
+			_rjkx_patient._turename AS patName,
+			_rjkx_patient._mobile AS patMobile,
+			_rjkx_patient_sickness._desc AS sDesc,
+			GROUP_CONCAT(_rjkx_sickness._name) AS sNames,
+			_rjkx_patient_sickness._hope_stime AS hStime,
+			_rjkx_patient_sickness._hope_etime AS hEtime
+		FROM _rjkx_patient
+		INNER JOIN _rjkx_patient_sickness ON _rjkx_patient._id = _rjkx_patient_sickness._patient_id
+		INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_r_p_s_sickness._p_s_id = _rjkx_patient_sickness._id
+		INNER JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_p_s_sickness._sickness_id
+		WHERE
+			_rjkx_patient_sickness._patient_id = #{patId}
+		GROUP BY _rjkx_patient_sickness._id
+		LIMIT 1
+	</select>
+	
+	<select id="isJustAddVip" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_vip_consultation
+		WHERE
+			_rjkx_vip_consultation._login_id = #{mainUserId}
+			AND DATE_ADD(_rjkx_vip_consultation._ctime,INTERVAL 10 MINUTE) >= NOW()
+	</select>
+	
+	<insert id="addVipConsultation" parameterType="dto">
+		INSERT INTO _rjkx_vip_consultation(
+			_rjkx_vip_consultation._mi_city,
+			_rjkx_vip_consultation._see_city,
+			_rjkx_vip_consultation._login_id,
+			_rjkx_vip_consultation._patient_name,
+			_rjkx_vip_consultation._patient_id,
+			_rjkx_vip_consultation._mobile,
+			_rjkx_vip_consultation._start_time,
+			_rjkx_vip_consultation._end_time,
+			_rjkx_vip_consultation._sickness,
+			_rjkx_vip_consultation._sick_desc,
+			_rjkx_vip_consultation._status,
+			_rjkx_vip_consultation._ctime
+		) VALUES(#{miCity},#{seeCity},#{mainUserId},#{patName},#{patId},#{patMobile},#{sTime},#{eTime},#{sickness},#{sickDesc},0,NOW())
+	</insert>
+	
+	<select id="getBalance" parameterType="dto" resultType="java.lang.String">
+		SELECT
+			_rjkx_patient._available_balance AS pBala
+		FROM _rjkx_patient
+		WHERE
+			_rjkx_patient._id = #{mainUserId}
+	</select>
+	
+	<update id="editBalance" parameterType="dto">
+		UPDATE _rjkx_patient SET _rjkx_patient._available_balance = _rjkx_patient._available_balance ${balanceAdd}
+		WHERE
+			_rjkx_patient._id = #{mainUserId}
+	</update>
+	
+	<select id="loadOrderAmount" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._amount AS oAmount,
+			_rjkx_patient_order._order_id AS oNum,
+			_rjkx_patient_order._pay_type AS payType
+		FROM _rjkx_patient_order
+		WHERE
+			_rjkx_patient_order._id = #{orderId}
+	</select>
+		
+	<select id="loadOrderForRefund" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._id AS orderId,
+			_rjkx_patient_order._pay_type AS pType,
+			_rjkx_patient_order._out_order_id AS outId,
+			_rjkx_patient_order._patient_id2 AS patientId,
+			_rjkx_patient_order._subscribe_id AS scheduleId,
+			_rjkx_patient_order._amount AS refund,
+			CONCAT(_rjkx_patient_order._order_id , 'R') AS refundNum
+		FROM _rjkx_patient_order
+		WHERE
+			_rjkx_patient_order._id = #{orderId}
+	</select>
+	
+	<select id="loadOrderSuccessInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._order_id AS oNum,
+			_rjkx_order_schedule._address AS schAddr,
+			CONCAT(DATE_FORMAT(_rjkx_order_schedule._start_time,'%d/%m/%y'),'(',
+			(CASE DAYOFWEEK(_rjkx_order_schedule._start_time)  
+						WHEN 1 THEN '周日' 
+						WHEN 2 THEN '周一' 
+						WHEN 3 THEN '周二' 
+						WHEN 4 THEN '周三' 
+						WHEN 5 THEN '周四' 
+						WHEN 6 THEN '周五' 
+						WHEN 7 THEN '周六' END),')') AS dateInfo,
+			TIME_FORMAT(_rjkx_order_schedule._start_time,'%H:%i') AS timeInfo
+		FROM _rjkx_patient_order
+		INNER JOIN _rjkx_order_schedule ON _rjkx_order_schedule._id = _rjkx_patient_order._subscribe_id
+		WHERE
+			_rjkx_patient_order._id = #{orderId}
+	</select>
+	
+	<select id="listSongHua" resultType="dto">
+		SELECT
+			_rjkx_doctor_review_gift._id AS gId,
+			_rjkx_doctor_review_gift._name AS gName,
+			_rjkx_doctor_review_gift._icon AS gIcon,
+			_rjkx_doctor_review_gift._amount AS gAmount
+		FROM _rjkx_doctor_review_gift
+		ORDER BY _rjkx_doctor_review_gift._amount DESC
+	</select>
+	
+	<!-- 查询订单的短信提醒内容-->
+	<select id="findOrderSms" parameterType="dto" resultType="dto">
+		SELECT _rjkx_doctor._name AS doctorName,
+			DATE_FORMAT(_rjkx_order_schedule._start_time,'%m月%d日') AS days,
+			WEEKDAY(_rjkx_order_schedule._start_time) AS wd,
+			DATE_FORMAT(_rjkx_order_schedule._start_time,'%H:%i') AS stime,
+			DATE_FORMAT(_rjkx_order_schedule._end_time,'%H:%i') AS etime,
+			_rjkx_order_schedule._address,
+			_rjkx_patient._turename,
+			_rjkx_patient._mobile 
+		FROM _rjkx_patient_order INNER JOIN _rjkx_order_schedule ON _rjkx_patient_order._subscribe_id=_rjkx_order_schedule._id 
+		INNER JOIN _rjkx_doctor ON _rjkx_order_schedule._doctor_id=_rjkx_doctor._id 
+		INNER JOIN _rjkx_patient ON _rjkx_patient_order._patient_id=_rjkx_patient._id 
+		WHERE _rjkx_patient_order._id=#{orderId} LIMIT 1
+	</select>
+	
+	<select id="querySickSub" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness_sub._id AS ssId,
+			REPLACE(_rjkx_sickness_sub._name,'${queryContent}',CONCAT('<![CDATA[<span>]]>','${queryContent}','<![CDATA[</span>]]>')) AS ssName
+		FROM _rjkx_sickness_sub
+		WHERE
+			_rjkx_sickness_sub._leaf = 1
+			AND _rjkx_sickness_sub._name LIKE '%${queryContent}%'
+		ORDER BY _rjkx_sickness_sub._parentid ASC,_rjkx_sickness_sub._sortno ASC
+	</select>
+	
+	<insert id="addFeedBack" parameterType="dto">
+		INSERT INTO _rjkx_feedback(
+			_rjkx_feedback._login_id,
+			_rjkx_feedback._content,
+			_rjkx_feedback._ctime
+		) VALUES(#{mainUserId},#{fbContent},NOW())
+	</insert>
+	
+	<select id="queryFeedBack" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_feedback
+		WHERE
+			_rjkx_feedback._login_id = #{mainUserId}
+			AND DATE_ADD(_rjkx_feedback._ctime,INTERVAL 1 HOUR) >= NOW()
+	</select>
+	
+	<select id="isBack" parameterType="dto" resultType="java.lang.Double">
+		SELECT
+			(CASE  WHEN _rjkx_patient_order._back = 0 AND SUBSTR(_rjkx_patient_order._order_id FROM 1 FOR 1) = 'P' THEN _rjkx_patient_order._amount 
+						WHEN _rjkx_patient_order._back = 0 AND SUBSTR(_rjkx_patient_order._order_id FROM 1 FOR 1) = 'V' THEN _rjkx_patient_order._amount/2 ELSE 0 END)
+		FROM _rjkx_patient_order
+		WHERE
+			_rjkx_patient_order._id = #{orderId}
+	</select>
+	
+	<select id="editOrderBack" parameterType="dto">
+		UPDATE _rjkx_patient_order SET _rjkx_patient_order._back = #{back} WHERE _rjkx_patient_order._id = #{orderId}
+	</select>
+	
+	<select id="isPingFen" parameterType="dto" resultType="dto">
+		SELECT
+			COUNT(1) AS count
+		FROM _rjkx_doctor_review
+		WHERE
+			_rjkx_doctor_review._order_id = #{orderId}
+	</select>
+	
+	<select id="loadPatInfoForEdit" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_sickness._id AS psId,
+			_rjkx_patient._id AS patId,
+			_rjkx_patient._turename AS patName,
+			_rjkx_patient._age AS patAge,
+			_rjkx_patient._sex AS patSex,
+			_rjkx_patient._mobile AS patMobile,
+			_rjkx_patient._identity_id AS patIdCard,
+			_rjkx_patient_sickness._desc AS userSDesc,
+			GROUP_CONCAT(_rjkx_sickness._id) AS sIds
+		FROM _rjkx_patient
+		INNER JOIN _rjkx_patient_sickness ON _rjkx_patient._id = _rjkx_patient_sickness._patient_id
+		INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_r_p_s_sickness._p_s_id = _rjkx_patient_sickness._id
+		INNER JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_p_s_sickness._sickness_id
+		WHERE
+			_rjkx_patient_sickness._patient_id = #{patId}
+		GROUP BY _rjkx_patient_sickness._id
+		LIMIT 1
+	</select>
+	
+	<update id="editPat" parameterType="dto">
+		UPDATE _rjkx_patient SET 
+			_rjkx_patient._turename = #{patName},
+			_rjkx_patient._mobile = #{patMobile},
+			_rjkx_patient._age = #{patAge},
+			_rjkx_patient._sex = #{patSex},
+			_rjkx_patient._identity_id = #{patIdCard},
+			_rjkx_patient._utime = NOW()
+		WHERE
+			_rjkx_patient._id = #{patId}
+	</update>
+	
+	<update id="editPatSic" parameterType="dto">
+		UPDATE _rjkx_patient_sickness SET _rjkx_patient_sickness._desc = #{userSDesc} WHERE _rjkx_patient_sickness._id = #{psId}
+	</update>
+	
+	<delete id="delRps" parameterType="dto">
+		DELETE FROM _rjkx_r_p_s_sickness WHERE _rjkx_r_p_s_sickness._p_s_id = #{psId}
+	</delete>
+	
+	<select id="getVipOrderPayInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_vip_order._id AS oId,
+			_rjkx_vip_order._vip_id AS vipId,
+			_rjkx_vip_order._order_num AS oNum,
+			_rjkx_vip_order._status AS oStatus,
+			_rjkx_vip_order._is_need_pay AS oIsNeedPay,
+			_rjkx_vip_order._need_pay_total AS oPayTotal,
+			(CASE WHEN _rjkx_vip_order._pay_mode = 1 THEN '定金' WHEN _rjkx_vip_order._pay_mode = 2 THEN '修改费' ELSE '尾款'  END) AS payModeStr,
+			_rjkx_vip_order._pay_mode AS oPayMode,
+			_rjkx_vip_order._pay_amount AS oPayAmount,
+			_rjkx_vip_sch._doc_name AS schDoc,
+			_rjkx_vip_sch._sch_addr AS schAddr,
+			CONCAT(DATE_FORMAT(_rjkx_vip_sch._sch_time,'%m月%d日'),'(',
+			(CASE DAYOFWEEK(_rjkx_vip_sch._sch_time)  
+						WHEN 1 THEN '周日' 
+						WHEN 2 THEN '周一' 
+						WHEN 3 THEN '周二' 
+						WHEN 4 THEN '周三' 
+						WHEN 5 THEN '周四' 
+						WHEN 6 THEN '周五' 
+						WHEN 7 THEN '周六' END),')',
+			DATE_FORMAT(_rjkx_vip_sch._sch_time,'%H:%i')) AS schTime,
+			_rjkx_vip_sch._sch_desc AS schDesc,
+			_rjkx_vip_consultation._login_id AS mainUserId,
+			_rjkx_patient._openid AS openId
+		FROM _rjkx_vip_order
+		LEFT JOIN _rjkx_vip_consultation ON _rjkx_vip_consultation._id = _rjkx_vip_order._vip_id AND _rjkx_vip_consultation._status = 1
+		LEFT JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_vip_consultation._login_id AND _rjkx_patient._parent_id = -1
+		LEFT JOIN _rjkx_vip_sch ON _rjkx_vip_sch._vip_order_id = _rjkx_vip_order._id AND _rjkx_vip_sch._status = 1
+		WHERE
+			_rjkx_vip_order._id = #{oId}
+			AND _rjkx_vip_order._is_need_pay = 1
+	</select>
+	
+	<update id="editVipOder" parameterType="dto">
+		UPDATE _rjkx_vip_order SET
+			<if test="nextStatus != null">
+				_rjkx_vip_order._status = #{nextStatus},				
+			</if>
+			_rjkx_vip_order._is_need_pay = 0,
+			_rjkx_vip_order._pay_mode = 0,
+			_rjkx_vip_order._pay_amount = 0,
+			_rjkx_vip_order._utime = NOW()
+		WHERE
+			_rjkx_vip_order._id = #{oId}
+			AND _rjkx_vip_order._status = #{oStatus}
+	</update>
+	
+	<insert id="addVipPayLog" parameterType="dto">
+		INSERT INTO _rjkx_vip_pay(
+			_rjkx_vip_pay._vip_order_id,
+			_rjkx_vip_pay._pay_mode,
+			_rjkx_vip_pay._pay_amount,
+			_rjkx_vip_pay._pay_type,
+			_rjkx_vip_pay._pay_out_order_num,
+			_rjkx_vip_pay._ctime
+		) VALUES(#{oId},#{payMode},#{payAmount},#{payType},#{payOutOrderNum},NOW())
+	</insert>
+	
+	<select id="listHistoryOrderList" parameterType="dto" resultType="dto">
+		SELECT * FROM (
+			SELECT
+					_rjkx_patient_order._id AS oId,
+					_rjkx_patient_order._order_id AS oNum,
+					_rjkx_doctor._id AS docId,
+					_rjkx_doctor._name AS docName,
+					_rjkx_doctor._icon AS docPhtot,
+					_rjkx_doctor._hospital_name AS docHosName,
+					_rjkx_order_schedule._id AS schId,
+					_rjkx_order_schedule._address AS schAddr,
+					_rjkx_order_schedule._start_time AS schStime,
+					_rjkx_patient._turename AS patName,
+					_rjkx_patient_order._amount 
+				FROM _rjkx_patient_order
+				INNER JOIN _rjkx_order_schedule ON _rjkx_order_schedule._id = _rjkx_patient_order._subscribe_id
+				INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_order_schedule._doctor_id
+				INNER JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_patient_order._patient_id
+				WHERE
+					_rjkx_patient_order._patient_id2 = #{mainUserId}
+					AND _rjkx_patient_order._order_status !=1 AND _rjkx_patient_order._order_status!=6 
+		UNION ALL 
+			SELECT oId,oNum,docId,_rjkx_doctor._name AS docName,
+					_rjkx_doctor._icon AS docPhtot,
+					_rjkx_doctor._hospital_name AS docHosName,schId,schAddr,schStime,patName,_amount FROM (
+				SELECT _rjkx_vip_consultation._id AS oId,
+					_rjkx_vip_order._order_num AS oNum,
+					(select _rjkx_vip_sch._doc_id FROM _rjkx_vip_sch WHERE _vip_order_id=_rjkx_vip_order._id ORDER BY _id DESC limit 1) AS docId,
+					(select _rjkx_vip_sch._id FROM _rjkx_vip_sch WHERE _vip_order_id=_rjkx_vip_order._id ORDER BY _id DESC limit 1) AS schId,
+					(select _rjkx_vip_sch._sch_addr FROM _rjkx_vip_sch WHERE _vip_order_id=_rjkx_vip_order._id ORDER BY _id DESC limit 1) AS schAddr,
+					(select _rjkx_vip_sch._sch_time FROM _rjkx_vip_sch WHERE _vip_order_id=_rjkx_vip_order._id ORDER BY _id DESC limit 1) AS schStime,
+					_rjkx_patient._turename AS patName,
+					_rjkx_vip_order._is_need_pay AS _amount 
+				FROM _rjkx_vip_consultation 
+					INNER JOIN _rjkx_vip_order ON _rjkx_vip_consultation._id = _rjkx_vip_order._vip_id 
+					INNER JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_vip_consultation._patient_id 
+					WHERE
+						_rjkx_vip_consultation._login_id = #{mainUserId} 
+						AND _rjkx_vip_order._status>0 AND _rjkx_vip_order._status!=5) s 
+				INNER JOIN _rjkx_doctor ON s.docId=_rjkx_doctor._id) tempa 
+		ORDER BY schStime DESC
+	</select>
+	
+	<!-- 查询城市id-->
+	<select id="findCityId" parameterType="dto" resultType="dto">
+		SELECT _id AS cityId 
+		FROM _rjkx_area 
+		WHERE _area_name=#{cityName} LIMIT 1
+	</select>
+</mapper>

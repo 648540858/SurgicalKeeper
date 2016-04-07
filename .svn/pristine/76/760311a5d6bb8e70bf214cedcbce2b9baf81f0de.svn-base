@@ -1,0 +1,256 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>了解病情 选对医生</title>
+<c:set var="root"
+	value="${pageContext.request.contextPath}/resources/wx" />
+<c:set var="ctx" value="${pageContext.request.contextPath}" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, minimum-scale=1.0 , maximum-scale=1.0, user-scalable=0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" type="text/css" href="${root}/css/style.css">
+<script type="text/javascript"
+	src="${root}/js/My97DatePicker/WdatePicker.js"></script>
+<script type="text/javascript" src="${root}/js/jquery-1.10.1.min.js"></script>
+<script type="text/javascript" src="${root}/js/jquery.validate.min.js"></script>
+<script type="text/javascript" src="${root}/js/validate-methods.js"></script>
+<script type="text/javascript">
+	var sickNessIds = '';
+	var ajaxRoot = '<%=request.getContextPath() %>';
+	function selectSickness(id) {
+		if ($("#sickness_" + id).hasClass("hui")) {
+			$("#sickness_" + id).removeClass('hui');
+			$("#sickness_" + id).addClass('yellow');
+		} else {
+			$("#sickness_" + id).removeClass('yellow');
+			$("#sickness_" + id).addClass('hui');
+		}
+
+	}
+
+	$(document).ready(function() {
+		$("#searchDoctors").validate({
+			rules : {
+				tureName : {
+					required : true,
+					stringCheck : true
+				},
+				identityId : {
+					required : true,
+					isIdCardNo : true
+				},
+				sex : {
+					required : true
+				},
+				age : {
+					required : true,
+					isIntGtZero : true
+				},
+				pDesc : {
+					required : true
+				},
+				startTime : {
+					required : true
+				},
+				endTime : {
+					required : true
+				}
+				
+
+			},
+			messages : {
+				tureName : {
+					required : "姓名不能为空",
+					stringCheck : "只能包含中文、英文、数字、下划线等字符"
+				},
+				identityId : {
+					required : "证件ID不能为空",
+					isIdCardNo : "请正确填写您的证件ID"
+				},
+				sex : {
+					required : "请选择您的性别"
+				},
+				age : {
+					required : "年龄不能为空",
+					isIntGtZero : "请正确填写您的年龄"
+				},
+				pDesc : {
+					required : "病情描述不能为空"
+				},
+				startTime : {
+					required : "预约开始时间不能为空"
+				},
+				endTime : {
+					required : "预约开始时间不能为空"
+				}
+			}
+		});
+
+	});
+	
+	function searchDoctors(){
+		$("a[id^='sickness_']").each(function(){
+			if($(this).hasClass("yellow")){
+				var id = $(this).attr("id");
+				id = id.split("_")[1];
+				sickNessIds += id + ",";
+			}  
+		});
+		$('#sickNessIds').val(
+				sickNessIds.substring(0, sickNessIds.length - 1));
+		if($("#searchDoctors").valid()){
+			$.ajax({
+				type : 'POST',
+				url : ajaxRoot + '/wxItf/addPatient.freda',
+				data : {
+					"loginId" : $("#loginId").val(),
+					"tureName" : $("#tureName").val(),
+					"mobile" : $("#mobile").val(),
+					"age" : $("#age").val(),
+					"identityId" : $("#identityId").val(),
+					"sex" : $('input[name="sex"]:checked').val(),
+					"patientId" : $("#patientId").val(),
+					"pDesc" : $("#pDesc").val(),
+					"sickNessIds" : $("#sickNessIds").val(),
+					"areaId":$("#areaId").val(),
+					"appToken" : '123'
+				},
+				dataType : "json",
+				beforeSend : function() {
+					if($(".add_ceng").is(":hidden")){
+						$(".add_ceng,.cover").fadeIn();
+					}
+				},
+				success : function(data) {
+					if (data.success == true) {
+						if($("#patientId").val() == null || $("#patientId").val() == ''){
+							$("#patientId").val(data.data.patientId);
+						}
+						if($("#vipInTreatment").val() == "true"){
+							$('#searchDoctors').attr("action","${ctx}/wxItf/toAddVIPConsultation.freda");
+							if(data.data != null && data.data !=''){
+								$("#patientSicknessId").val(data.data.patientSicknessId);
+							}
+							$("#searchDoctors").submit();
+							$(".add_ceng").fadeOut();
+						}else{
+							if($("#mycenter").val()!="1"){
+								$("#patientSicknessId").val(data.data.patientSicknessId);
+								$("#searchDoctors").submit();
+								$(".add_ceng").fadeOut();
+							}else{
+								$("#searchDoctors").attr("action","${ctx}/wxItf/toChoosePatient.freda").submit();
+								$(".add_ceng").fadeOut();
+							}
+						}
+						
+					} else {
+						alert(data.msg);
+					}
+
+				}
+			});
+			
+		}
+	}
+	
+</script>
+
+
+</head>
+<body class="body_bgtwo">
+	<form action="${ctx}/wxItf/searchDoctors.freda" method="post"
+		id="searchDoctors">
+		<div class="addple_list">
+			<ul>
+				<li><span class="l_span">姓&nbsp;&nbsp;&nbsp;&nbsp;名：</span>
+				<div class="putbox">
+						<input name="tureName" id="tureName" type="text" class="inputtwo"
+							placeholder="姓名" value="${patient.tureName }">
+					</div></li>
+				<li><span class="l_span">身份证：</span>
+				<div class="putbox">
+						<input id="identityId" name="identityId" type="text"
+							class="inputtwo" placeholder="请填写身份证" value="${patient.identityId }">
+					</div></li>
+				<li><span class="l_span">性&nbsp;&nbsp;&nbsp;&nbsp;别：</span>
+				<div class="putbox" style="border: 0px;">
+				<c:choose>
+					<c:when test="${patient.sex == 1 }">
+						<input type="radio" id="rad" name="sex" value="1" checked>
+						男 <input type="radio" id="rad2" value="0" name="sex"> 女
+					</c:when>
+					<c:otherwise>
+						<input type="radio" id="rad" name="sex" value="1" >
+						男 <input type="radio" id="rad2" value="0" name="sex" checked> 女
+					</c:otherwise>
+				</c:choose>
+						
+					</div></li>
+				<li><span class="l_span">年&nbsp;&nbsp;&nbsp;&nbsp;龄：</span>
+				<div class="putbox" style="border: 0px;">
+						<input name="age" id="age" type="text" value="${patient.age}">
+					</div></li>
+				<li><span class="l_span">手机号：</span>
+				<div class="putbox">
+						<input name="mobile" id = "mobile" type="text" class="inputtwo"
+							value="${mobile}" >
+					</div></li>
+				<li style="border-bottom: none;">请选择疾病：
+					<p>
+						<c:forEach var="sickness" items="${sicknessList}">
+							<a href="#" name="sickness" class="hui"
+								id="sickness_${sickness.sId }"
+								onclick="selectSickness('${sickness.sId}')">${sickness.name }
+							</a>
+						</c:forEach>
+					</p>
+				</li>
+				<li
+					style="border-bottom: none; padding-bottom: 1rem; margin-top: 1rem;">
+					<span class="l_span">病情描述：</span>
+					<div class="putbox" style="margin-left: 4.5rem;">
+						<textarea name="pDesc" id="pDesc" cols="" rows=""
+							class="inputthree" placeholder="请输入不适症状和诊断"></textarea>
+					</div>
+					<div class="cb"></div>
+				</li>
+			</ul>
+		</div>
+		<input type="hidden" id="sickNessIds" name="sickNessIds">
+		<input type="hidden" id="patientId" name="patientId" value="${patientId}"/>
+		<input type="hidden" id="isBinding" name="isBinding" value="true"/>
+		<input type="hidden" id="loginId" name="loginId" value="${pDto.loginId}"/>
+		<input type="hidden" id="vipInTreatment" name="vipInTreatment" value="${vipInTreatment}"/>
+		<input type="hidden" id="miCity" name="miCity" value="${pDto.miCity}"/>
+        <input type="hidden" id="seeCity" name="seeCity" value="${pDto.seeCity}"/>
+        <input type="hidden" id="patientSicknessId" name="patientSicknessId"/>
+        <input type="hidden" id="mycenter" name="mycenter" value="${pDto.mycenter}"/>
+        <input type="hidden" id="areaId" name="areaId" value="${areaId}"/>
+		<div class="add_box">
+			<div class="add_time">
+				<span class="l_span">期望就诊时间：</span>
+				<div class="right_time">
+					<input type="text" id="startTime" name="startTime"
+						onclick="WdatePicker({readOnly:true,dateFmt:'yyyy-MM-dd HH:mm',minDate:'%y-%M-%d'})"
+						class="Wdate" /> <input type="text" id="endTime" name="endTime"
+						onclick="WdatePicker({readOnly:true,dateFmt:'yyyy-MM-dd HH:mm',minDate:'#F{$dp.$D(\'startTime\')}'})"
+						class="Wdate" />
+				</div>
+			</div>
+			<input type="hidden" name="appToken" id="appToken" value="123" />
+			<div class="bin_nav">
+				<input name="" id="addPatientInfo" type="button" value="确定" onclick="searchDoctors()"
+					class="btn_nav">
+			</div>
+		</div>
+	</form>
+   <div class="cover"></div>
+   <div class="add_ceng"><p>正在处理中。。。</p></div> 
+</body>
+</html>

@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ApptOrder">
+	<!--查询订单 -->
+	<select id="queryOrder" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._id AS apptId,
+			_rjkx_patient._turename AS patName,
+			_rjkx_patient._mobile AS patMobile,
+			_rjkx_patient_order._sch_stime AS sTime,
+			_rjkx_patient_order._sch_etime AS eTime,
+			_rjkx_patient_order._ctime AS cTime,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='ORDER_STATE' AND _code=_rjkx_patient_order._order_status) AS apptStatus,
+			(SELECT _mobile FROM _rjkx_patient WHERE _id=_rjkx_patient_order._patient_id2) AS patMobile2
+		FROM _rjkx_patient_order 
+			inner join _rjkx_patient ON _rjkx_patient_order._patient_id=_rjkx_patient._id 
+		WHERE _rjkx_patient_order._order_status = ${orderStatus} 
+		ORDER BY _rjkx_patient_order._ctime DESC 
+		LIMIT ${start},${limit}
+	</select>
+	
+	<!--查询城市 -->
+	<select id="queryCity" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS city_id,
+			_area_name AS text,
+			_level AS LEVEL,
+			_parent_id  AS parentId,
+			_leaf		AS leaf
+		FROM _rjkx_area 
+		WHERE
+			_rjkx_area._level>0
+		<if test="city_id == null">
+				AND  _rjkx_area._parent_id=1		
+		</if>
+		<if test="city_id != null">
+				AND _rjkx_area._parent_id= ${city_id}		
+		</if>
+	</select>
+	
+	<select id="queryOrderCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT count(1) 
+		FROM _rjkx_patient_order  
+		WHERE _rjkx_patient_order._order_status = ${orderStatus}
+	</select>
+	
+	<!--查询订单详情 -->
+	<select id="queryOrderAll" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._id AS apptId,
+			_rjkx_patient_order._order_id AS orderId,
+			_rjkx_patient_order._doctor_id AS doctorId,
+			_rjkx_patient_order._amount AS amount,
+			_rjkx_patient_order._sch_address AS address,
+			_rjkx_patient_order._msg AS msg,
+			(SELECT _name FROM _rjkx_doctor WHERE _id=_rjkx_patient_order._doctor_id) AS docName,
+			_rjkx_patient._turename AS patName,
+			_rjkx_patient_order._ctime AS cTime,
+			_rjkx_patient_order._finish_time AS finishTime,
+			_rjkx_patient_order._refund AS refund,
+			_rjkx_patient_order._refund_type AS refundType,
+			_rjkx_patient_order._pay_type AS oPayType,
+			_rjkx_patient_order._sch_stime AS sTime,
+			_rjkx_patient_order._sch_etime AS eTime,
+			_rjkx_patient_order._ctime AS cTime,
+			_rjkx_patient._mobile AS patMobile,
+			_rjkx_patient_order._order_status AS orderStatus,
+			_rjkx_patient_order._patient_id AS pId,
+			(SELECT _mobile FROM _rjkx_patient WHERE _id=_rjkx_patient_order._patient_id2) AS patMobile2
+		FROM _rjkx_patient_order 
+			INNER JOIN _rjkx_patient ON _rjkx_patient_order._patient_id=_rjkx_patient._id 
+		WHERE _rjkx_patient_order._id = ${oId}
+	</select>
+	
+	<!--更改预约信息 -->
+	<update id="updateAppt" parameterType="dto">
+		UPDATE _rjkx_patient_order SET
+			_rjkx_patient_order._doctor_id = #{doc_id},
+			_rjkx_patient_order._sch_address= #{address},
+			_rjkx_patient_order._sch_stime= #{appt_sTime},
+			_rjkx_patient_order._sch_etime= #{appt_eTime},
+			_rjkx_patient_order._msg=#{appt_remark}
+		WHERE
+			_rjkx_patient_order._id = #{oId}
+	</update>
+	
+	<!--审核订单通过 -->
+	<update id="updateOrder" parameterType="dto">
+		UPDATE _rjkx_patient_order SET
+			_rjkx_patient_order._order_status = 3
+		WHERE
+			_rjkx_patient_order._id = #{oId}
+	</update>
+	
+	<select id="getPayInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._out_order_id AS outOrderNum,
+			_rjkx_patient_order._amount AS amount,
+			_rjkx_patient_order._pay_type AS payType,
+			_rjkx_patient_order._patient_id2 AS mainUserId
+		FROM _rjkx_patient_order
+		WHERE
+			_rjkx_patient_order._id = #{oId}
+	</select>
+	
+	<!--取消订单（修改状态）-->
+	<update id="cancelOrder" parameterType="dto">
+		UPDATE _rjkx_patient_order SET
+			_rjkx_patient_order._order_status = 7,
+			_rjkx_patient_order._finish_time=NOW(),
+			_rjkx_patient_order._refund_type=#{oPayType},
+			_rjkx_patient_order._refund=#{oPayAmount}
+		WHERE
+			_rjkx_patient_order._id = #{oId}
+	</update>
+	
+	<!--加余额-->
+	<update id="addUserBalance" parameterType="dto">
+		UPDATE _rjkx_patient SET
+			_available_balance = _available_balance + ${oPayAmount}
+		WHERE
+			_rjkx_patient._id = #{mainUserId}
+			AND _rjkx_patient._parent_id = '-1'
+	</update>
+	
+	<!--查询评价以及礼物信息 -->
+	<select id="queryApptAppr" parameterType="dto" resultType="dto">
+		SELECT  
+			(SELECT _name FROM _rjkx_doctor WHERE _id=_rjkx_doctor_review._doctor_id) AS docName,
+			_rjkx_doctor_review._level  AS apprLevel,
+			_rjkx_doctor_review._content  AS apprContent,
+			_rjkx_doctor_review._gift_id  AS getGift
+		FROM  _rjkx_doctor_review 
+		WHERE _rjkx_doctor_review._order_id = ${oId}
+	</select>
+	
+	<!--查询礼物信息 -->
+	<select id="queryApptGift" parameterType="dto" resultType="dto">
+		SELECT  
+			_rjkx_doctor_review_gift._name AS giftTitle,
+			_rjkx_doctor_review_gift._icon AS giftType,
+			_rjkx_doctor_review_gift._ctime AS gift_cTime,
+			_rjkx_doctor_review_gift._amount AS giftPrice
+		FROM  _rjkx_doctor_review_gift 
+		WHERE _rjkx_doctor_review_gift._id = ${giftId}
+	</select>
+	
+	<select id="getPatSmsInfo" parameterType="dto" resultType="dto">
+		SELECT
+			IFNULL((SELECT _turename FROM _rjkx_patient WHERE _id=_rjkx_patient_order._patient_id2),'') AS smsName,
+			IFNULL((SELECT _mobile FROM _rjkx_patient WHERE _id=_rjkx_patient_order._patient_id2),'') AS smsAddr,	
+			CONCAT(DATE_FORMAT(_rjkx_patient_order._sch_stime,'%m月%d日'),
+			'(',(CASE DAYOFWEEK(_rjkx_patient_order._sch_stime)  
+								WHEN 1 THEN '周日' 
+								WHEN 2 THEN '周一' 
+								WHEN 3 THEN '周二' 
+								WHEN 4 THEN '周三' 
+								WHEN 5 THEN '周四' 
+								WHEN 6 THEN '周五' 
+								WHEN 7 THEN '周六' END),')',
+			DATE_FORMAT(_rjkx_patient_order._sch_stime,'%H:%i'),'地址:',_rjkx_patient_order._sch_address) AS smsKeyWord
+		FROM _rjkx_patient_order
+		WHERE
+			_rjkx_patient_order._id =#{oId}
+	</select>
+	
+	<select id="getDocSmsInfo" parameterType="dto" resultType="dto">
+		SELECT
+			IFNULL((SELECT _name FROM _rjkx_doctor WHERE _id=_rjkx_patient_order._doctor_id),'') AS smsName,
+			IFNULL((SELECT _telephone FROM _rjkx_doctor WHERE _id=_rjkx_patient_order._doctor_id),'') AS smsAddr,	
+			CONCAT(DATE_FORMAT(_rjkx_patient_order._sch_stime,'%m月%d日'),
+			'(',(CASE DAYOFWEEK(_rjkx_patient_order._sch_stime)  
+								WHEN 1 THEN '周日' 
+								WHEN 2 THEN '周一' 
+								WHEN 3 THEN '周二' 
+								WHEN 4 THEN '周三' 
+								WHEN 5 THEN '周四' 
+								WHEN 6 THEN '周五' 
+								WHEN 7 THEN '周六' END),')',
+			DATE_FORMAT(_rjkx_patient_order._sch_stime,'%H:%i'),'地址:',_rjkx_patient_order._sch_address) AS smsKeyWord
+		FROM _rjkx_patient_order
+		WHERE
+			_rjkx_patient_order._id =#{oId}
+	</select>
+	
+	
+	<!--查询患者 详情-->
+	<select id="queryDetail" parameterType="dto" resultType="dto">
+		SELECT  
+			_rjkx_patient_detail._patient_source AS source,
+			_rjkx_patient_detail._patient_order_id AS oId,
+			_rjkx_patient_detail._surgery_is AS surgety,
+			_rjkx_patient_detail._diagnose AS diagnose,
+			_rjkx_patient_detail._history AS history,
+			_rjkx_patient_detail._product_category AS category,
+			_rjkx_patient_detail._desc AS pDesc
+		FROM  _rjkx_patient_detail 
+		WHERE _rjkx_patient_detail._patient_order_id=#{oId}
+	</select>
+	
+	<!--查询患者基本信息-->
+	<select id="queryPatient" parameterType="dto" resultType="dto">
+		SELECT  
+			_rjkx_patient._nation AS ethnic,
+			_rjkx_patient._turename AS pName,
+			_rjkx_patient._sex AS pGender,
+			_rjkx_patient._area_id AS area,
+			(SELECT _area_name FROM _rjkx_area WHERE _id = _rjkx_patient._area_id) AS areaName,
+			_rjkx_patient._birthdate AS Birth
+		FROM  _rjkx_patient 
+		WHERE _rjkx_patient._id=#{pId}
+	</select>
+	
+	<insert id="insertDetail" parameterType="dto">
+		INSERT INTO _rjkx_patient_detail(_patient_id,_patient_source,_patient_order_id,_surgery_is,_diagnose,_history,_product_category,_utime,_desc)
+		VALUES (#{pId},#{pSource},#{oId},#{pSurgery},#{pDiagnose},#{pHistory},#{pCategory},NOW(),#{pDesc})
+	</insert>
+	
+	<update id="updatepatient" parameterType="dto">
+		UPDATE _rjkx_patient SET
+				_rjkx_patient._sex = #{pGender},
+				_rjkx_patient._birthdate = #{pBirth},
+				_rjkx_patient._area_id = #{pAreaId},
+				_rjkx_patient._nation = #{pEthnic}
+		WHERE _rjkx_patient._id=#{pId}
+	</update>
+
+	<update id="updateDetail" parameterType="dto">
+		UPDATE _rjkx_patient_detail SET
+				_rjkx_patient_detail._patient_id = #{pId},
+				_rjkx_patient_detail._patient_source = #{pSource},
+				_rjkx_patient_detail._patient_order_id = #{oId},
+				_rjkx_patient_detail._surgery_is = #{pSurgery},
+				_rjkx_patient_detail._diagnose = #{pEthnic},
+				_rjkx_patient_detail._history = #{pHistory},
+				_rjkx_patient_detail._product_category = #{pCategory},
+				_rjkx_patient_detail._utime=NOW(),
+				_rjkx_patient_detail._desc=#{pDesc}
+		WHERE _rjkx_patient_detail._patient_order_id=#{oId}
+	</update>
+	
+	<select id="getOrderDocid" parameterType="dto" resultType="dto">
+		SELECT _doctor_id AS docId,
+			_order_id AS orderId
+		FROM _rjkx_patient_order
+		WHERE
+			_rjkx_patient_order._id =#{oId}
+	</select>
+</mapper>

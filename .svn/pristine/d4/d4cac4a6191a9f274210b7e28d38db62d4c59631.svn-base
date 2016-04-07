@@ -1,0 +1,306 @@
+package com.rjkx.sk.manager.cms.controller;
+
+import java.io.File;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import com.rjkx.sk.manager.base.ManagerBaseController;
+import com.rjkx.sk.manager.cms.service.GroupService;
+import com.rjkx.sk.manager.common.utils.BasicUtils;
+import com.rjkx.sk.manager.index.vo.ManagerUserVo;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.FileUtil;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.utils.SystemCons;
+
+/**
+ * 广告内容管理
+ * 
+ * @ClassName: ADmanagerController
+ * @author:panlinlin
+ * @data:2016年3月2日
+ * @Description:
+ * @author: pan
+ * @date: 2016年3月2日 下午4:13:32
+ */
+@Controller
+@RequestMapping(value = "/groupController")
+public class GroupController extends ManagerBaseController {
+	@Autowired
+	@Resource(name = "groupServiceImpl")
+	private GroupService groupService;
+
+	/**
+	 * 查询圈子列表
+	 * 
+	 * @Title: listAd
+	 * @author:panlinlin
+	 * @data:2016年3月4日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/listGroup")
+	public String listGroup(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		List<?> data = super.getFredaReader().queryForList("group.listGroupAll", pDto);
+
+		Integer count = (Integer) super.getFredaReader().queryForObject("group.listGroupAllCount", pDto);
+
+		super.write(JsonHelper.encodeList2PageJson(data, count, SystemCons.DATE_TIME_FORMART), response);
+
+		return null;
+	}
+
+	/**
+	 * 查询单条信息
+	 * 
+	 * @Title: queryGroup
+	 * @author:panlinlin
+	 * @data:2016年3月4日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/queryGroup")
+	public String queryGroup(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		Dto pDto = super.getParamsAsDto(request);
+
+		Dto data = (Dto) super.getFredaReader().queryForObject("group.queryGroup", pDto);
+
+		super.write(JsonHelper.encodeObject2Json(data, SystemCons.DATE_TIME_FORMART), response);
+
+		return null;
+	}
+
+	/**
+	 * 查看回复
+	 * 
+	 * @Title: queryReply
+	 * @author:panlinlin
+	 * @data:2016年3月9日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/queryReply")
+	public String queryReply(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		Dto pDto = super.getParamsAsDto(request);
+
+		List<?> data = super.getFredaReader().queryForList("group.queryReply", pDto);
+
+		super.write(JsonHelper.encodeList2PageJson(data, null, SystemCons.DATE_TIME_FORMART), response);
+		return null;
+	}
+
+	/**
+	 * 图片上传
+	 * 
+	 * @Title: uploadPhoto
+	 * @author:panlinlin
+	 * @data:2016年3月2日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/uploadGroupImg")
+	public String uploadGroupImg(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+
+		CommonsMultipartFile file = (CommonsMultipartFile) multipartRequest.getFile("fileIcon");
+		String fileLastName = FileUtil.getExtension(file.getOriginalFilename());
+		if (BasicUtils.isImg(fileLastName)) {
+			String newFileName = "lec_" + System.nanoTime();
+			String dateDir = FredaUtils.getCurDate();
+			String realPath = appProperties.getValue("app.ad.photo.dir");
+			File filePath = new File(realPath+File.separatorChar + dateDir);
+			if (!filePath.exists()) {
+				filePath.mkdirs();
+			}
+			File outFile = new File(realPath + File.separatorChar+dateDir +File.separatorChar+ newFileName + fileLastName);
+
+			FileCopyUtils.copy(file.getBytes(), outFile);
+			super.setOkTipMsg(appProperties.getValue("app.ad.photo.saveDir") + "/"+dateDir +"/"+ newFileName + fileLastName, response);
+		} else {
+			super.setErrTipMsg(SystemCons.TIPS_ERROR_FILE_TYPE_MSG, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 增加圈子内容
+	 * 
+	 * @Title: addGroup
+	 * @author:panlinlin
+	 * @data:2016年3月4日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/addGroup")
+	public String addGroup(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		Dto pDto = super.getParamsAsDto(request);
+
+		pDto.put(systemProperties.getValue("sys.var.user.id"), ((ManagerUserVo) super.getSessionAttribute(request, SystemCons.ADMIN_SESSION_USER_VAR)).getuId());
+
+		pDto.put(systemProperties.getValue("sys.var.user.name"), ((ManagerUserVo) super.getSessionAttribute(request, SystemCons.ADMIN_SESSION_USER_VAR)).getuName());
+		if (pDto.getAsInteger("msgtype") != 2) {
+			pDto.put("gMediaUrl", null);
+			pDto.put("gImg", null);
+		}
+		try {
+			groupService.addGroup(pDto);
+			super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		} catch (Exception e) {
+			super.setOkTipMsg(SystemCons.TIPS_ERROR_MSG, response);
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * 编辑圈子内容
+	 * 
+	 * @Title: editGroup
+	 * @author:panlinlin
+	 * @data:2016年3月4日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/editGroup")
+	public String editGroup(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		try {
+			groupService.editAd(super.getParamsAsDto(request));
+			super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		} catch (Exception e) {
+			super.setOkTipMsg(SystemCons.TIPS_ERROR_MSG, response);
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * 删除圈子内容
+	 * 
+	 * @Title: deleteGroup
+	 * @author:panlinlin
+	 * @data:2016年3月4日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/deleteGroup")
+	public String deleteGroup(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		try {
+			groupService.deletAd(super.getParamsAsDto(request));
+			super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		} catch (Exception e) {
+			super.setOkTipMsg(SystemCons.TIPS_ERROR_MSG, response);
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * 图片上传
+	 * 
+	 * @Title: uploadPhoto
+	 * @author:panlinlin
+	 * @data:2016年3月2日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/uploadAdImg")
+	public String uploadAdImg(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+
+		CommonsMultipartFile file = (CommonsMultipartFile) multipartRequest.getFile("fileIcon");
+		String fileLastName = FileUtil.getExtension(file.getOriginalFilename());
+		if (BasicUtils.isImg(fileLastName)) {
+			String newFileName = "news_" + System.nanoTime();
+			String dateDir = FredaUtils.getCurDate();
+			String realPath = appProperties.getValue("app.ad.photo.dir");
+			File filePath = new File(realPath +File.separatorChar+ dateDir);
+			if (!filePath.exists()) {
+				filePath.mkdirs();
+			}
+			File outFile = new File(realPath +File.separatorChar+ dateDir+File.separatorChar + newFileName + fileLastName);
+
+			FileCopyUtils.copy(file.getBytes(), outFile);
+			super.setOkTipMsg(appProperties.getValue("app.ad.photo.saveDir") +"/"+ dateDir +"/"+ newFileName + fileLastName, response);
+		} else {
+			super.setErrTipMsg(SystemCons.TIPS_ERROR_FILE_TYPE_MSG, response);
+		}
+		return null;
+	}
+
+	@RequestMapping(value = "/editReply")
+	public String editReply(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		try {
+			groupService.editReply(super.getParamsAsDto(request));
+			super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		} catch (Exception e) {
+			super.setOkTipMsg(SystemCons.TIPS_ERROR_MSG, response);
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	@RequestMapping(value = "/deleteReplyById")
+	public String deleteReplyById(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		try {
+			groupService.deleteReplyById(super.getParamsAsDto(request));
+			super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		} catch (Exception e) {
+			super.setOkTipMsg(SystemCons.TIPS_ERROR_MSG, response);
+			e.printStackTrace();
+		}
+		return null;
+	}
+}

@@ -1,0 +1,139 @@
+body{
+	background-color: #e9e9e9;
+}
+/**顶部按钮设置**/
+.center_query {
+	width: 100%;
+	height: 10%;
+	background-color: rgb(233, 233, 233);
+}
+label {
+	color: #0D9675;
+}
+.btn_all {
+	margin: 0% 3%;
+}
+.center_btn_1 {
+	padding-top: 20px;
+	float: left;
+	
+}
+.center_btn_1 .input-group  {
+	max-width: 300px;
+}
+.center_btn_1 .input-group input {
+	width: 100%;
+	float: right;
+}
+.center_btn_2 {
+	float: right;
+	width: 60%;
+	margin-top: 20px;
+}
+.center_btn_2  .input-group {
+	max-width: 500px;
+	float: right;
+}
+.mySelect {
+	height: 34px;
+	width: auto;
+	font-size: 13px;
+}
+/**表格区设置**/
+	
+.center_table{
+	height: 90%;
+	width: 100%;
+	background-color: rgb(233, 233, 233);
+}
+.table_btn .btn-2 {
+	float: right;
+	margin-right: 3%;
+	clear: right;
+	width: auto;
+	max-width: 300px;
+}
+.table_btn .btn-1 {
+	float: left;
+	margin-left: 3%;
+	clear: left;
+	width: 50%;
+	max-width: 300px;
+}
+.table_show {
+	margin: 0% 3%;
+	border-radius: 0px;
+	border: 2px solid #cfcfcf;
+	height: 75%;
+	overflow: auto;
+	min-height: 500px;
+	background-color: #fff;
+}
+.table{
+	font-size:13px;
+	width: 100%;
+	height:auto;
+	text-align: center;
+	background-color: #FFF;
+}
+.table tbody{
+	
+}
+.table th, .table td { 
+	text-align: center; 
+	height:38px;
+}
+
+.fanye_show ul {
+	margin-right: 4%;
+	float: right;
+	clear: both;
+	margin-top: -18px;
+}
+.fanye_show ul li a{
+	color:#0D9675;
+}
+.into_show {
+	margin-left: 5%;
+	padding-top: 5px;
+}
+.into_show font{
+	color:#fe4800;
+}
+
+.into_show b{
+	color:#0D9675;
+}
+.btn-success {
+	color: #fff;
+	background-color: #0D9675;
+}
+.pagination > .active > a, .pagination > .active > a:focus, .pagination > .active > a:hover, .pagination > .active > span, .pagination > .active > span:focus, .pagination > .active > span:hover {
+	background: #0D9675;
+	color:#FFF;
+}
+
+/**树**/
+.all_content {
+	float: right;
+	height: auto;
+	width: 70%;
+	background: rgb(233, 233, 233);
+}
+.mytree {
+	
+	width: 30%;
+	background: rgb(233, 233, 233);
+	float: left;
+	height: 100%;
+}
+.istree {
+	width: 100%;
+	height: 100%;
+	background-color: #FFF;
+	border: 2px solid #ece9e9;
+	overflow-y: auto;
+}
+.ztree {
+	margin: 8% 5%;
+}

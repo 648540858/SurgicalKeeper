@@ -1,0 +1,129 @@
+package com.rjkx.sk.manager.basedata.service.impl;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.rjkx.sk.manager.base.ManagerBaseServiceImpl;
+import com.rjkx.sk.manager.basedata.service.SicknessManagerService;
+import com.rjkx.sk.system.datastructure.Dto;
+
+/**
+ * 疾病.属性
+ * 
+ * @ClassName: SicknessManagerServiceImpl
+ * @Description: 
+ * @author 
+ * @date 
+ * @version V2.0
+ */
+@Service(value="sicknessManagerServiceImpl")
+public class SicknessManagerServiceImpl extends ManagerBaseServiceImpl implements SicknessManagerService {
+
+	@Override
+	public void addSicknessAttr(Dto pDto) {
+		super.getFredaDao().insert("SicknessAttr.addSicknessAttr",pDto);
+	}
+
+	@Override
+	public void editSicknessAttr(Dto pDto) {
+		super.getFredaDao().update("SicknessAttr.editSicknessAttr",pDto);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
+	public void delSicknessAttr(Dto pDto) {
+		String[] ids = pDto.getAsString("ids").split(",");
+
+		for (String id : ids) {
+			pDto.put("attrId", id);
+
+			super.getFredaDao().delete("SicknessAttr.delSicknessAttr", pDto);
+			super.getFredaDao().delete("SicknessAttr.delSicknessAttrContent", pDto);
+		}
+	}
+
+	@Override
+	public void addSickness(Dto pDto) {
+		super.getFredaDao().insert("SicknessAttr.addSickness",pDto);
+	}
+
+	@Override
+	public void editSickness(Dto pDto) {
+		super.getFredaDao().update("SicknessAttr.editSickness",pDto);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
+	public void delSickness(Dto pDto) {
+		String[] ids = pDto.getAsString("ids").split(",");
+
+		for (String id : ids) {
+			pDto.put("sickId", id);
+
+			super.getFredaDao().delete("SicknessAttr.delSickness", pDto);
+			super.getFredaDao().delete("SicknessAttr.delSicknessSub", pDto);
+			super.getFredaDao().delete("SicknessAttr.delSicknessDoctor", pDto);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void addSicknessSub(Dto pDto) {
+		super.getFredaDao().insert("SicknessAttr.addSicknessSub",pDto);
+		pDto.put("leaf", 0);
+		super.getFredaDao().update("SicknessAttr.editSicknessSubLeaf",pDto);
+	}
+
+	@Override
+	public void editSicknessSub(Dto pDto) {
+		super.getFredaDao().update("SicknessAttr.editSicknessSub",pDto);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void delSicknessSub(Dto pDto) {
+		String[] ids = pDto.getAsString("ids").split(",");
+
+		for (String id : ids) {
+			pDto.put("sickSubId", id);
+
+			super.getFredaDao().delete("SicknessAttr.delSicknessSubById", pDto);
+		}
+		//下级如无，更改父节点为叶子节点
+		if(super.getFredaDao().queryForList("SicknessAttr.listSicknessSub", pDto).size()<1){
+			pDto.put("leaf", 1);
+			super.getFredaDao().update("SicknessAttr.editSicknessSubLeaf",pDto);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void deleteYyDoc(Dto pDto) {
+		
+		String[] ids = pDto.getAsString("ids").split(",");
+
+		for (String id : ids) {
+			pDto.put("YyDoc", id);
+			super.getFredaDao().delete("SicknessAttr.deleteYyDoc", pDto);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void addYyDoc(Dto pDto) {
+		String[] ids = pDto.getAsString("idList").split(",");
+
+		for (String id : ids) {
+			pDto.put("docId", id);
+			Integer count = (Integer) super.getFredaDao().queryForObject("SicknessAttr.checkYyDoc", pDto);
+			if(count==0){
+				super.getFredaDao().insert("SicknessAttr.addYyDoc", pDto);
+			}
+		}
+		
+	}
+
+}

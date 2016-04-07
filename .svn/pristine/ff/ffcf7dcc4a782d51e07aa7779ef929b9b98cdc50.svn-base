@@ -1,0 +1,251 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>了解病情 选对医生</title>
+<c:set var="root" value="${pageContext.request.contextPath}/resources/wx" />
+<c:set var="ctx" value="${pageContext.request.contextPath}" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0 , maximum-scale=1.0, user-scalable=0"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" type="text/css" href="${root}/css/swiper.min.css"/>
+<link rel="stylesheet" type="text/css" href="${root}/css/simpScroller.css"/>
+<link rel="stylesheet" type="text/css" href="${root}/css/style.css"/>
+<script type="text/javascript" src="${root}/js/jquery-1.10.1.min.js"></script>
+<script type="text/javascript" src="${root}/js/score.js"></script>
+<script type="text/javascript" src="${root}/js/swiper.3.1.2.jquery.min.js"></script>
+<script type="text/javascript" src="${root}/js/simpScroller.js"></script>
+<script src="${ctx}/resources/pingpp/pingpp.js" type="text/javascript"></script>
+<script type="text/javascript">
+var ajaxRoot = '<%=request.getContextPath() %>';
+var doctorId = '${orderInfo.doctorId}';
+var patientId = '${orderInfo.patientId}';
+var orderId = '${orderInfo.orderId}';
+var orderState = '${orderInfo.orderState}';
+var logInfo = '${orderInfo.logInfo}';
+var opId = '${orderInfo.loginId}';
+var opName = '${orderInfo.loginName}';
+var availableBalance = '${orderInfo.availableBalance}';
+
+	$(document).ready(function() {
+		var swiper = new Swiper('.swiper-container', {
+			freeMode : true,
+			slidesPerView : 'auto',
+		});
+
+		var shu = new Swiper('#shu_nav', {
+			freeMode : true,
+			slidesPerView : 'auto',
+		});
+
+	})
+
+	$(document).ready(function() {
+		$(".hua_img").on("click", function() {
+			if ($(this).find(".tmceng").is(":hidden")) {
+				$(".swiper-wrapper .hua_img .tmceng").hide();
+				$(this).find(".tmceng").show();
+			}else{
+				$(".swiper-wrapper .hua_img .tmceng").hide();
+				$(this).find(".tmceng").hide();
+			}
+		});
+
+	});
+
+	$(function() {
+		var score = new Score({
+			callback : function(cfg) {
+				console.log(cfg.starAmount);
+			}
+		});
+	});
+	
+	function chooseGift(giftId,giftAmount){
+		if($('#giftId').val()==giftId){
+			$('#giftId').val("");
+			$('#giftAmount').val(0);
+		}else{
+			$('#giftId').val(giftId);
+			$('#giftAmount').val(giftAmount);
+		}
+	}
+	
+	function addDoctorReview(){
+		if($('#level').val() == null || $('#level').val()== ''){
+			alert('请选择评分！');
+			return;
+		}
+		if ($("#reviewConent").val().length < 7) {
+			alert('希望您能写满6个字哦!');
+			return;
+		}
+		var order_no = '';
+		if($('#giftId').val() != null && $('#giftId').val() != ''){
+			if(confirm("赠送礼物需要支付"+$('#giftAmount').val()+"元")){
+				if(availableBalance >=  $('#giftAmount').val()){
+					$.post(ajaxRoot + "/wxItf/editePatient.freda", {
+						patientId : opId,
+						type : 1,
+						availableBalance : ($('#orderAmount').val()-$('#giftAmount').val()),
+						appToken : '123'
+					}, function(data2) {
+						if (data2.success == true) {
+							$.post(ajaxRoot + "/wxItf/getOrderNo.freda", {
+								orderType : 4,
+								appToken : '123'
+							}, function(odata) {
+								if (odata.success == true) {
+									order_no = odata.data;
+									$.post(ajaxRoot + "/wxItf/addCapitalLog.freda", {
+													opId : opId,
+													type : 4,
+													amount : $('#giftAmount').val(),
+													orderNo : order_no,
+													appToken : '123'
+												}, function(data1) {
+													if (data1.success == true) {
+														$.post(ajaxRoot + "/wxItf/addDoctorReview.freda", {
+															doctorId : doctorId,
+															patientId : patientId,
+															orderId : orderId,
+															giftId : $('#giftId').val(),
+															content : $('#reviewConent').val(),
+															level : $('#level').val(),
+															orderState : orderState,
+															logInfo : logInfo,
+															opId : opId,
+															opName : opName,
+															opType:1,
+															appToken : '123'
+														}, function(data) {
+															if(data.success == true){
+																if ($(".add_ceng").is(":hidden")) {
+																	$(".add_ceng,.cover").fadeIn();
+																}
+																$('#submitReview').submit();
+															}
+														}, "json");
+													} else {
+														alert(data1.msg);
+													}
+												}, "json");
+
+								} else {
+									alert(data3.msg);
+								}
+							}, "json");
+						} else {
+							alert(data2.msg);
+						}
+					}, "json");
+					
+					
+				}else{
+					alert('账号余额不足请到个人中心充值！');
+					self.location.href="https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx21449a3c51607b9f&redirect_uri=http://test.waikegj.com/SurgicalKeeper/wxItf/myCenterPageInit.freda?appToken=123&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect";
+				}
+			}else{
+				return false;
+			}
+	}else{		
+		$.post(ajaxRoot + "/wxItf/addDoctorReview.freda", {
+			doctorId : doctorId,
+			patientId : patientId,
+			orderId : orderId,
+			giftId : $('#giftId').val(),
+			content : $('#reviewConent').val(),
+			level : $('#level').val(),
+			orderState : orderState,
+			logInfo : logInfo,
+			opId : opId,
+			opName : opName,
+			opType:1,
+			appToken : '123'
+		}, function(data) {
+			if(data.success == true){
+				if ($(".add_ceng").is(":hidden")) {
+					$(".add_ceng,.cover").fadeIn();
+				}
+				$('#submitReview').submit();
+			}
+		}, "json");
+		}
+	}
+	
+</script>
+
+</head>
+<body class="body_bgtwo">
+<form action="${ctx}/wxItf/toDoctorReviewSuccess.freda" method="post" id="submitReview" name="submitReview">
+	<div class="ping_fen">
+		<span class="left_font"> 评分 </span>
+		<div class="right_in">
+			<div class="star">
+				<ul>
+					<li><a href="#">1</a></li>
+					<li><a href="#">2</a></li>
+					<li><a href="#">3</a></li>
+					<li><a href="#">4</a></li>
+					<li><a href="#">5</a></li>
+				</ul>
+			</div>
+		</div>
+		<div class="cb"></div>
+	</div>
+	<div class="ping_fen mb1">
+		<span class="left_font"> 评价 </span>
+		<div class="right_in">
+			<p>您可以放心写上您的真是感受，不会影响您的担保金返还</p>
+			<div class="help_inputone">
+				<textarea name="" id = "reviewConent" cols="" rows="" placeholder="希望您能写满6个字哦" class="inputfive"></textarea>
+			</div>
+		</div>
+		<div class="cb"></div>
+	</div>
+
+	<div class="ping_fen">
+		<span class="left_font"> 心意 </span>
+		<div class="right_in">
+			<p>主任休息做公益不易，您表示一下感谢吧！</p>
+		</div>
+		<div class="cb"></div>
+
+		<div class="songhua">
+
+			<div class="swiper-container" style="margin-left: 0rem;">
+				<div class="swiper-wrapper">
+				<c:forEach var="gift" items="${giftList}">
+					<div class="swiper-slide swiper_widthtwo" onclick="chooseGift('${gift.giftId}','${gift.amount}')">
+						<div class="hua_img">
+							<div class="tmceng" id="tmceng_${gift.giftId}"></div>
+							<img src="${root}/${gift.icon}" />
+							<p>
+								<span>${gift.name}</span><br>￥${gift.amount}
+							</p>
+						</div>
+					</div>
+				</c:forEach>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<input type="hidden" id="level" name="level"/>
+	<input type="hidden" id="giftId" name="giftId"/>
+	<input type="hidden" id="giftAmount" name="giftAmount"/>
+	<input type="hidden" id="loginId" name="loginId" value="${orderInfo.loginId}"/>
+	<input type="hidden" id="orderAmount" name="orderAmount"  value="${orderDto.orderAmount}"/>
+	<input type="hidden" name="appToken" id="appToken" value="123" />
+	<div class="bin_nav" style="margin-bottom: 3rem;">
+		<input name="" type="button" value="提交" class="btn_nav" onclick="addDoctorReview()"/>
+	</div>
+</form>
+<div class="cover"></div>
+   <div class="add_ceng"><p>评论提交成功！</p></div> 
+</body>
+</html>

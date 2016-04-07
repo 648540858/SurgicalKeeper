@@ -1,0 +1,75 @@
+package com.rjkx.sk.system.listener;
+import java.util.List;
+import java.util.concurrent.Executors;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.rjkx.sk.admin.core.service.SystemInitServiceItf;
+import com.rjkx.sk.itf.weixin.utils.WeiXinTokenThread;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.utils.SpringBeanLoader;
+import com.rjkx.sk.system.utils.SystemCons;
+
+public class SystemInitListener implements ServletContextListener  {
+	
+	private static Log log = LogFactory.getLog(SystemInitListener.class);
+	/**
+	 * 系统关闭
+	 * @author Rally
+	 */
+	@Override
+	public void contextDestroyed(ServletContextEvent arg0) 
+	{	
+		WeiXinTokenThread.stop=1;/*关闭微信线程*/
+		
+		log.info("系统关闭! 时间:" + FredaUtils.getCurrentTime());
+	}
+	/**
+	 * 系统启动
+	 * @author Rally
+	 */
+	@Override
+	public void contextInitialized(ServletContextEvent arg0) 
+	{	
+		SpringBeanLoader.getApplicationContext();
+		
+		SystemInitServiceItf initService = (SystemInitServiceItf)SpringBeanLoader.getSpringBean("systemInitServiceImpl");
+		
+		log.info("系统参数和数据字典加载中...");
+		
+		List<?> codeList = initService.queryAllCode();
+		List<?> paramsList = initService.queryAllParams();
+		
+		log.info("数据字典..===============================================================================================");
+		for(Object codes : codeList)
+		{
+			Dto code = (Dto)codes;
+			log.info("字典变量:" + code.getAsString("cList") + "\t\t||字典变量名称:" + code.getAsString("cVar") + "\t\t字典键/值:" + code.getAsString("cCode") + "/" + code.getAsString("cName"));
+		}
+		log.info("======================================================================================================");
+		arg0.getServletContext().setAttribute(SystemCons.APPLICATION_SYSTEM_CODE_VAR, JsonHelper.encodeObject2Json(codeList));
+		log.info("数据字典加载完毕!...");
+		
+		log.info("全局参数..===============================================================================================");
+//		Dto sysParams = new BaseDto();
+		for(Object params : paramsList)
+		{
+			Dto param = (Dto)params;
+//			sysParams.put(param.getAsString("pKey"), param.getAsString("pValue"));
+			log.info("参数KEY:" + param.getAsString("pKey") + "\t\t||参数VALUE:" + param.getAsString("pValue") + "\t\t||描述:" + param.getAsString("pDesc"));
+		}
+		log.info("=======================================================================================================");
+		arg0.getServletContext().setAttribute(SystemCons.APPLICATION_SYSTEM_PARAMS_VAR, paramsList);
+		log.info("全局参数加载完毕!...");
+		log.info("全局参数&&数据字段加载完毕..已存入内存中!...");
+		log.info("系统启动成功! 时间:" + FredaUtils.getCurrentTime());
+		
+		Executors.newSingleThreadExecutor().execute(new WeiXinTokenThread());
+	}
+}

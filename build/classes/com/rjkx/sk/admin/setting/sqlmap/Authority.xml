@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Authority">
+	
+	<!-- 根据Role删除Menu绑定 -->
+	<delete id="delMenuToRoleByRole" parameterType="dto">
+		DELETE FROM _rjkx_sys_role_menu WHERE _rjkx_sys_role_menu._rid = #{rId}
+	</delete>
+	<!-- 根据User删除Role绑定 -->
+	<delete id="delUserToRoleByUser" parameterType="dto">
+		DELETE FROM _rjkx_sys_user_role WHERE _rjkx_sys_user_role._uid = #{uId}
+	</delete>
+	<!-- 根据Role删除User绑定 -->
+	<delete id="delUserToRoleByRole" parameterType="dto">
+		DELETE FROM _rjkx_sys_user_role WHERE _rjkx_sys_user_role._rid = #{rId}
+	</delete>
+	<!-- 添加Menu和Role的绑定 -->
+	<insert id="addMenuToRole" parameterType="dto">
+		INSERT INTO _rjkx_sys_role_menu(
+			_rjkx_sys_role_menu._mid,_rjkx_sys_role_menu._rid)
+		VALUES(#{mId},#{rId})
+	</insert>
+	<!-- 添加User和Role的绑定 -->
+	<insert id="addUserToRole" parameterType="dto">
+		INSERT INTO _rjkx_sys_user_role(
+			_rjkx_sys_user_role._rid,_rjkx_sys_user_role._uid)
+		VALUES(#{rId},#{uId})
+	</insert>
+	
+</mapper>

@@ -1,0 +1,17 @@
+package com.rjkx.sk.admin.om.utils;
+/**
+ * 
+  * @ClassName: VipCons
+  * @Description: TODO
+  * @author wkgi-Rally
+  * @date 2016年1月15日 上午9:32:57 
+  * @version V1.0
+ */
+public class VipCons 
+{
+	
+	public static final String WX_PAY_PAGE = "http://test.waikegj.com/WxPro/wx/ghyy_vipcon_pay.jsp";
+	
+	public static final String WX_MSG_TEMP_ID = "nhs5NZy_QC289te7UIfkKncM3Vly-IDCchnlZk1sHDo";
+	
+}

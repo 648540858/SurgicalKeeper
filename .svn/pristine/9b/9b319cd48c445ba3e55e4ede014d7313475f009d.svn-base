@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>医愿我就医-了解病情 找对医生</title>
+<link href="/SurgicalKeeper/index/css/style.css" type="text/css" rel="stylesheet" />
+<script src="/SurgicalKeeper/index/js/jquery-1.7.2.min.js" type="text/javascript"></script>
+
+</head>
+
+<body>
+<div class="layout_top">
+	<div class="top_box">
+       	<a href="#"> <img src="/SurgicalKeeper/index/images/logo.jpg" class="picimg fl" /></a>
+        <div class="fr"><a href="#"> <img src="/SurgicalKeeper/index/images/tel.jpg" class="tleimg" /></a>  <br />
+        <div class="nav"><a href="/SurgicalKeeper/index/index.html" class="hover">首页</a><a href="/SurgicalKeeper/index/aboutus.html">关于我们</a></div>
+        </div>
+        <div class="cb"></div>
+    </div>
+</div>
+<div id="focus-banner">
+    <ul id="focus-banner-list">
+        <li>
+            <a href="#" class="focus-banner-img"><img id="ddd" src="/SurgicalKeeper/index/images/banner.jpg" alt=""/></a>
+        </li>
+        <li>
+            <a href="#" class="focus-banner-img"><img src="/SurgicalKeeper/index/images/banner1.jpg" alt=""/></a>
+        </li>
+        <li>
+            <a href="#" class="focus-banner-img"><img src="/SurgicalKeeper/index/images/banner.jpg" alt=""/></a>
+        </li>
+        <li>
+            <a href="#" class="focus-banner-img"><img src="/SurgicalKeeper/index/images/banner1.jpg" alt=""/></a>
+        </li>
+    </ul>
+    <a href="javascript:;" id="next-img" class="focus-handle"></a>
+    <a href="javascript:;" id="prev-img" class="focus-handle"></a>
+    <ul id="focus-bubble"></ul>
+</div>
+
+
+<div class="con_my">
+	<div class="conleft"><img src="/SurgicalKeeper/index/images/images1.jpg" /><p>微信扫描  立即预约</p></div>
+    <div class="conright">
+        <p>
+        	<img src="/SurgicalKeeper/index/images/tel00.jpg" width="300"  /><br />
+        	北京瑞吉康星科技有限公司<br />
+            
+            传真：<br />
+            网址：www.yiyuan591.com<br />
+            地址：北京市海淀区西北旺北清路68号</p>
+    </div>
+	<div class="cb"></div>
+</div>
+
+<div class="footer">京ICP备15056045号-2</div>
+
+<script  src="/SurgicalKeeper/index/js/banner.js" type="text/javascript"></script>
+
+</body>
+</html>

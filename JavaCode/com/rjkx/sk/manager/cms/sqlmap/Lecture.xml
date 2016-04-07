@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="LectureV2">
+	
+	<select id="listLecture" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS lecId,
+			_speakers AS lecSpeaker,
+			_title AS lecTitle,
+			_content AS lecContent,
+			_read_count AS lecReadcount,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_doctor_lecture._status) AS lecStatus,
+			_company AS lecCompany,
+			_favicon AS lecIcon,
+			_media_url AS lecMediaurl,
+			concat(date(_ctime),'') AS lecCdate 
+		FROM _rjkx_doctor_lecture 
+		WHERE
+			1=1
+			<if test="queryContent != null and queryContent != ''">
+				AND _title LIKE '%${queryContent}%'
+			</if>
+		LIMIT ${start},${limit}
+	</select>
+	
+	<select id="listLectureCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_doctor_lecture 
+		WHERE 
+			1=1
+			<if test="queryContent != null and queryContent != ''">
+				AND _title LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="getLecture" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS lecId,
+			_speakers AS lecSpeaker,
+			_title AS lecTitle,
+			_content AS lecContent,
+			_status AS lecStatus,
+			_company AS lecCompany,
+			_favicon AS lecIcon,
+			_media_url AS lecMediaurl 
+		FROM _rjkx_doctor_lecture 
+		WHERE _id=#{lecId}
+	</select>
+	
+	<insert id="addLecture" parameterType="dto">
+		INSERT INTO _rjkx_doctor_lecture(_speakers,_title,_start_time,_end_time,
+			_content,_read_count,_status,_company,_favicon,_media_url,_ctime) 
+		VALUES(#{lecSpeaker},#{lecTitle},NOW(),NOW(),#{lecContent},0,#{lecStatus},
+			#{lecCompany},#{lecIcon},#{lecMediaurl},NOW())
+	</insert>
+	
+	<update id="editLecture" parameterType="dto">
+		UPDATE _rjkx_doctor_lecture SET
+			_speakers = #{lecSpeaker},
+			_title = #{lecTitle},
+			_content = #{lecContent},
+			_status = #{lecStatus},
+			_company = #{lecCompany},
+			_favicon = #{lecIcon},
+			_media_url = #{lecMediaurl}
+		WHERE
+			_id = #{lecId}
+	</update>
+	
+	<delete id="delLecture" parameterType="dto">
+		DELETE FROM _rjkx_doctor_lecture WHERE _id = #{lecId}
+	</delete>
+	
+</mapper>

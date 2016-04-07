@@ -1,0 +1,283 @@
+$(function(){
+	initPage();
+	//validateAddEdit();
+	queryAd();
+	//绑定查询按钮事件
+	$("#btn_query").click(function(){
+		queryAd();
+	});
+	//给添加按钮绑定事件，激活弹窗
+	$("#btn_add").click(function(){
+		
+		addBtn();
+	});
+	
+	//上传
+	$("#btn_upload").click(function(){
+		uploadfile();
+	});
+	
+	//编辑按钮绑定事件
+	$("#btn_edit").click(function(){
+		editBtn();
+	});
+	$("#prevPage").click(function(){
+		var curpage=Number($("#pageNum").text());
+		if(curpage<2)
+			return;
+		curpage--;
+		$("#pageNum").text(curpage);
+		var total=Number($("#pageTotal").text());
+		changeTotal(total,curpage);
+		queryAd();
+	});
+	$("#nextPage").click(function(){
+		var curpage=Number($("#pageNum").text());
+		var total=Number($("#pageTotal").text());
+		if(curpage>=total)
+			return;
+		curpage++;
+		$("#pageNum").text(curpage);
+		changeTotal(total,curpage);
+		queryAd();
+	});
+	
+	//删除按钮绑定事件
+	$("#btn_delete").click(function(){
+		subDelete();
+	});
+		
+});
+
+var adId=0;
+
+initPage=function(){
+	addPaging();
+	
+	$("#adStatus option").remove();
+	
+	var id_arr=getCodeArray('STATE');
+	for(var i=0;i<id_arr.length;i++) {
+		$("#adStatus").append("<option value='"+id_arr[i].code+"'>"+id_arr[i].name+"</option>");
+	}
+	validateAddEdit();
+	
+};
+validateAddEdit=function(){
+	
+	$('#validate_addEdit').validate({
+        //设置离焦即验证，主要针对required:true, 因为它默认提交时验证
+		onfocusout: function(element) { $(element).valid(); },
+        rules: {
+        	adTitle: {required:true},
+        	adContent: {required:true},
+        	fileIcon: {required:true}
+        },
+        errorPlacement: function(error, element) {  
+		    error.appendTo(element.parent());  
+    	},
+        messages : {
+        	adTitle: { 
+        		required: "<span style='line-height: 35px;color:red;font-weight: normal;'>标题还没填写！</span>"
+            },
+            adContent: {
+            	required: "<span style='line-height: 35px;color:red;font-weight: normal;'>内容还没填写！</span>"
+            },
+            fileIcon: {
+            	required: "<span style='line-height: 35px;color:red;font-weight: normal;'>图片还没选择！</span>"
+            }
+    	}
+    });
+	
+};
+
+
+//添加按钮事件
+addBtn=function(){
+	$("#upInto").html(" ");
+	$('#adTitle').val(''),
+	$('#adContent').val(''),
+	$('#fileAdres').val(''),
+	$('#fileIcon').val(''),
+	//$('#adStatus').val('1'),
+	$("#imgShow").attr("src",'');
+	$('#adStatus')[0].selectedIndex = 0; 
+	$("#addPage").dialog({ 
+		backdrop: "static",
+        title       : "添加广告",
+       //dialogClass : "modal-sm",
+       buttons: {
+    	   "关闭": function() {
+               $(this).dialog("close");},
+            "提交": function() {
+            		var adTitle=$('#adTitle').val();
+            		var adContent=$('#adContent').val();
+            		var adImg=$('#fileAdres').val();
+            		var adStatus=$('#adStatus').val();
+            		if(adTitle!=""&&adContent!=""&&adImg!=""&&adStatus!=""){
+            	sendAjax(root+"/aDmanager/addAd.do",{
+            		adTitle:adTitle,
+            		adContent:adContent,
+            		adImg:adImg,
+            		adStatus:adStatus},
+    				function(data){
+    					if(data.bflag==1){
+    						 //添加成功关闭对话窗口
+    						alert(data.msg);
+    						$("#addPage").dialog("close");
+    						queryAd();
+    					}else{
+    						alert(data.msg);
+    						$("#addPage").dialog("close");
+    					}
+    				}
+    			);
+    			}else{
+            			alert("内容填写不完整，请检查后提交...");
+            		}
+            	
+            }
+        }
+    });
+};
+
+uploadfile=function(){
+	
+	if($('#fileIcon').val()!=''){
+		$.ajaxFileUpload({
+	        url:root+'/aDmanager/uploadAdImg.do',
+	        fileElementId:'fileIcon',
+	        dataType: 'json',
+	        success: function (data, status){
+	          if(data.bflag==1){
+	        	  $("#fileAdres").val(data.msg);
+	        	  $("#imgShow").attr("src",data.msg);
+	        	  $("#upInto").html("上传成功...");
+	          }else{
+	        	  $("#fileAdres").val();
+	        	  $("#upInto").html("上传失败...请重试...");
+	          }
+	        },
+	        error: function (data, status){
+	        }
+	   	}
+		);
+	};
+};
+
+//编辑按钮事件
+editBtn=function(){
+	//回显清空内容
+	$("#upInto").html(" ");
+	var ids=getCheckId("grup");
+	
+	if(ids.length==0){
+		alert("未选择要编辑的条目！！！");
+	}else if(ids.indexOf(",")>0){
+		alert("请选择单个条目进行编辑");
+	}else if($.isNumeric(Number(ids)) ){
+		sendAjax(root+"/aDmanager/queryAD.do",{
+			adId:ids},
+			function(data){
+				//设置回显的值
+				$('#adTitle').val(data.adTitle);
+				$('#adContent').val(data.adContent);
+				$('#fileAdres').val(data.adImg);
+				$("#imgShow").attr("src",data.adImg);
+				$("#adStatus").val(data.statusId);
+			}
+		);
+		editSubmit(ids);
+	}
+};
+
+
+editSubmit=function(ids){
+	$("#addPage").dialog({ 
+		backdrop: "static",
+        title       : "修改内容",
+       buttons: {
+    	   "关闭": function() {
+               $(this).dialog("close");},
+            "确定": function() {
+            		var adTitle=$('#adTitle').val();
+            		var adContent=$('#adContent').val();
+            		var adImg=$('#fileAdres').val();
+            		var adStatus=$('#adStatus').val();
+            		var adId=ids;
+            		if(adTitle!=""&&adContent!=""&&adImg!=""&&adStatus!=""){
+		            	sendAjax(root+"/aDmanager/editAd.do",{
+		            		adTitle:adTitle,
+		            		adContent:adContent,
+		            		adImg:adImg,
+		            		adStatus:adStatus,
+		            		adId:adId},
+		    				function(data){
+		    					if(data.bflag==1){
+		    						alert(data.msg);
+		    						queryAd();
+		    					}else{
+		    						alert(data.msg);
+		    						$(this).dialog("close");
+		    					}
+		    				}
+		    			);
+		    			$(this).dialog("close");
+            		}else{
+            			alert("内容填写不完整，请检查后提交...");
+            		}
+            	
+            }
+        }
+    });
+	
+};
+
+//删除提交
+subDelete=function(){
+	
+	 $.messager.model = { 
+        cancel: { text: "取消", classed: 'btn-error' },
+        ok:{ text: "确定", classed: 'btn-default' }
+      };
+      $.messager.confirm("删除提示", "你确定要删除吗？", function() { 
+        var ids=getCheckId("grup");
+		  sendAjax(root+"/aDmanager/deletAd.do",{
+				ids:ids},
+				function(data){
+					if(data.bflag==1){
+						alert(data.msg);
+						queryAd();
+					}else{
+						alert(data.msg);
+					}
+				}
+			);
+      });
+};
+
+
+/**
+ * 查询工具方法
+ * 查询完成会修改翻页导航的数字
+ */
+queryAd=function(){
+	
+	var limit=10;
+	var page=Number($("#pageNum").text());
+	var queryContent=$("#HospDepartmentqueryId").val();
+	var url=root+"/aDmanager/listAd.do";
+	var start=limit*(page-1);
+	
+	sendAjax(url,{
+		limit:limit,
+		page:page,
+		start:start,
+		queryContent:queryContent},
+			function(data){
+				templateHtml("list",data,"content");
+				changeTotalV2(data.TOTALCOUNT,page,limit);
+		    }
+	);
+};
+

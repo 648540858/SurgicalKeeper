@@ -1,0 +1,30 @@
+package com.rjkx.sk.itf.common.web;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.rjkx.sk.itf.common.po.AppTokenBean;
+import com.rjkx.sk.itf.common.util.CommonItfUtils;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.utils.WebUtil;
+import com.rjkx.sk.system.web.base.BaseController;
+
+
+public class AppBaseController extends BaseController {
+
+	@SuppressWarnings("unchecked")
+	protected Dto getParamsAsDto(HttpServletRequest request) {
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+
+		if (FredaUtils.isEmpty(pDto) || FredaUtils.isEmpty(pDto.getAsString("appToken")) || FredaUtils.isEmpty(pDto.getAsString("imeiStr"))) {
+			return null;
+		} else {
+			AppTokenBean tokenBean=CommonItfUtils.getEhcache(pDto.getAsString("imeiStr"));
+			if(FredaUtils.isEmpty(tokenBean))
+				return null;
+			pDto.put("clientType", tokenBean.getType());
+			return pDto;
+		}
+	}
+
+}

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 组织机构(部门\角色\人员) -->
+<mapper namespace="Organization">
+	<!-- LIST DEPT -->
+	<select id="listDept" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_dept._did AS dId,_rjkx_sys_dept._name AS dName,
+			_rjkx_sys_dept._desc AS dDesc,_rjkx_sys_dept._parentid AS pId,
+			_rjkx_sys_dept._leaf AS dLeaf,_rjkx_sys_dept._state AS dState,
+			_rjkx_sys_dept._sortno AS dSortNo,_rjkx_sys_dept._remark AS dRemark,
+			d2._name AS pName
+		FROM _rjkx_sys_dept
+		INNER JOIN _rjkx_sys_dept d2 ON d2._did = _rjkx_sys_dept._parentid
+		WHERE
+			_rjkx_sys_dept._did = #{pId} OR _rjkx_sys_dept._parentid = #{pId}					
+			<if test="queryContent != null">
+				AND _rjkx_sys_dept._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	<select id="listDeptCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sys_dept
+		WHERE
+			_rjkx_sys_dept._did = #{pId} OR _rjkx_sys_dept._parentid = #{pId}					
+			<if test="queryContent != null">
+				AND _rjkx_sys_dept._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<!-- LIST ROLE -->
+	<select id="listRole" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_role._rid AS rId,_rjkx_sys_role._name AS rName,
+			_rjkx_sys_role._desc AS rDesc,_rjkx_sys_role._state AS rState,
+			_rjkx_sys_role._ctime AS cTime,_rjkx_sys_role._remark AS rRemark
+		FROM _rjkx_sys_role
+		WHERE
+			1=1
+			<if test="queryContent != null">
+				AND _rjkx_sys_role._name LIKE '%${queryContent}%'				
+			</if>
+	</select>
+	<select id="listRoleCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sys_role
+		WHERE
+			1=1
+			<if test="queryContent != null">
+				AND _rjkx_sys_role._name LIKE '%${queryContent}%'				
+			</if>
+	</select>
+	
+	<!-- LIST USER -->
+	<select id="listUser" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_user._uid AS uId,_rjkx_sys_user._did AS dId,
+			_rjkx_sys_user._name AS uName,_rjkx_sys_user._account AS uAccount,
+			_rjkx_sys_user._sex AS uSex,
+			_rjkx_sys_user._tel AS uTel,_rjkx_sys_user._desc AS uDesc,
+			_rjkx_sys_user._locked AS uLocked,_rjkx_sys_user._state AS uState,
+			_rjkx_sys_user._ctime AS cTime,_rjkx_sys_user._remark AS uRemark,
+			_rjkx_sys_dept._name AS dName
+		FROM _rjkx_sys_user
+		INNER JOIN _rjkx_sys_dept ON _rjkx_sys_dept._did = _rjkx_sys_user._did
+		WHERE
+			_rjkx_sys_user._type <![CDATA[<>]]> 1 
+			AND _rjkx_sys_user._did = #{dId}
+			<if test="queryContent != null">
+				AND _rjkx_sys_user._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	<select id="listUserCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sys_user
+		WHERE
+			_rjkx_sys_user._type <![CDATA[<>]]> 1 
+			AND _rjkx_sys_user._did = #{dId}
+			<if test="queryContent != null">
+				AND _rjkx_sys_user._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<!-- ADD DEPT -->
+	<insert id="addDept" parameterType="dto">
+		INSERT INTO _rjkx_sys_dept(
+			_rjkx_sys_dept._name,_rjkx_sys_dept._desc,
+			_rjkx_sys_dept._parentid,_rjkx_sys_dept._leaf,
+			_rjkx_sys_dept._state,_rjkx_sys_dept._sortno,
+			_rjkx_sys_dept._ctime)
+		VALUES(#{dName},#{dDesc},#{pId},1,#{dState},#{dSortNo},NOW())
+	</insert>
+	
+	<!-- ADD ROLE -->
+	<insert id="addRole" parameterType="dto">
+		INSERT INTO _rjkx_sys_role(
+			_rjkx_sys_role._name,_rjkx_sys_role._desc,
+			_rjkx_sys_role._state,_rjkx_sys_role._ctime)
+		VALUES(#{rName},#{rDesc},#{rState},NOW())
+	</insert>
+	
+	<!-- ADD USER -->
+	<insert id="addUser" parameterType="dto">
+		INSERT INTO _rjkx_sys_user(
+			_rjkx_sys_user._did,_rjkx_sys_user._name,
+			_rjkx_sys_user._account,_rjkx_sys_user._pwd,
+			_rjkx_sys_user._sex,_rjkx_sys_user._tel,
+			_rjkx_sys_user._desc,_rjkx_sys_user._locked,
+			_rjkx_sys_user._type,_rjkx_sys_user._state,
+			_rjkx_sys_user._ctime)
+		VALUES(#{dId},#{uName},#{uAccount},#{uPwd},#{uSex},#{uTel},#{uDesc},#{uLocked},2,#{uState},NOW())
+	</insert>
+	
+	<!-- EDIT DEPT -->
+	<update id="editDept" parameterType="dto">
+		 UPDATE _rjkx_sys_dept SET 
+			_rjkx_sys_dept._name = #{dName},
+			_rjkx_sys_dept._desc = #{dDesc},
+			_rjkx_sys_dept._state = #{dState},
+			_rjkx_sys_dept._sortno = #{dSortNo}
+		WHERE
+			_rjkx_sys_dept._did = #{dId}
+	</update>
+	
+	<!-- EDIT ROLE -->
+	<update id="editRole" parameterType="dto">
+		UPDATE _rjkx_sys_role SET
+			_rjkx_sys_role._name = #{rName},
+			_rjkx_sys_role._desc = #{rDesc},
+			_rjkx_sys_role._state = #{rState}
+		WHERE
+			_rjkx_sys_role._rid = #{rId}
+	</update>
+	
+	<!-- EDIT USER -->
+	<update id="editUser" parameterType="dto">
+		UPDATE _rjkx_sys_user SET
+			_rjkx_sys_user._name = #{uName},
+			_rjkx_sys_user._account = #{uAccount},
+			_rjkx_sys_user._pwd = #{uPwd},
+			_rjkx_sys_user._sex = #{uSex},
+			_rjkx_sys_user._tel = #{uTel},
+			_rjkx_sys_user._desc = #{uDesc},
+			_rjkx_sys_user._locked = #{uLocked},
+			_rjkx_sys_user._state = #{uState}
+		WHERE
+			_rjkx_sys_user._uid = #{uId}
+	</update>
+	
+	<!-- DELETE DEPT -->
+	<delete id="delDept" parameterType="dto">
+		DELETE FROM _rjkx_sys_dept WHERE _rjkx_sys_dept._did = #{dId}
+	</delete>
+	
+	<!-- DELETE ROLE -->
+	<delete id="delRole" parameterType="dto">
+		DELETE FROM _rjkx_sys_role WHERE _rjkx_sys_role._rid = #{rId}
+	</delete>
+	
+	<!-- DELETE USER -->
+	<delete id="delUser" parameterType="dto">
+		DELETE FROM _rjkx_sys_user WHERE _rjkx_sys_user._uid = #{uId}
+	</delete>
+	
+	
+	<!-- 增加删除情况下:修改部门LEAF值 -->
+	<update id="editDeptLeaf" parameterType="dto">
+		UPDATE _rjkx_sys_dept SET _rjkx_sys_dept._leaf = #{leaf} WHERE _rjkx_sys_dept._did = #{pId}
+	</update>
+	
+</mapper>

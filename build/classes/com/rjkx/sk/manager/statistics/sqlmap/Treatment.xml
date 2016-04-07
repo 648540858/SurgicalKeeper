@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Treatment">
+	<!--查询订单 -->
+	<select id="listTreatment" parameterType="dto" resultType="dto">
+		SELECT
+			IF ((SELECT _parent_id FROM _rjkx_area WHERE _rjkx_area._id = _rjkx_hospital._area_id)>0,
+							(SELECT _area_name FROM _rjkx_area WHERE _rjkx_area._id = _rjkx_area._parent_id),
+								NULL) AS shengName,
+			_rjkx_area._area_name AS shiName,
+			_rjkx_doctor._id AS dId,
+			_rjkx_doctor._name AS dName,
+			_rjkx_doctor._hospital_id AS hId,
+			_rjkx_hospital._area_id  AS aId,
+			_rjkx_hospital._name  AS hName,
+		(SELECT COUNT(1) FROM _rjkx_patient_order WHERE _doctor_id = _rjkx_doctor._id 
+		<if test="sTime != null and sTime!=''">
+				AND _rjkx_patient_order._sch_stime >='${sTime}'
+		</if>
+		<if test="eTime != null and eTime!=''">
+				AND '${eTime}'>= _rjkx_patient_order._sch_stime
+		</if>
+		  ) AS patientNum,
+		(SELECT COUNT(1) FROM _rjkx_vip_sch WHERE _doc_id = _rjkx_doctor._id 
+		 <if test="sTime != null and sTime!=''">
+		AND _rjkx_vip_sch._sch_time >='${sTime}' 
+		</if>
+		<if test="eTime != null and eTime!=''">
+		AND '${eTime}'>=_rjkx_vip_sch._sch_time 
+		</if>
+		) AS vipNum,
+		(SELECT COUNT(1) FROM _wx_user_openid where docid = _rjkx_doctor._id) AS attention
+		FROM
+				_rjkx_doctor
+		
+		LEFT JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+		
+		LEFT JOIN _rjkx_area ON _rjkx_area._id = _rjkx_hospital._area_id
+		
+		WHERE 
+			_rjkx_hospital._area_id=${aId}
+			<if test="queryContent != null and queryContent!=''">
+				AND _rjkx_doctor._name LIKE '%${queryContent}%'
+			</if>
+		ORDER BY _rjkx_hospital._area_id DESC 
+		LIMIT ${start},${limit}
+	</select>
+	
+	<select id="listTreatmentCount" parameterType="dto" resultType="java.lang.Integer">
+			SELECT
+				COUNT(1)
+			FROM
+				_rjkx_doctor
+		
+		LEFT JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+		
+		LEFT JOIN _rjkx_area ON _rjkx_area._id = _rjkx_hospital._area_id
+		
+		WHERE 
+			_rjkx_hospital._area_id=${aId}
+			
+	</select>
+	
+	<!--查询城市 -->
+	<select id="queryCity" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS city_id,
+			_area_name AS text,
+			_parent_id  AS parentId
+		FROM _rjkx_area 
+		WHERE
+			_rjkx_area._level>0
+		<if test="status !=''and status != null">
+				AND _rjkx_area._status=${status}	
+		</if>	
+			
+		<if test="parentId == ''||parentId == null">
+				AND  _rjkx_area._parent_id=1		
+		</if>
+		<if test="parentId != ''">
+				AND _rjkx_area._parent_id= ${parentId}		
+		</if>
+	</select>
+	
+	<!--查询详情 -->
+	<select id="listDetail" parameterType="dto" resultType="dto">
+		<!--查询患者详情 -->
+		<if test="type == 0">
+			SELECT 
+				(SELECT _turename from _rjkx_patient WHERE _id=_rjkx_patient_order._patient_id) AS pName,
+				_sch_stime AS sTime,
+				_amount AS amount
+			FROM
+			_rjkx_patient_order
+			
+			WHERE _doctor_id=	${dId}
+				<if test="sTime != null and sTime!=''">
+					AND _sch_stime>='${sTime}'
+				</if>
+				<if test="eTime != null and eTime!=''">
+					AND '${eTime}'>=_sch_stime
+				</if>
+		</if>
+		<!--查询vip详情 -->
+		<if test="type == 1">
+			SELECT 
+				(SELECT _patient_name FROM _rjkx_vip_consultation WHERE _id = _rjkx_vip_order._vip_id) AS pName,
+				_rjkx_vip_sch._sch_time AS sTime,
+				(SELECT SUM(_pay_amount) FROM _rjkx_vip_pay WHERE _vip_order_id=_rjkx_vip_sch._vip_order_id) AS amount
+				FROM
+				_rjkx_vip_sch
+				INNER  JOIN _rjkx_vip_order ON _rjkx_vip_order._id = _rjkx_vip_sch._vip_order_id
+				
+			WHERE _rjkx_vip_sch._doc_id=${dId}
+			<if test="sTime != null and sTime!=''">
+				AND _rjkx_vip_sch._sch_time>='${sTime}'
+			</if>
+			<if test="eTime != null and eTime!=''">
+				AND  '${eTime}'>=_rjkx_vip_sch._sch_time
+			</if>
+		</if>
+		LIMIT ${start},${limit}
+	</select>
+</mapper>

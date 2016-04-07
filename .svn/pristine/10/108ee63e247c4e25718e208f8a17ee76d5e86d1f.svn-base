@@ -1,0 +1,4 @@
+@charset "utf-8";
+.center_data{float:left;width:100%;height:auto;top:0;left:0;}
+.center_btn{width:100%;height:auto;top:0;left:5px;}
+.center_table{float:left;height:auto;width:100%;top:0;left:5px;font-size: 12px;}

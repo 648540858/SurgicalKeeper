@@ -1,0 +1,189 @@
+$(function(){
+	initPage();
+	validateAddEdit();
+	querySickness();
+	//绑定查询按钮事件
+	$("#btn_query").click(function(){
+		querySickness();
+	});
+	
+	//给添加按钮绑定事件，激活弹窗
+	$("#btn_add").click(function(){
+		$("#submit-mode").val("add");
+		$("#modalTitle").text("添加");
+		$("#sickName").val("");
+		$("#sickDesc").val("");
+		
+		$('#sickStatus')[0].selectedIndex = 0;
+		$("#modal_addEdit").modal("toggle");
+	});
+	
+	//编辑按钮绑定事件
+	$("#btn_edit").click(function(){
+		$("#submit-mode").val("edit");
+		$("#modalTitle").text("编辑");
+		editShow();
+	});
+	
+	//给子类维护按钮绑定事件，激活弹窗
+	$("#btn_sub").click(function(){
+		var ids=getCheckId("grup");
+		if(ids.length==0){
+			alert("未选择要操作的疾病！！！");
+		}else if(ids.indexOf(",")>0){
+			alert("请选择单个进行操作");
+		}else if($.isNumeric(Number(ids)) ){
+			var url=root+"/include/manager/basedata/jsp/SicknessSubManager.jsp?sId="+ids;
+			$("#subsickframe").attr("src",url);
+			$("#modal_subSick").modal("toggle");
+		}
+	});
+	
+	//删除按钮绑定事件
+	$("#btn_delete").click(function(){
+		deleteSickness();
+	});
+	
+	//绑定复选框事件
+	$("#topcheck").click(function(){
+		checkbox("grup", "topcheck"); 
+	});
+
+});
+initPage=function(){
+	$("#sickStatus option").remove();
+	var id_arr=getCodeArray('STATE');
+	for(var i=0;i<id_arr.length;i++) {
+		$("#sickStatus").append("<option value='"+id_arr[i].code+"'>"+id_arr[i].name+"</option>");
+	}
+}
+validateAddEdit=function(){
+	$('#validate_addEdit').validate({
+        //设置离焦即验证，主要针对required:true, 因为它默认提交时验证
+		onfocusout: function(element) { $(element).valid(); },
+        rules: {
+        	sickName: {required:true},
+            sickDesc: {required:true}
+        },
+        errorPlacement: function(error, element) {  
+		    error.appendTo(element.parent());  
+    	},
+        messages : {
+            sickName: { 
+            	required: "<span style='line-height: 35px;color:red;font-weight: normal;'>名称还没填写！</span>"
+            },
+            sickDesc: {
+	            required: "<span style='line-height: 35px;color:red;font-weight: normal;'>描述还没填写！</span>"
+	        }
+    	}
+    });
+	$("#btn-save-addEdit").click(function(){
+		saveAddEdit();
+	});
+};
+
+//添加与编辑保存按钮事件
+saveAddEdit=function(){
+	var type=$("#submit-mode").val();
+	if(type=="add"){
+			sendAjax(root+"/SicknessAndattr/addSickness.do",{
+				sickName:$('#sickName').val(),
+				sickDesc:$('#sickDesc').val(),
+				sickStatus:$('#sickStatus').val(),
+				submitMode:""},
+				function(data){
+					if(data.bflag==1){
+						alert(data.msg);
+						 //添加成功关闭对话窗口
+						 $("#modal_addEdit").modal("toggle");
+						 querySickness();
+					}else{
+						alert(data.msg);
+					}
+				}
+			);
+	}else if(type=="edit"){
+	
+		var ids=getCheckId("grup");
+		sendAjax(root+"/SicknessAndattr/editSickness.do",{
+					sickName:$('#sickName').val(),
+					sickDesc:$('#sickDesc').val(),
+					sickStatus:$('#sickStatus').val(),
+					sickId:ids,
+					submitMode:"edit"},
+			function(data){
+				if(data.bflag==1){
+					alert(data.msg);
+					 //成功关闭对话窗口
+					 $("#modal_addEdit").modal("toggle");
+					 querySickness();
+				}else{
+					alert(data.msg);
+				}
+			}
+		);
+	}
+};
+
+//编辑回显
+editShow=function(){
+	//回显清空内容
+	var ids=getCheckId("grup");
+	
+	if(ids.length==0){
+		alert("未选择要编辑的疾病！！！");
+	}else if(ids.indexOf(",")>0){
+		alert("请选择单个进行编辑");
+	}else if($.isNumeric(Number(ids)) ){
+		//显示弹窗
+		$("#modal_addEdit").modal("toggle");
+		
+		sendAjax(root+"/SicknessAndattr/getSickness.do",{
+			sickId:ids},
+			function(data){
+				//设置回显的值
+				$("#sickName").val(data.sickName);
+				$("#sickDesc").val(data.sickDesc);
+				$('#sickStatus').val(data.sickStatus);
+			}
+		);
+	}
+};
+
+//删除确认
+deleteSickness=function(){
+	var ids=getCheckId("grup");
+	if(ids.length==0){
+		alert("未选择要删除的项目！！！")
+	}else{
+		confirmWin("你确认要删除吗？","subDelete");
+	}
+};
+
+//删除提交
+subDelete=function(){
+	var ids=getCheckId("grup");
+
+	sendAjax(root+"/SicknessAndattr/delSickness.do",{
+		ids:ids},
+		function(data){
+			if(data.bflag==1){
+				alert(data.msg);
+				querySickness();
+			}else{
+				alert(data.msg);
+			}
+		}
+	);
+};
+
+querySickness=function(){
+	var url=root+"/SicknessAndattr/listSickness.do";
+	sendAjax(url,{
+		queryContent:$("#input_query").val()},
+			function(data){
+				templateHtml("list",data,"content");
+		    }
+	);
+};
+

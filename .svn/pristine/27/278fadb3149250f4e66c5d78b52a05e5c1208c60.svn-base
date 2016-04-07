@@ -1,0 +1,99 @@
+package com.rjkx.sk.itf.common.po;
+/**
+ * TOKEN BEAN
+  * @ClassName: AppTokenBean
+  * @Description: TODO
+  * @author wkgi-Rally
+  * @date 2015年11月24日 下午3:37:43 
+  * @version V1.0
+ */
+public class AppTokenBean 
+{
+	/**
+	 * 创建实例
+	  * 创建一个新的实例 AppTokenBean. 
+	  * <p>Title: </p>
+	  * <p>Description: </p>
+	  * @param appToken
+	  * @param timeStamp
+	  * @param ipAddr
+	  * @param type
+	 */
+	public AppTokenBean(String appToken , String timeStamp , String ipAddr , int type , String imeiStr)
+	{
+		this.appToken = appToken;
+		
+		this.timeStamp = timeStamp;
+		
+		this.ipAddr = ipAddr;
+		
+		this.type = type;
+		
+		this.imeiStr = imeiStr;
+	}
+	
+	/**
+	 * TOKEN
+	 */
+	private String appToken;
+	/**
+	 * 时间戳
+	 */
+	private String timeStamp;
+	/**
+	 * IP
+	 */
+	private String ipAddr;
+	/**
+	 * 类型
+	 */
+	private int type;
+	/**
+	 * 
+	 */
+	private String imeiStr;
+	
+	
+	public String getAppToken() 
+	{
+		return appToken;
+	}
+	public void setAppToken(String appToken) 
+	{
+		this.appToken = appToken;
+	}
+	public String getTimeStamp() 
+	{
+		return timeStamp;
+	}
+	public void setTimeStamp(String timeStamp) 
+	{
+		this.timeStamp = timeStamp;
+	}
+	public String getIpAddr() 
+	{
+		return ipAddr;
+	}
+	public void setIpAddr(String ipAddr) 
+	{
+		this.ipAddr = ipAddr;
+	}
+	public int getType() 
+	{
+		return type;
+	}
+	public void setType(int type) 
+	{
+		this.type = type;
+	}
+	public String getImeiStr() 
+	{
+		return imeiStr;
+	}
+	public void setImeiStr(String imeiStr) 
+	{
+		this.imeiStr = imeiStr;
+	}
+	
+	
+}

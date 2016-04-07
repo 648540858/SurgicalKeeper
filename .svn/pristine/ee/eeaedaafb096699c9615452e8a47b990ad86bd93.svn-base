@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="VipOrder">
+	<!--查询订单 -->
+	<select id="queryOrder" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_vip_consultation._id AS vipId,
+			_rjkx_vip_consultation._mi_city AS miCity,
+			_rjkx_vip_consultation._see_city AS seeCity,
+			_rjkx_vip_consultation._patient_name AS patName,
+			_rjkx_vip_consultation._mobile AS patMobile,
+			_rjkx_patient._mobile AS loginMobile,
+			_rjkx_vip_consultation._start_time AS sTime,
+			_rjkx_vip_consultation._end_time AS eTime,
+			_rjkx_vip_consultation._ctime AS cTime 
+			<choose>
+				<when test="orderStatus != 0">
+					,(SELECT _text FROM _rjkx_sys_code WHERE _list='CONS_STATUS' AND _code=_rjkx_vip_order._status) AS vipStatus
+				</when>
+				<otherwise>
+					,(SELECT _text FROM _rjkx_sys_code WHERE _list='CONS_STATUS' AND _code=_rjkx_vip_consultation._status) AS vipStatus
+				</otherwise>
+			</choose>
+		FROM _rjkx_vip_consultation 
+			inner join _rjkx_patient ON _rjkx_vip_consultation._login_id=_rjkx_patient._id 
+			<if test="orderStatus != 0">
+				LEFT JOIN _rjkx_vip_order ON _rjkx_vip_order._vip_id = _rjkx_vip_consultation._id
+			</if>
+		WHERE
+			<choose>
+				<when test="orderStatus == 0">
+					_rjkx_vip_consultation._status = #{orderStatus}
+				</when>
+				<otherwise>
+					_rjkx_vip_consultation._status = 1
+					AND _rjkx_vip_order._status = #{orderStatus}
+				</otherwise>
+			</choose>
+		ORDER BY _rjkx_vip_consultation._ctime DESC 
+		LIMIT ${start},${limit}
+	</select>
+	
+	<select id="queryOrderCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_vip_consultation
+			<if test="orderStatus != 0">
+				LEFT JOIN _rjkx_vip_order ON _rjkx_vip_order._vip_id = _rjkx_vip_consultation._id
+			</if>
+		WHERE
+			<choose>
+				<when test="orderStatus == 0">
+					_rjkx_vip_consultation._status = #{orderStatus}
+				</when>
+				<otherwise>
+					_rjkx_vip_consultation._status = 1
+					AND _rjkx_vip_order._status = #{orderStatus}
+				</otherwise>
+			</choose>
+	</select>
+	
+	<select id="loadOrder" parameterType="dto" resultType="dto">
+		SELECT
+			/*提交信息*/
+			_rjkx_vip_consultation._id AS vipId,
+			_rjkx_vip_consultation._sickness AS cSickStr,
+			_rjkx_vip_consultation._sick_desc AS cSickDesc,
+			_rjkx_vip_consultation._status AS vipStatus,
+			/*预约信息*/
+			_rjkx_vip_sch._id AS schId,
+			_rjkx_vip_sch._doc_id AS schDocId,
+			_rjkx_vip_sch._doc_name AS schDocName,
+			_rjkx_vip_sch._sch_addr AS schAddr,
+			_rjkx_vip_sch._sch_time AS schTime,
+			_rjkx_vip_sch._ctime AS schCreateTime,
+			_rjkx_vip_sch._sch_desc AS schDesc,
+			/*订单信息*/
+			_rjkx_vip_order._id AS oId,
+			_rjkx_vip_order._status AS oStatus,
+			_rjkx_vip_order._order_num AS oNum,
+			_rjkx_vip_order._is_need_pay AS oIsNeedPay,
+			_rjkx_vip_order._pay_amount AS oNeedPayAmount,
+			_rjkx_vip_order._pay_mode AS oPayMode,
+			(CASE WHEN ISNULL(_rjkx_vip_order._need_pay_total) THEN 0 ELSE _rjkx_vip_order._need_pay_total END) AS oNeedPayTotal,
+			(CASE WHEN ISNULL(SUM(_rjkx_vip_pay._pay_amount)) THEN 0 ELSE SUM(_rjkx_vip_pay._pay_amount) END) AS oPayTotal
+		FROM _rjkx_vip_consultation
+			LEFT JOIN _rjkx_vip_order ON _rjkx_vip_order._vip_id = _rjkx_vip_consultation._id
+			LEFT JOIN _rjkx_vip_sch ON _rjkx_vip_sch._vip_order_id = _rjkx_vip_order._id AND _rjkx_vip_sch._status = 1
+			LEFT JOIN _rjkx_vip_pay ON _rjkx_vip_pay._vip_order_id = _rjkx_vip_order._id
+		WHERE
+			_rjkx_vip_consultation._id = #{vipId}
+		GROUP BY _rjkx_vip_consultation._id
+	</select>
+	
+	<update id="setConsultationStatus" parameterType="dto">
+		UPDATE _rjkx_vip_consultation SET
+			_rjkx_vip_consultation._status = 1
+		WHERE
+			_rjkx_vip_consultation._id = #{cId}
+			AND _rjkx_vip_consultation._status = 0
+	</update>
+	
+	<insert id="addVipOrder" parameterType="dto">
+		INSERT INTO _rjkx_vip_order(_vip_id,_order_num,_status,_is_need_pay,_pay_amount,_ctime,_utime) 
+		VALUES(#{cId},#{orderNum},#{cStatus},0,0,NOW(),NOW())
+	</insert>
+	
+	<select id="listOpLog" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_kefu_op_log._status AS kStatus,
+			_rjkx_kefu_op_log._op_name AS kName,
+			_rjkx_kefu_op_log._op_time AS kOptime,
+			_rjkx_kefu_op_log._op_info AS kOpInfo
+		FROM _rjkx_kefu_op_log
+		WHERE
+			_rjkx_kefu_op_log._o_type = 2
+			AND _rjkx_kefu_op_log._o_id = #{cId}
+		ORDER BY _rjkx_kefu_op_log._op_time DESC
+	</select>
+	
+	<select id="listOpLogCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_kefu_op_log
+		WHERE
+			_rjkx_kefu_op_log._o_type = 2
+			AND _rjkx_kefu_op_log._o_id = #{cId}
+	</select>
+	
+	<update id="editOrderInfo" parameterType="dto">
+		UPDATE _rjkx_vip_order SET
+			<if test="nextStatus != null">
+				_rjkx_vip_order._status = #{nextStatus},
+			</if>
+			<if test="needPayTotal != null and needPayTotal != 0">
+				_rjkx_vip_order._need_pay_total = #{needPayTotal},
+			</if>
+			_rjkx_vip_order._is_need_pay = #{isNeedPay},
+			_rjkx_vip_order._pay_mode = #{payMode},
+			<choose>
+				<when test="needPayTotal != null and needPayTotal != 0">
+					_rjkx_vip_order._pay_amount = #{payAmount},
+				</when>
+				<otherwise>
+					_rjkx_vip_order._pay_amount = ${payAmount} * _rjkx_vip_order._need_pay_total,
+				</otherwise>
+			</choose>
+			_rjkx_vip_order._utime = NOW()
+		WHERE
+			_rjkx_vip_order._id = #{oId}
+	</update>
+	
+	<update id="editSchStatusForOrder" parameterType="dto">
+		UPDATE _rjkx_vip_sch SET 
+			_rjkx_vip_sch._status = 0
+		WHERE
+			_rjkx_vip_sch._vip_order_id = #{oId}
+			AND _rjkx_vip_sch._status = 1
+	</update>
+	
+	<insert id="addSch" parameterType="dto">
+		INSERT INTO _rjkx_vip_sch(_vip_order_id,_doc_id,_doc_name,_sch_addr,_sch_desc,_sch_time,_status,_ctime) 
+		VALUES(#{oId},#{schDocIdForEdit},#{schDocForEdit},#{schAddrForEdit},#{schDescForEdit},#{schTimeForEdit},1,NOW())
+	</insert>
+	
+	<select id="getPayInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_vip_pay._pay_out_order_num AS outOrderNum,
+			_rjkx_vip_pay._pay_amount AS amount,
+			_rjkx_vip_pay._pay_type AS payType,
+			_rjkx_vip_consultation._login_id AS mainUserId
+		FROM _rjkx_vip_pay
+		LEFT JOIN _rjkx_vip_order ON _rjkx_vip_order._id = _rjkx_vip_pay._vip_order_id
+		LEFT JOIN _rjkx_vip_consultation ON _rjkx_vip_consultation._id = _rjkx_vip_order._vip_id
+		WHERE
+			_rjkx_vip_pay._vip_order_id = #{oId}
+			AND _rjkx_vip_pay._pay_mode = #{payMode}
+	</select>
+	
+	<select id="getOrderNeedPayInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_vip_order._order_num AS orderNum,
+			_rjkx_vip_order._pay_amount AS payAmount,
+			(CASE WHEN _rjkx_vip_order._pay_mode = 1 THEN '定金' WHEN _rjkx_vip_order._pay_mode = 2 THEN '修改费' ELSE '尾款'  END) AS payMode,
+			_rjkx_patient._openid AS mainUserOpenId
+		FROM _rjkx_vip_order
+		INNER JOIN _rjkx_vip_consultation ON _rjkx_vip_consultation._id = _rjkx_vip_order._vip_id
+		INNER JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_vip_consultation._login_id AND _rjkx_patient._parent_id = -1 
+		WHERE
+			_rjkx_vip_order._id = #{oId}
+			AND _rjkx_vip_order._is_need_pay = 1
+	</select>
+	
+	<update id="addUserBalance" parameterType="dto">
+		UPDATE _rjkx_patient SET
+			_rjkx_patient._available_balance = _rjkx_patient._available_balance + ${oPayAmount}
+		WHERE
+			_rjkx_patient._id = #{mainUserId}
+			AND _rjkx_patient._parent_id = '-1'
+	</update>
+	
+	<select id="getDocSmsInfo" parameterType="dto" resultType="dto">
+		SELECT
+			IFNULL(_rjkx_doctor._name,'') AS smsName,
+			IFNULL(_rjkx_doctor._telephone,'') AS smsAddr,
+			CONCAT(DATE_FORMAT(_rjkx_vip_sch._sch_time,'%m月%d日'),
+			'(',(CASE DAYOFWEEK(_rjkx_vip_sch._sch_time)  
+								WHEN 1 THEN '周日' 
+								WHEN 2 THEN '周一' 
+								WHEN 3 THEN '周二' 
+								WHEN 4 THEN '周三' 
+								WHEN 5 THEN '周四' 
+								WHEN 6 THEN '周五' 
+								WHEN 7 THEN '周六' END),')',
+			DATE_FORMAT(_rjkx_vip_sch._sch_time,'%H:%i'),'地址:',_rjkx_vip_sch._sch_addr) AS smsKeyWord
+		FROM _rjkx_vip_sch
+			INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_vip_sch._doc_id
+		WHERE
+			_rjkx_vip_sch._vip_order_id = #{oId}
+			AND _rjkx_vip_sch._status = 1
+	</select>
+	
+	<select id="getPatSmsInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_vip_consultation._patient_name AS smsName,
+			IFNULL(_rjkx_vip_consultation._mobile,') AS smsAddr,
+			CONCAT(DATE_FORMAT(_rjkx_vip_sch._sch_time,'%m月%d日'),
+			'(',(CASE DAYOFWEEK(_rjkx_vip_sch._sch_time)  
+								WHEN 1 THEN '周日' 
+								WHEN 2 THEN '周一' 
+								WHEN 3 THEN '周二' 
+								WHEN 4 THEN '周三' 
+								WHEN 5 THEN '周四' 
+								WHEN 6 THEN '周五' 
+								WHEN 7 THEN '周六' END),')',
+			DATE_FORMAT(_rjkx_vip_sch._sch_time,'%H:%i'),'地址:',_rjkx_vip_sch._sch_addr) AS smsKeyWord
+		FROM _rjkx_vip_sch
+		INNER JOIN _rjkx_vip_order ON _rjkx_vip_order._id = _rjkx_vip_sch._vip_order_id
+		INNER JOIN _rjkx_vip_consultation ON _rjkx_vip_consultation._id = _rjkx_vip_order._vip_id
+		WHERE
+			_rjkx_vip_sch._vip_order_id = #{oId}
+			AND _rjkx_vip_sch._status = 1
+	</select>
+	
+	<select id="getOrderDocid" parameterType="dto" resultType="dto">
+		SELECT _rjkx_doctor._id AS docId,
+			_rjkx_vip_sch._vip_order_id AS orderId 
+		FROM _rjkx_vip_sch
+			INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_vip_sch._doc_id
+		WHERE
+			_rjkx_vip_sch._vip_order_id = #{oId}
+			AND _rjkx_vip_sch._status = 1
+	</select>
+</mapper>

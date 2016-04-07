@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Code">
+	
+	<!-- LIST -->
+	<select id="listCode" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_code._cid AS cId,_rjkx_sys_code._list AS cList,
+			_rjkx_sys_code._var AS cVar,_rjkx_sys_code._text AS cText,
+			_rjkx_sys_code._code AS cCode,_rjkx_sys_code._desc AS cDesc,
+			_rjkx_sys_code._type AS cType,_rjkx_sys_code._state AS cState,
+			_rjkx_sys_code._sortno AS cSortNo,_rjkx_sys_code._remark AS cRemark
+		FROM _rjkx_sys_code
+		<if test="init == null">
+			WHERE
+				_rjkx_sys_code._state = 1
+		</if>
+	</select>
+	<select id="listCodeCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sys_code
+	</select>
+	
+	<!-- ADD -->
+	<insert id="addCode" parameterType="dto">
+		INSERT INTO _rjkx_sys_code(
+		_rjkx_sys_code._list,_rjkx_sys_code._var,
+		_rjkx_sys_code._text,_rjkx_sys_code._code,
+		_rjkx_sys_code._desc,_rjkx_sys_code._type,
+		_rjkx_sys_code._state,_rjkx_sys_code._sortno,
+		_rjkx_sys_code._ctime)
+		VALUES(#{cList},#{cVar},#{cText},#{cCode},#{cDesc},2,#{cState},#{cSortNo},NOW())
+	</insert>
+	
+	<!-- EDIT -->
+	<update id="editCode" parameterType="dto">
+		UPDATE _rjkx_sys_code SET
+			_rjkx_sys_code._list = #{cList},
+			_rjkx_sys_code._var = #{cVar},
+			_rjkx_sys_code._text = #{cText},
+			_rjkx_sys_code._code = #{cCode},
+			_rjkx_sys_code._desc = #{cDesc},
+			_rjkx_sys_code._state = #{cState},
+			_rjkx_sys_code._sortno = #{cSortNo}
+		WHERE
+			_rjkx_sys_code._cid = #{cId}
+	</update>
+	
+	<!-- DELETE -->
+	<delete id="delCode" parameterType="dto">
+		DELETE FROM _rjkx_sys_code WHERE _rjkx_sys_code._cid = #{cId}
+	</delete>
+</mapper>

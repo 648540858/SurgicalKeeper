@@ -1,0 +1,8 @@
+package com.rjkx.sk.manager.order.utils;
+
+public class VipCons {
+	public static final String WX_PAY_PAGE = "http://wx.yiyuan591.com/WxPro/wx/ghyy_vipcon_pay.jsp";
+
+	public static final String WX_MSG_TEMP_ID = "CRFAPVN3BTacIlA3Y1w_NDv0oXYmxPa26Kqi0g9uWGw";
+
+}

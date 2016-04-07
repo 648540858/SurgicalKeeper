@@ -1,0 +1,90 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>                                                                                                                                     
+<head>                                                                                                                                     
+<title>了解病情 选对医生</title>
+<c:set var="root"
+	value="${pageContext.request.contextPath}/resources/wx" />
+<c:set var="ctx" value="${pageContext.request.contextPath}" />                                                                                                                        
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />                                                                      
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0 , maximum-scale=1.0, user-scalable=0">             
+<meta http-equiv="X-UA-Compatible" content="IE=edge">                                                                                      
+<meta name="robots" content="noindex, nofollow" />                                                                                         
+<link rel="stylesheet" type="text/css" href="${root}/css/style.css">
+<script type="text/javascript" src="${root}/js/jquery-1.10.1.min.js"></script>                                                                   
+<script type="text/javascript">                                                                                                            
+$(function(){                                                                                                                              
+    $(".success_head .left_gh").click(function(){                                                                                          
+			if($(".own_del").is(":hidden")){                                                                                                     
+				$(".own_del,.cover").fadeIn();                                                                                                     
+			}else{                                                                                                                               
+				$(".own_del,.cover").fadeOut();                                                                                                    
+			}                                                                                                                                    
+		});                                                                                                                                    
+    $(".cover").click(function(){                                                                                                          
+        $(this).fadeOut();                                                                                                                 
+        $(".own_del").fadeOut();                                                                                                           
+    });                                                                                                                                    
+	                                                                                                                                         
+	                                                                                                                                         
+});
+function changePatient(patientId){
+	$('#patientId').val(patientId);
+	$('#getPatientCase').submit();
+}
+</script>                                                                                                                                  
+                                                                                                                                           
+                                                                                                                                           
+</head>
+<body class="body_bgone">
+	<header class="success_head header_bg1"> ${patient.tureName }
+	 <span class="left_gh"
+		id="navmenu">更换</span> </header>
+
+	<div class="case">
+		<c:forEach var="sickness" items="${mySicknessList}">
+			<div class="case_box">
+				<div class="leftbox">
+					<span class="zi">${sickness.orderTime}</span><i class="quan"></i>
+				</div>
+				<div class="rightbox">
+					<div class="inbox">${sickness.pDesc}<br>
+						${sickness.doctorName}<br> ${sickness.hospitalName}
+					</div>
+				</div>
+			</div>
+		</c:forEach>
+
+
+	</div>
+
+
+	<div class="cover"></div>
+	<div class="own_del">
+		<ul>
+			<c:forEach var="patients" items="${patientList}" varStatus="status">
+				<c:choose>
+					<c:when test="${patients.patientId == patient.uId }">
+						<li><div class="del_bg" onclick="changePatient('${patients.patientId}')">
+								<a href="#">${patients.tureName}</a>
+							</div></li>
+					</c:when>
+					<c:otherwise>
+						<li><div class="del_box" onclick="changePatient('${patients.patientId}')">
+								<a href="#">${patients.tureName}</a>
+							</div></li>
+					</c:otherwise>
+				</c:choose>
+			</c:forEach>
+			<div class="cb"></div>
+		</ul>
+	</div>
+	<form action="${ctx}/wxItf/getMySicknessCase.freda" method="post" name="getPatientCase" id="getPatientCase">
+	<input type="hidden" id="loginId" name="loginId" value="${loginId}">
+	<input type="hidden" id="patientId" name="patientId" >
+	<input type="hidden" name="appToken" id="appToken" value="123" />
+	</form>
+</body>
+</html>                                                                                                                                    

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SicknessAttr">
+	<!-- 疾病属性的操作 -->
+	<select id="listSicknessAttr" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS attrId,
+			_name AS attrName,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_sickness_attr._status) AS attrStatus,
+			_icon AS attrIcon,
+			_sortno AS attrNo,
+			_ctime AS cTime,
+			_utime AS uTime
+		FROM
+			_rjkx_sickness_attr
+		WHERE
+			1=1 
+			<if test="queryContent != null and queryContent!=''">
+				AND _name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="getSicknessAttr" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS attrId,
+			_name AS attrName,
+			_status AS attrStatus,
+			_sortno AS attrNo,
+			_icon AS attrIcon 
+		FROM
+			_rjkx_sickness_attr 
+		WHERE _id=#{attrId}
+	</select>
+	
+	<insert id="addSicknessAttr" parameterType="dto">
+		INSERT INTO _rjkx_sickness_attr(_name,_icon,_status,_sortno,_ctime,_utime) 
+		VALUES(#{attrName},#{attrIcon},#{attrStatus},#{attrNo},NOW(),NOW())
+	</insert>
+	
+	<update id="editSicknessAttr" parameterType="dto">
+		UPDATE _rjkx_sickness_attr 
+		SET
+			_name = #{attrName},
+			_icon = #{attrIcon},
+			_status = #{attrStatus},
+			_sortno = #{attrNo},
+			_utime = NOW()
+		WHERE
+			_id = #{attrId}
+	</update>
+	
+	<delete id="delSicknessAttr" parameterType="dto">
+		DELETE FROM _rjkx_sickness_attr WHERE _id = #{attrId}
+	</delete>
+	
+	<delete id="delSicknessAttrContent" parameterType="dto">
+		DELETE FROM _rjkx_r_sickness_attr WHERE _attr_id = #{attrId}
+	</delete>
+	
+	<!-- 疾病的操作 -->
+	<select id="listSickness" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS sickId,
+			_name AS sickName,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_sickness._status) AS sickStatus,
+			_desc AS sickDesc 
+		FROM
+			_rjkx_sickness
+		WHERE
+			1=1 
+			<if test="queryContent != null and queryContent!=''">
+				AND _name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="getSickness" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS sickId,
+			_name AS sickName,
+			_status AS sickStatus,
+			_desc AS sickDesc 
+		FROM
+			_rjkx_sickness 
+		WHERE _id=#{sickId}
+	</select>
+	
+	<insert id="addSickness" parameterType="dto">
+		INSERT INTO _rjkx_sickness(_name,_desc,_status,_type_id) 
+		VALUES(#{sickName},#{sickDesc},#{sickStatus},1)
+	</insert>
+	
+	<update id="editSickness" parameterType="dto">
+		UPDATE _rjkx_sickness 
+		SET
+			_name = #{sickName},
+			_desc = #{sickDesc},
+			_status = #{sickStatus} 
+		WHERE
+			_id = #{sickId}
+	</update>
+	
+	<delete id="delSickness" parameterType="dto">
+		DELETE FROM _rjkx_sickness WHERE _id = #{sickId}
+	</delete>
+	
+	<delete id="delSicknessSub" parameterType="dto">
+		DELETE FROM _rjkx_sickness_sub WHERE _s_id = #{sickId}
+	</delete>
+	
+	<delete id="delSicknessDoctor" parameterType="dto">
+		DELETE FROM _rjkx_r_doctor_sickness WHERE _sickness_id = #{sickId}
+	</delete>
+	
+	<!-- 疾病的子类操作 -->
+	<select id="listSicknessSub" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS sickSubId,
+			_name AS sickSubName,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_sickness_sub._status) AS sickSubStatus,
+			_desc AS sickSubDesc,
+			_sortno AS sickSubNo 
+		FROM
+			_rjkx_sickness_sub 
+		WHERE _s_id=#{sId} 
+			AND _parentid=#{pId}
+	</select>
+	
+	<select id="getSicknessSub" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS sickSubId,
+			_name AS sickSubName,
+			_status AS sickSubStatus,
+			_desc AS sickSubDesc,
+			_sortno AS sickSubNo 
+		FROM
+			_rjkx_sickness_sub 
+		WHERE _id=#{sickSubId}
+	</select>
+	
+	<insert id="addSicknessSub" parameterType="dto">
+		INSERT INTO _rjkx_sickness_sub(_s_id,_name,_desc,_sortno,_status,_parentid,_leaf) 
+		VALUES(#{sId},#{sickSubName},#{sickSubDesc},#{sickSubNo},#{sickSubStatus},#{pId},1)
+	</insert>
+	
+	<update id="editSicknessSub" parameterType="dto">
+		UPDATE _rjkx_sickness_sub 
+		SET
+			_name = #{sickSubName},
+			_desc = #{sickSubDesc},
+			_sortno=#{sickSubNo},
+			_status = #{sickSubStatus} 
+		WHERE
+			_id = #{sickSubId}
+	</update>
+	
+	<update id="editSicknessSubLeaf" parameterType="dto">
+		UPDATE _rjkx_sickness_sub 
+		SET
+			_leaf=#{leaf} 
+		WHERE
+			_id = #{pId}
+	</update>
+	
+	<delete id="delSicknessSubById" parameterType="dto">
+		DELETE FROM _rjkx_sickness_sub WHERE _id = #{sickSubId} OR _parentid=#{sickSubId}
+	</delete>
+	
+	<!-- 疾病属性的操作 -->
+	<select id="listYyDoc" parameterType="dto" resultType="dto">
+		SELECT 	
+				_rjkx_sickness_doctor._id AS sDocId,
+				_rjkx_doctor._name AS docName,
+				_rjkx_hospital._name AS docHost,
+				_rjkx_doctor._telephone AS docPhone
+		FROM _rjkx_sickness_doctor 
+			INNER JOIN _rjkx_doctor ON _rjkx_doctor._id=_rjkx_sickness_doctor._doctor_id 
+			INNER JOIN _rjkx_hospital ON _rjkx_doctor._hospital_id=_rjkx_hospital._id 
+		WHERE _rjkx_sickness_doctor._sickness_id=#{sickId} 
+			<if test="queryContent != null and queryContent!=''">
+				AND _rjkx_doctor._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<delete id="deleteYyDoc" parameterType="dto">
+		DELETE FROM _rjkx_sickness_doctor WHERE _id = #{YyDoc}
+	</delete>
+	
+	<insert id="addYyDoc" parameterType="dto">
+		INSERT INTO _rjkx_sickness_doctor (_sickness_id,_doctor_id,_ctime) 
+		VALUES (#{sickId} ,#{docId} ,NOW())
+	</insert>
+	
+	<select id="checkYyDoc" parameterType="dto" resultType="java.lang.Integer">
+		SELECT COUNT(1) FROM _rjkx_sickness_doctor 
+		WHERE _doctor_id=#{docId} AND _sickness_id=#{sickId}
+	</select>
+	
+</mapper>

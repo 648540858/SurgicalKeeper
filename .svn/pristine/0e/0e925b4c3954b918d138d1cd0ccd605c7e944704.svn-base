@@ -1,0 +1,187 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+
+<title>VIP订单管理</title>
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/bootstrap/css/bootstrap.min.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/zTree/css/zTreeStyle/zTreeStyle.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/include/manager/om/css/VipOrderManager.css" />
+
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/jquery/jquery.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/artTemplate/artTemplate.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/zTree/js/jquery.ztree.all-3.5.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/jqueryValidate/jquery.validate.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/js/bootstrap-datetimepicker.zh-CN.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/js/commonUtils.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/om/js/VipOrderManager.js"></script>
+<script type="text/javascript">
+	var root="<%=request.getContextPath()%>";
+	var codeArray=${applicationScope.APPLICATION_SYSTEM_CODE_VAR};
+</script>
+</head>
+<body>
+ <div class="center_data">
+	<h4>VIP订单</h4>
+	<!-- 按钮区 -->
+	<div class="center_btn">
+		<div class="center_btn_1">
+			<label for="orderStatus" class="col-sm-2 control-label text-center">状态</label>
+			<div class="col-sm-4">
+			    <select id="orderStatus"></select>
+			</div>
+			<button id="btn_query" class="btn btn-default" >查询</button> 
+		</div>
+		<div class="center_btn_2">
+			<button class="btn btn-default" id="btn_view" >查看</button>
+		</div>
+	</div>
+</div>
+<!-- 表格区 -->
+<div class="center_table">
+ <table class="table table-hover">
+   <thead>
+     <tr>
+       <th>&nbsp;</th>
+       <th>就诊人</th>
+       <th>就诊人联系电话</th>
+       <th>申请人联系电话</th>
+       <th>医保城市</th>
+       <th>期望就诊城市</th>
+       <th>期望就诊时间</th>
+       <th>申请时间</th>
+       <th>状态</th>
+     </tr>
+   </thead>
+   <tbody id="content" ></tbody>
+	<script id="list" type="text/html">
+ 		{{each ROOT as value i}}
+     		<tr>
+				<td ><input type="checkbox" name="grup" id="grup{{value.vipId}}"  value="{{value.vipId}}"/></td>
+				<td>{{value.patName}}</td>
+				<td>{{value.patMobile}}</td>
+				<td>{{value.loginMobile}}</td>
+				<td>{{value.miCity}}</td>
+				<td>{{value.seeCity}}</td>
+				<td>{{value.sTime}}-{{value.eTime}}</td>
+				<td>{{value.cTime}}</td>
+				<td>{{value.vipStatus}}</td>
+			</tr>
+		{{/each}}
+   </script>
+ </table>
+</div>
+
+<!-- 添加/编辑页面 -->
+<div class="modal fade" id="modal_addEdit" style="width:auto;height: auto">
+	<div class="modal-dialog" >
+		<div class="modal-content">
+        	<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">
+					<span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+				</button>
+				<h4 class="modal-title" id="modalTitle">订单信息</h4>
+			</div>
+			
+			<div class="modal-body">
+				<!-- 用户信息 -->
+					<b>预约信息</b>
+					<div style="width:100%;border:1px solid gray;background:#D7DEF0;">
+						疾病种类：<span id="cSickStr"></span><br/>
+						病情描述：<span id="cSickDesc"></span>
+					</div>
+					<!-- 预约信息 -->
+					<b>预约信息</b>
+					<div style="width:100%;border:1px solid gray;background:#D7DEF0;">
+						预约医生：<span id="schDocName"></span><br/>
+						预约地址：<span id="schAddr"></span><br/>
+						预约时间：<span id="schTime"></span><br/>
+						预约描述：<span id="schDesc"></span><br/>
+					</div>
+					<!-- 订单信息 -->
+					<b>订单信息</b>
+					<div style="width:100%;border:1px solid gray;background:#D7DEF0;">
+						订单号：<span id="oNum"></span><br/>
+						是否需要支付：<span id="oIsNeedPay"></span><br/>
+						需要支付金额：<span id="oNeedPayAmount"></span><br/>
+						支付项目：<span id="oPayMode"></span><br/>
+						需要支付总额：<span id="oNeedPayTotal"></span><br/>
+						已支付总额：<span id="oPayTotal"></span><br/>
+						订单状态：<span id="oStatus"></span><br/>
+					</div>
+					<!-- 修改订单信息 -->
+					<b>修改订单</b>
+					 <div style="width:100%;">
+						<div class="form-group" style="width:50%;height:230px;border:1px solid gray;float:left;background:#D7DEF0;">
+							 <br/>
+							 <div class="input-append" style="float:left;">
+								<label for="dtp_input1" class=" control-label">预约医生：</label>
+				               	<input id="schDocForEdit" type="text" id="schDocForEdit" readonly/>
+				               	<span class="add-on"><i class="glyphicon glyphicon-user"></i></span><br/>
+				             </div><br/>
+					             
+				            <div class="input-append" style="float:left;">
+				               	<label for="dtp_input1" class=" control-label">预约费用：</label>
+				               	<input id="needPayTotal" type="text" id="schDocForEdit" />
+				               	<span class="add-on"><i class="glyphicon glyphicon-usd"></i></span><br/>
+				            </div><br/>
+					              
+				            <div class="input-append" style="float:left;">
+				               	<label for="dtp_input1" class=" control-label">预约描述：</label>
+				               	<input id="schDescForEdit" type="text" id="schDocForEdit" />
+				               	<span class="add-on"><i class="glyphicon glyphicon-subscript"></i></span><br/>
+							</div><br/>
+								
+			               	<div class="input-append date form_datetime" style="float:left;">
+		               			<label for="dtp_input1" class=" control-label">预约时间：</label>
+							    <input id="schTimeForEdit" size="20" type="text" value="" readonly>
+							    <span class="add-on"><i class="glyphicon glyphicon-calendar"></i></span><br/>
+							</div><br/>
+			            		
+					        <div class="input-append" style="float:left;">
+				               	<label for="dtp_input1" class=" control-label">预约地址：</label>
+				               	<input id="schAddrForEdit" type="text" id="schDocForEdit" />
+				               	<span class="add-on"><i class="glyphicon glyphicon-map-marker"></i></span><br/>
+			            	</div><br/>
+			            	
+			            	<div class="input-append" style="float:left;">
+			            		<br/>&nbsp
+				               	<button type="button" class="btn btn-default" id="btn-xd">下单</button>
+								<button type="button" class="btn btn-default" id="btn-xd-edit1">因患者改</button>
+								<button type="button" class="btn btn-default" id="btn-xd-edit2">因医生改</button>
+							<br/>
+			            	</div>
+						 </div>
+						<div class="doctor_tree" style="width:50%;height:230px;border:1px solid gray;float:right;background:#D7DEF0;">
+							<b >请选择医生:</b>
+							<div id="tree_doctor" class="ztree"  style="width:95%;margin:0 auto;"></div>
+						</div>
+				</div>
+			</div>
+			<div class="modal-footer" >
+				<div style="width:100%;margin:0 auto;float: left">
+					<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+					<button type="button" class="btn btn-default" id="btn-save-sendconfirm">发送余款确认</button>
+					<button type="button" class="btn btn-default" id="btn-save-orderback">退还定金</button>
+					<button type="button" class="btn btn-default" id="btn-save-sendpay">发送支付</button>
+					<button type="button" class="btn btn-default" id="btn-save-ordersp">审核通过</button>
+					<button type="button" class="btn btn-default" id="btn-save-orderdel">废弃订单</button>
+				</div>
+				
+			</div>
+			
+			
+			
+		</div>
+	</div>
+
+	
+	<input type="hidden" value="" id="submit-mode"/>
+</div>
+
+</body>
+</html>

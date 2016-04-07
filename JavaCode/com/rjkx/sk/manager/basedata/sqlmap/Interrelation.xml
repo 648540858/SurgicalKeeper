@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Interrelation">
+	
+	<select id="listAllSicknessWithHosDept" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness._id AS id,
+			_rjkx_sickness._name AS text,
+			1 AS parentid,
+			1 AS leaf,
+			'' AS icon,
+			_rjkx_r_sickness_dep._dep_id AS hdId
+		FROM _rjkx_sickness
+			LEFT JOIN _rjkx_r_sickness_dep ON _rjkx_r_sickness_dep._sickness_id = _rjkx_sickness._id 
+									   AND _rjkx_r_sickness_dep._dep_id = #{hdId}
+		WHERE
+			_rjkx_sickness._status = 1
+		GROUP BY _rjkx_sickness._id
+	</select>
+	
+	<select id="listAllHosDeptWithHos" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_hospital_department._id AS id,
+			_rjkx_hospital_department._name AS text,
+			1 AS parentid,
+			1 AS leaf,
+			'' AS icon,
+			_rjkx_r_hospital_dep._hospital_id AS hospId
+		FROM _rjkx_hospital_department
+			LEFT JOIN _rjkx_r_hospital_dep ON _rjkx_r_hospital_dep._dep_id = _rjkx_hospital_department._id
+									   AND _rjkx_r_hospital_dep._hospital_id = #{hospId}
+		WHERE
+			_rjkx_hospital_department._status = 1
+		GROUP BY _rjkx_hospital_department._id
+	</select>
+	
+	<select id="listSicknessWithDoctor" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness._id AS id,
+			_rjkx_sickness._name AS text,
+			1 AS parentid,
+			1 AS leaf,
+			'' AS icon,
+			_rjkx_r_doctor_sickness._doctor_id AS docId
+		FROM _rjkx_sickness
+			LEFT JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._sickness_id = _rjkx_sickness._id 
+										  AND _rjkx_r_doctor_sickness._doctor_id = #{docId}
+		WHERE
+			_rjkx_sickness._status = 1
+		GROUP BY _rjkx_sickness._id
+	</select>
+	
+	<delete id="delSicknessToDoctorByDoc" parameterType="dto">
+		DELETE FROM _rjkx_r_doctor_sickness WHERE _doctor_id = #{docId}
+	</delete>
+	
+	<delete id="delSicknessToHosDeptByHosDept" parameterType="dto">
+		DELETE FROM _rjkx_r_sickness_dep WHERE _dep_id = #{hdId}
+	</delete>
+	
+	<delete id="delHosDeptToHosByHos" parameterType="dto">
+		DELETE FROM _rjkx_r_hospital_dep WHERE _hospital_id = #{hospId}
+	</delete>
+	
+	<insert id="addSicknessToHosDept" parameterType="dto">
+		INSERT INTO _rjkx_r_sickness_dep(_dep_id,_sickness_id) 
+		VALUES(#{hdId},#{id})
+	</insert>
+	
+	<insert id="addHosDeptToHos" parameterType="dto">
+		INSERT INTO _rjkx_r_hospital_dep(_hospital_id,_dep_id) 
+		VALUES(#{hospId},#{id})
+	</insert>
+	
+	<insert id="addSicknessToDoctor" parameterType="dto">
+		INSERT INTO _rjkx_r_doctor_sickness(_sickness_id,_doctor_id) 
+		VALUES(#{id},#{docId})
+	</insert>
+	
+</mapper>

@@ -1,0 +1,217 @@
+package com.rjkx.sk.admin.cms.service.impl;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.rjkx.sk.admin.cms.service.SicknessAndAttrServiceItf;
+import com.rjkx.sk.admin.core.web.AdminBaseServiceImpl;
+import com.rjkx.sk.system.datastructure.Dto;
+/**
+ * 
+  * @ClassName: SicknessAndAttrServiceImpl
+  * @Description:
+  * @author yiyuan-Rally
+  * @date 2015年10月13日 下午6:08:15 
+  * @version V1.0
+ */
+@Service(value="sicknessAndAttrServiceImpl")
+public class SicknessAndAttrServiceImpl extends AdminBaseServiceImpl implements SicknessAndAttrServiceItf
+{
+	/*
+	  * <p>Title: addSickness</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#addSickness(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void addSickness(Dto pDto)
+	{
+		super.getFredaDao().insert("Sickness.addSickness", pDto);
+	}
+	/*
+	  * <p>Title: editSickness</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#editSickness(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void editSickness(Dto pDto)
+	{
+		super.getFredaDao().update("Sickness.editSickness", pDto);
+	}
+	/*
+	  * <p>Title: delSickness</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#delSickness(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void delSickness(Dto pDto)
+	{
+		String[] ids = pDto.getAsString("ids").split(",");
+		
+		for(String id : ids)
+		{
+			pDto.put("id", id);
+			
+			super.getFredaDao().delete("Sickness.delSickness", pDto);
+			
+		}
+	}
+	/*
+	  * <p>Title: addAttr</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#addAttr(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void addAttr(Dto pDto)
+	{
+		super.getFredaDao().insert("Sickness.addAttr", pDto);
+	}
+	/*
+	  * <p>Title: editAttr</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#editAttr(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void editAttr(Dto pDto)
+	{
+		super.getFredaDao().update("Sickness.editAttr", pDto);
+	}
+	/*
+	  * <p>Title: delAttr</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#delAttr(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public void delAttr(Dto pDto)
+	{
+		String[] ids = pDto.getAsString("ids").split(",");
+		
+		for(String id : ids)
+		{
+			pDto.put("id", id);
+			
+			super.getFredaDao().delete("Sickness.delAttr", pDto);
+		}
+	}
+	/*
+	  * <p>Title: addSicknessAndAttr</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#addSicknessAndAttr(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void addSicknessAndAttr(Dto pDto)
+	{
+		super.getFredaDao().insert("SicknessSet.addSicknessSet", pDto);
+	}
+	/*
+	  * <p>Title: editSicknessAndAttr</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#editSicknessAndAttr(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void editSicknessAndAttr(Dto pDto)
+	{
+		super.getFredaDao().update("SicknessSet.editSicknessSet", pDto);
+	}
+	/*
+	  * <p>Title: delSicknessAndAttr</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#delSicknessAndAttr(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void delSicknessAndAttr(Dto pDto)
+	{
+		String[] ids = pDto.getAsString("ids").split(",");
+		
+		for(String id : ids)
+		{
+			pDto.put("id", id);
+			
+			super.getFredaDao().delete("SicknessSet.delSicknessSet", pDto);
+		}
+	}
+	/*
+	  * <p>Title: addSicknessSub</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#addSicknessSub(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void addSicknessSub(Dto pDto)
+	{
+		pDto.put("leaf", 0);
+		
+		super.getFredaDao().insert("Sickness.addSicknessSub", pDto);
+		
+		super.getFredaDao().update("Sickness.setSicknessSubLeaf", pDto);
+	}
+
+	/*
+	  * <p>Title: editSicknessSub</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#editSicknessSub(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	@Override
+	public void editSicknessSub(Dto pDto) 
+	{
+		super.getFredaDao().update("Sickness.editSicknessSub", pDto);
+	}
+
+	/*
+	  * <p>Title: delSicknessSub</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.SicknessAndAttrServiceItf#delSicknessSub(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void delSicknessSub(Dto pDto) 
+	{
+		pDto.put("leaf", 1);
+		
+		if(((Integer)super.getFredaDao().queryForObject("Sickness.listSicknessSubCount", pDto)) < 2)
+		{
+			super.getFredaDao().update("Sickness.setSicknessSubLeaf", pDto);
+		}
+		super.getFredaDao().delete("Sickness.delSicknessSub", pDto);
+		
+	}
+	
+	
+}

@@ -1,0 +1,43 @@
+$(function(){
+	  $('#loginForm').validate({
+        //设置离焦即验证，主要针对required:true, 因为它默认提交时验证
+        // debug:true,
+		onfocusout: function(element) {$(element).valid();},
+        rules: {
+        	account: {required:true},
+        	pwd: {required:true}
+        },
+        messages : {
+            account: {
+            	required: "<span style='line-height: 35px;color:red;font-weight: normal;'>账号还没填写！</span>"
+            },
+            pwd: {
+            	required: "<span style='line-height: 35px;color:red;font-weight: normal;'>密码还没填写！</span>"
+           }
+    	},
+    	errorPlacement: function(error, element) {  
+		    error.appendTo(element.parent());  
+    	}
+    });
+    
+	$("#login").click(function(){
+		loginIn();
+	});
+	
+});
+
+loginIn=function(){
+	sendAjax(root+"/manager/loginIn.do",{
+		"account" : $("#account").val(),
+		"pwd" : $("#pwd").val()},
+		function(data){
+			//0  不成功  1  成功 
+			if(data.bflag==1){
+				self.location.href = root + '/include/manager/index/jsp/index.jsp';
+		    }else{
+		    	var html = "<div class=\"alert alert-danger\" role=\"alert\">"+data.msg+"</div>";
+				$('body').append(html);
+		    }
+		}
+	);
+}

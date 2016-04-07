@@ -1,0 +1,7 @@
+@charset "utf-8";
+.center_data{float:left;width:100%;height:auto;top:0;left:0;}
+.center_btn{width:100%;height:auto;top:0;left:10px;}
+.center_btn_1{float:left;width:50%;height:auto;top:0;left:0;margin-left:10px;}
+#HospDepartmentqueryId{width:200px}
+.center_btn_2{float:right;width:auto;height:auto;top:0;left:0;}
+.center_table{float:left;height:auto;width:100%;top:0;left:5px;font-size: 12px;}

@@ -1,0 +1,113 @@
+package com.rjkx.sk.itf.weixin.service;
+
+import com.rjkx.sk.system.datastructure.Dto;
+
+public interface WeiXinItfServiceItf {
+
+	/**
+	 * 报名
+	  * 
+	  * @author wkgi-Rally
+	  * @date 2015年10月9日 下午3:27:09
+	  * @param pDto
+	 */
+	int enrollCourse(Dto pDto);
+	
+	/**
+	 * 
+	  * 添加患者
+	  * @author wkgi-ligen
+	  * @date 2015年10月15日 下午3:20:30
+	  * @param pDto
+	 */
+	boolean addPatient(Dto pDto);
+	/**
+	 * 
+	  * 编辑患者信息
+	  * @author wkgi-ligen
+	  * @date 2015年10月19日 上午10:53:51
+	  * @param pDto
+	  * @return
+	 */
+	boolean editPatient(Dto pDto);
+	
+	/**
+	 * 
+	  * 添加患者病情
+	  * @author wkgi-ligen
+	  * @date 2015年10月15日 下午3:22:43
+	  * @param pDto
+	 */
+	boolean addPatientSickness(Dto pDto);
+	/**
+	 * 
+	  * 添加病情疾病关系
+	  * @author wkgi-ligen
+	  * @date 2015年10月15日 下午3:24:42
+	  * @param pDto
+	 */
+	boolean addPatientSicknessRelationSickness(Dto pDto);
+	/**
+	 * 
+	  * 添加病人信息
+	  * @author wkgi-ligen
+	  * @date 2015年10月16日 上午8:58:56
+	  * @param pDto
+	 */
+	boolean addPatientInfo(Dto pDto);
+	
+	
+	/**
+	 * 
+	  * 添加Binding
+	  * @author wkgi-ligen
+	  * @date 2015年10月16日 上午8:58:56
+	  * @param pDto
+	 */
+	boolean addPatientBinding(Dto pDto);
+	/**
+	 * 
+	  * 编辑Binding
+	  * @author wkgi-ligen
+	  * @date 2015年10月16日 上午8:58:56
+	  * @param pDto
+	 */
+	void editPatientBinding(Dto pDto);
+	
+	/**
+	 * 
+	  * 添加vip会诊记录
+	  * @author wkgi-ligen
+	  * @date 2015年10月16日 上午8:58:56
+	  * @param pDto
+	 */
+	boolean addVIPConsultation(Dto pDto);
+	
+	
+	
+	/**
+	 * 
+	  * 添加意见反馈
+	  * @author wkgi-ligen
+	  * @date 2015年10月16日 上午8:58:56
+	  * @param pDto
+	 */
+	boolean addFeedback(Dto pDto);
+	
+	
+	
+	
+	/***
+	 * 获取openid
+	 */
+	String getOpenID(String code);
+	
+	/**
+	 * 
+	  * 添加医生评论
+	  * @author wkgi-ligen
+	  * @date 2015年11月02日 上午8:58:56
+	  * @param pDto
+	 */
+	boolean addDoctorReview(Dto pDto);
+}

@@ -1,0 +1,238 @@
+	
+var getCodeText = function(_list,_code){
+	var codeText = "";
+	for(var i=0;i<codeArray.length;i++){
+		if(codeArray[i].cList == _list && codeArray[i].cCode == _code){
+			codeText = codeArray[i].cText;
+			break;
+		}
+	}
+	return codeText;
+}
+
+var getCodeText2 = function(_var){
+	var codeText = "";
+	for(var i=0;i<codeArray.length;i++){
+		if(codeArray[i].cVar == _var){
+			codeText = codeArray[i].cText;
+			break;
+		}
+	}
+	return codeText;
+}
+/**
+ * 根据VAR 找Code集合
+ * @param _var
+ * @return {}
+ */
+var getCodeArray = function(_var){
+	var code = [];
+	for(var i=0;i<codeArray.length;i++) {
+		if(codeArray[i].cList == _var) {
+			code.push({
+				name : codeArray[i].cText,
+				code : codeArray[i].cCode
+			});
+		}
+	}
+	return code;
+}
+/**
+ * 将JSON装入模板并放入指定DOM中
+ * @param {} tempId
+ * @param {} data
+ * @param {} domId
+ */
+templateHtml=function (tempId , data , domId){
+	
+	var html = template(tempId, data);
+	
+	$('#' + domId).html(html);
+};
+	
+appandTemplateHtml=function (tempId , data , domId){
+	
+	var html = template(tempId, data);
+	
+	$('#' + domId).html($('#' + domId).html() + html);
+
+};
+	
+/**
+ * LOAD JS
+ */
+LoadJS = function( fileUrl ){
+	var oHead = document.getElementsByTagName('HEAD').item(0);
+	
+	var oScript= document.createElement("script");
+	
+	oScript.type = "text/javascript";
+	
+	oScript.src=fileUrl;
+	
+	oHead.appendChild( oScript);
+
+};
+
+/**
+ * 发送AJAX
+ */
+sendAjax = function(url,params,callback){
+	
+	var that = this;
+	
+	var paramsStr = (typeof params) == 'string' ? params : $.param(params);
+	
+	$.ajax({
+		 type : 'POST' ,
+		 data:params,
+		 url : url,
+		 dataType : "json",
+		 beforeSend : function(xhr, settings){
+		 	that.setProgressbar();
+		 },
+		 
+		 success: function(data){
+		 	if(typeof callback == "function"){
+		 		callback.call(this , data,'seccess');
+		 	}
+		 },
+		 
+		  error: function(xhr, errorType, error){
+		  	if(typeof callback == "function"){
+		 		callback.call(this , errorType , 'fail');
+		 	}
+		  },
+		  
+		  complete : function(xhr, status){
+		  		that.removeProgressbar();
+		  }
+	});
+};
+	
+/**
+ * 设置进度条
+ */
+setProgressbar = function(){
+	if($('.loadbox').length != 0){
+		$('.loadbox').show();
+	}else{
+		var html = "<div class=\"loadbox\">"+
+				        "<div class=\"load-container load1\">"+
+				            "<div class=\"loader\">Loading...</div>"+
+				        "</div>"+
+				    "</div>";
+		$(document.body).append(html);
+	}
+};
+
+/**
+ * 除去进度条
+ */
+removeProgressbar = function(){
+	$('.loadbox').hide();
+};
+/**
+ * 清理Cookie
+ */
+clearCookie = function(){
+	var keys=document.cookie.match(/[^ =;]+(?=\=)/g); 
+	if (keys) {
+		for (var i = keys.length; i--;)
+		document.cookie=keys[i]+'=0;expires=' + new Date(0).toUTCString();
+	}
+}
+
+/**
+ * 复选框操作（全选按钮
+ * checkgName，复选框组的name属性
+ * checkId：全选复选框的id
+ */
+checkbox=function(checkgName , checkId ){
+	 $("input[name='"+checkgName+"']").prop("checked",$("#"+checkId+"").is(":checked"));
+}
+	
+	
+	
+	/**
+	 * 获取页面的checkbox组的id值，并拼成（1，2，5，6）的形式
+	 */
+getCheckId= function(groupName){
+	var ids="";
+	$("input[name='"+groupName+"']").each(function(){
+		 if($(this).prop("checked")==true){
+				ids=ids+$(this).val()+",";
+			};
+	})
+	//定义最后一个逗号的前一个索引
+	var lastd=ids.lastIndexOf(",");
+	ids=ids.slice(0,lastd);
+	return ids;
+}
+
+
+/**
+ * 确认窗
+ */
+confirmWin=function (prompt ,callback){
+	$("#confirmModel").remove();
+		var flsg=false;
+		var html = "<div class=\"modal fade\" id=\"confirmModel\">"+  
+					  "<div class=\"modal-dialog\">"+   
+					    "<div class=\"modal-content \">"+    
+					      "<div class=\"modal-header\"> "+   
+					        "<button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">×</span></button>"+    
+					        "<h4 class=\"modal-title\">提示信息</h4>  "+  
+					      "</div>  "+  
+					      "<div class=\"modal-body\">  "+  
+					        "<p>"+prompt+"</p>"+  
+					      "</div>  "+  
+					      "<div class=\"modal-footer\">  "+  
+					         "<input type=\"hidden\" id=\"url\"/>  "+  
+					         "<button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\">取消</button>  "+  
+					         "<button type=\"button\" onclick=\""+callback+"()\" class=\"btn btn-success\" data-dismiss=\"modal\">确定</button>  "+  
+					      "</div>  "+  
+					    "</div>"+  
+					  "</div>"+  
+					"</div>";
+	$('body').append(html);
+	$("#confirmModel").modal("toggle");
+}
+
+/**
+ * ******************************************  页面分页相关  ***************************************************************************
+ */
+//向页面添加翻页导航栏
+addPaging=function(){
+	var html = "<div id=\"footer\" > "+
+					 "<ul class=\"pager\"> "+
+					 " <li class=\"disabled\" id=\"prevPage\"><span>&laquo;上一页</span></li> "+
+					 " <li >第&nbsp<span id=\"pageNum\" >1</span>&nbsp页</li> "+
+					 " <li >共&nbsp<span id=\"pageTotal\" title=0>0</span>&nbsp页</li> "+
+					 " <li class=\"\"id=\"nextPage\" ><span>下一页&raquo;</span></li> "+
+					"</ul>  "+
+				"</div>"
+	$('body').append(html);
+}
+
+//改变共几页的方法
+changeTotal=function(total,curpage){
+	$("#pageTotal").text(total);
+	$("#pageNum").text(curpage);
+	
+	if(curpage<2){
+		$('#prevPage').html("<span>&laquo;上一页</span>");
+		$('#prevPage').prop("class","disabled");
+	}else{
+		$('#prevPage').html("<span>&laquo;上一页</span>");
+		$('#prevPage').prop("class","");
+	}
+	if(curpage>=total&&total>1){
+		$('#nextPage').html("<span>下一页&raquo;</span>");
+		$('#nextPage').prop("class","disabled");
+	}
+	if(total>1||curpage<total){
+		$('#nextPage').html("<span>下一页&raquo;</span>");
+		$('#nextPage').prop("class","");
+	}
+}

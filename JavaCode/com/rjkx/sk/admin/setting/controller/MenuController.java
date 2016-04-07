@@ -1,0 +1,116 @@
+package com.rjkx.sk.admin.setting.controller;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+/**
+ * @author Rally
+ */
+import com.rjkx.sk.admin.core.web.AdminBaseController;
+import com.rjkx.sk.admin.setting.service.MenuServiceItf;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.SystemCons;
+@Controller
+@RequestMapping(value="/menu")
+public class MenuController extends AdminBaseController
+{
+	private MenuServiceItf menuService;
+	
+	/**
+	 * LIST
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年9月22日 下午2:32:10
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/listMenu")
+	public String listMenu(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		Dto pDto = super.getParamsAsDto(request);
+		
+		List<?> data = super.getFredaReader().queryForPage("Menu.listMenu", pDto);
+		
+		Integer count = (Integer)super.getFredaReader().queryForObject("Menu.listMenuCount", pDto);
+		
+		super.write(JsonHelper.encodeList2PageJson(data, count), response);
+		
+		return null;
+	}
+	/**
+	 * ADD
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年9月22日 下午2:32:15
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/addMenu")
+	public String addMenu(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		menuService.addMenu(super.getParamsAsDto(request));
+		
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		
+		return null;
+	}
+	/**
+	 * EDIT
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年9月22日 下午2:32:22
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/editMenu")
+	public String editMenu(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		menuService.editMenu(super.getParamsAsDto(request));
+		
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		
+		return null;
+	}
+	/**
+	 * DELETE
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年9月22日 下午2:32:31
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/delMenu")
+	public String delMenu(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		menuService.delMenu(super.getParamsAsDto(request));
+		
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		
+		return null;
+	}
+	
+	
+	public MenuServiceItf getMenuService() 
+	{
+		return menuService;
+	}
+	@Resource(name="menuServiceImpl")
+	public void setMenuService(MenuServiceItf menuService) 
+	{
+		this.menuService = menuService;
+	}
+}

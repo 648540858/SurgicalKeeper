@@ -1,0 +1,301 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>了解病情 选对医生</title>
+<c:set var="root" value="${pageContext.request.contextPath}/resources/wx"/>
+<c:set var="ctx" value="${pageContext.request.contextPath}"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0 , maximum-scale=1.0, user-scalable=0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" type="text/css" href="${root}/css/swiper.min.css">
+<link rel="stylesheet" type="text/css" href="${root}/css/simpScroller.css">
+<link rel="stylesheet" type="text/css" href="${root}/css/style.css">
+<script type="text/javascript" src="${root}/js/jquery-1.10.1.min.js"></script>
+<script src="${root}/js/prefixfree.min.js"></script>
+<script type="text/javascript" src="${root}/js/swiper.3.1.2.jquery.min.js"></script>
+<script type="text/javascript" src="${root}/js/simpScroller.js"></script>
+<script type="text/javascript" src="${root}/js/index.js"></script>
+<script type="text/javascript"> 
+var patientId = '${patient.uId}';
+var scheduleType = '${scheduleType}';
+var doctorId = '${doctor.doctorId}';
+var ajaxRoot = '<%=request.getContextPath() %>';
+var today = new Array('日','一','二','三','四','五','六'); 
+var today1 = new Array('周日','周一','周二','周三','周四','周五','周六'); 
+var chooseTime = false;
+var submitOrderEnabled = false;
+jQuery(document).ready(function($){
+	var divHtml = '';
+	for(i=0;i<=6;i++){
+		var day = new Date();
+		day= new Date(day.getTime() + i*24*60*60*1000); 
+		divHtml +="<div class=\"swiper-slide swiper_widthone\"><div class=\"month_weeks\" onclick=\"getDoctorTimeSlice('"+formatDateyMd(day)+"',"+i+")\"><p class=\"dian\">"+today[day.getDay()]+"</p><p class=\"dian\" id='day_"+i+"'>"+day.getDate()+"</p></div></div>";
+	}
+	$('.swiper-wrapper').html(divHtml)
+	$(".doc_top li") .click(function(){
+		$(this).addClass("nav_bor").siblings().removeClass("nav_bor");
+		//alert($(this).index());	
+		$(".doc_intro .intro_jj").eq($(this).index()).show().siblings().hide();
+	});
+	
+	
+});
+
+	$(document).ready(function() {
+
+		var swiper = new Swiper('.swiper-container', {
+			freeMode : true,
+			slidesPerView : 'auto',
+		});
+
+		var shu = new Swiper('#shu_nav', {
+			freeMode : true,
+			slidesPerView : 'auto',
+		});
+
+	})
+
+	function formatDateyMd(now) {
+		var year = now.getFullYear();
+		var month = now.getMonth() + 1;
+		var date = now.getDate();
+		return year + "-" + month + "-" + date;
+	}
+	function formatDateMd(now) {
+		var month = now.getMonth() + 1;
+		var date = now.getDate();
+		return month + "/" + date;
+	}
+
+	function getDoctorTimeSlice(chooseDay, sequence) {
+		$("p[id^='day_']").removeClass('yuan');
+		$("p[id^='day_']").addClass('dian');
+		$('#day_' + sequence).removeClass('dian');
+		$('#day_' + sequence).addClass('yuan');
+		$('#schduleTime').html('');
+		$('#schduleAddress').html('');
+		chooseTime = false;
+		$.post(ajaxRoot + "/wxItf/getDoctorTimeSlice.freda", {
+			scheduleType : scheduleType,
+			chooseDate : chooseDay,
+			doctorId : doctorId,
+			appToken : '123'
+		}, function(data) {
+			var divSpan = '';
+			for (var i = 0; i < data.data.length; i++) {
+				divSpan += '<div class="spanleft"><span onclick=\"getDoctorTimeSliceById('
+						+ data.data[i].scheduleId + ')\">'
+						+ data.data[i].startTime + '</span></div>';
+			}
+			divSpan += '<div class="cb"></div>';
+			$('.doc_p').html(divSpan);
+			if($('#submitOrderButton').hasClass("btn_nav")){
+				$('#submitOrderButton').removeClass('btn_nav');
+				$('#submitOrderButton').addClass('btn_navthree');
+			}
+		}, "json");
+		checkSubmitEnabled();
+	}
+
+	function getDoctorTimeSliceById(schduleId) {
+		chooseTime=false;
+		$.post(ajaxRoot + "/wxItf/getTimeSliceById.freda", {
+			scheduleId : schduleId,
+			appToken : '123'
+		}, function(data) {
+			var myDate = new Date(data.data.scheduleTime);
+			$('#schduleTime').html(
+					formatDateMd(myDate) + '(' + today1[myDate.getDay()] + ')'
+							+ '<span class="h_span">' + data.data.startTime
+							+ '-' + data.data.endTime + '</span>');
+			$('#schduleAddress').html(data.data.address);
+			$('#docScId').val(data.data.scheduleId);
+			chooseTime = true;
+			checkSubmitEnabled();
+		}, "json");
+
+	}
+	function checkSubmitEnabled(){
+		if ($("#checkProtocol").prop("checked")&& chooseTime) {
+			if($('#submitOrderButton').hasClass("btn_navthree")){
+				$('#submitOrderButton').removeClass('btn_navthree');
+				$('#submitOrderButton').addClass('btn_nav');
+			}
+			submitOrderEnabled = true;
+		}else{
+			if($('#submitOrderButton').hasClass("btn_nav")){
+				$('#submitOrderButton').removeClass('btn_nav');
+				$('#submitOrderButton').addClass('btn_navthree');
+			}
+			submitOrderEnabled = false;
+		}
+	}
+
+	function submitOrder() {
+		if($('#patientSicknessId').val() == null ||$('#patientSicknessId').val() == '' ){
+			alert('请选择就诊人！');
+		}else{
+			if ($("#checkProtocol").prop("checked")&& chooseTime) {
+				if ($(".add_ceng").is(":hidden")) {
+					$(".add_ceng,.cover").fadeIn();
+				}
+				$.post(ajaxRoot + "/wxItf/submitPatientOrder.freda", {
+					docScId : $('#docScId').val(),
+					patientId : $('#patientId').val(),
+					myPatientId : $('#loginId').val(),
+					amount : '${orderPrice}',
+					logInfo : '创建订单',
+					orderState : 1,
+					opId : $('#loginId').val(),
+					opName : '${patient.tureName}',
+					opType : 1,
+					fundLogInfo : '待付款',
+					psId : $('#patientSicknessId').val(),
+					isVip : false,
+					appToken : '123'
+				}, function(data) {
+					if (data.success == true) {
+						$(".add_ceng").fadeOut();
+						$('#order_no').val(data.data.orderNum);
+						$('#orderId').val(data.data.orderId);
+						$('#toPayOrder').submit();
+					} else {
+						alert(data.msg);
+					}
+				}, "json");
+			}
+		}
+		
+
+	}
+	
+	$(function(){
+	    $(".pay_top ul li .right_btn").click(function(){
+				if($(".doc_ceng").is(":hidden")){
+					$(".doc_ceng,.cha,.cover").fadeIn();
+				}else{
+					$(".doc_ceng,.cha,.cover").fadeOut();
+				}
+			});
+	    $(".cover").click(function(){
+	        $(this).fadeOut();
+	        $(".doc_ceng,.cha").fadeOut();
+	    });
+		$(".cha").click(function(){
+	        $(this).fadeOut();
+	        $(".doc_ceng,.cover").fadeOut();
+	    });
+		
+		
+	});
+	
+	
+	function changePatient(patientId,patientName){
+		    $('#patientId').val(patientId);
+		    $('#patientName').html(patientName);
+			$.post(ajaxRoot + "/wxItf/findPatientSicknesses.freda", {
+				patientId : patientId,
+				appToken : '123'
+			}, function(data) {
+				if (data.success == true) {
+					$('#patientSicknessId').val(data.data.psId);
+					$(".doc_ceng,.cha,.cover").fadeOut();
+				} else {
+					alert(data.msg);
+				}
+			}, "json");
+		
+		
+	}
+</script>
+
+
+</head>
+<body class="body_bgtwo">
+	
+    <div class="wait_box" style="margin-top:0rem;">
+    	<div class="doc_pic"><img src="${root}/${doctor.icon}"></div>
+    	<div class="doc_right">
+        	<h1>${doctor.dname} <span>${doctor.deptRank}</span></h1>
+            <p>${doctor.hName}<br>
+            	${doctor.deptName}
+            </p>
+        </div>
+        <div class="cb"></div>
+    </div>
+    <div class="doc_time">
+    	<div class="doc_months">
+        	
+            <div class="swiper-container" style="margin-left:0rem;">
+            <div class="swiper-wrapper">
+            </div>
+    </div>
+        	
+        </div>
+    	<div class="doc_p">
+			
+        </div>
+        <div class="pay_top">
+    	<ul>
+        <li><span class="left_in">时间</span><div class="rightin" id = "schduleTime" ></div><div class="cb"></div></li>
+        <li><span class="left_in">地址</span><div class="rightin" id = "schduleAddress" ></div><div class="cb"></div></li>
+        <li><span class="left_in">服务</span><div class="rightin"> <span class="y_span">15分钟问诊</span></div><div class="cb"></div></li>
+        <li><span class="left_in">姓名</span><div class="rightin" id="patientName" >${patients.tureName}</div><p class="right_btn">添加就诊人</p><div class="cb"></div></li>
+        
+        <div class="cb"></div>
+        </ul>
+    </div>
+    <div class="pay_xy">
+    	预约协议
+    	<span>
+    	<input type="checkbox" name="chk" id ="checkProtocol" onclick="checkSubmitEnabled()"> </span><span>已阅读 </span>
+    </div>
+    <div class="pay_db">
+    	<h1>取消订单规则</h1>
+    </div>
+    <div class="pay_fyj">
+    <ul>
+    <li><span>全额退款</span>下单后30分钟内</li>
+    <li><span>退款50%</span>下单30分钟后</li>
+    <li><span>不退款</span>爽约</li>
+    </ul>
+    </div>
+    <div style="font-size:0.75rem; line-height:1.5rem; color:#717171; text-align:left; padding:0.5rem 1rem;">下单即代表同意外科管家服务协议</div>   
+     <div class="bin_nav mb3"><input name="" type="button" id="submitOrderButton" value="下一步" class="btn_navthree"  onclick="submitOrder()"></div>   
+    </div>
+    
+    <div class="doc_ceng">
+	<h1><img src="${root}/images/d_pic31.png" class="cha">更换就诊人</h1>
+	<ul>
+			<c:forEach var="patient" items="${patientList}" varStatus="status">
+				<c:choose>
+					<c:when test="${status.index == 0 }">
+						<li class="hover" onclick="changePatient('${patient.patientId}','${patient.tureName}')"><a href="#" >${patient.tureName}</a></li>
+					</c:when>
+					<c:otherwise>
+						<li onclick="changePatient('${patient.patientId}','${patient.tureName}')"><a href="#" >${patient.tureName}</a></li>
+					</c:otherwise>
+				</c:choose>
+			</c:forEach>
+    </ul>
+	</div>
+	
+    <form action="${ctx}/wxItf/toPayOrder.freda" method="post" name="toPayOrder" id="toPayOrder">
+	    <input type="hidden" name="patientSicknessId" id="patientSicknessId" value="${patientSicknessId}"/> 
+		<input type="hidden" name="loginId" id="loginId" value="${loginId}"/>
+		<input type="hidden" name="patientId" id="patientId" value="${patients.uId}"/>
+		<input type="hidden" name="appToken" id="appToken" value="123" />
+		<input type="hidden" name="docScId" id="docScId" />
+		<input type="hidden" name="order_no" id="order_no" />
+		<input type="hidden" name="orderId" id="orderId" />
+		<input type="hidden" name="open_id" id="open_id" value="${open_id}"/>
+		<input type="hidden" name="amount" id="amount" value="${orderPrice}"/>
+	</form>
+	<div class="cover"></div>
+	<div class="add_ceng"><p>正在处理中。。。</p></div> 
+</body>
+</html>

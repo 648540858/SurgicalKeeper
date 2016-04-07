@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="WxUser">
+	
+	<select id="listwxUser" parameterType="dto" resultType="dto">
+		SELECT
+			_wx_user_openid.nickname AS name,
+			(SELECT _text from  _rjkx_sys_code WHERE _list='SEX' AND _code=_wx_user_openid.sex )AS sex,
+			_wx_user_openid.city AS city,
+			_wx_user_openid.province AS province,
+			IF(docId!=0,(SELECT _name from _rjkx_doctor WHERE _id = _wx_user_openid.docId ),'无') AS doc,
+			_wx_user_openid.ctime AS cTime
+			FROM
+			_wx_user_openid
+			WHERE 1=1
+			<if test="sTime != '' and sTime != null">
+				AND _wx_user_openid.ctime>='${sTime}'	
+			</if>
+			<if test="eTime != '' and eTime != null">
+				AND '${eTime}'>=_wx_user_openid.ctime
+			</if>
+			<if test="name != '' and name != null">
+				AND nickname LIKE '%${name}%'
+			</if>
+			<if test="sex != '' and sex != null">
+				AND sex =${sex}
+			</if>
+			<if test="province != '' and province != null and province != '所有地'">
+				AND province LIKE '%${province}%'
+			</if>
+			<if test="city != '' and city != null and city != '所有地'">
+				AND city LIKE '%${city}%'
+			</if>		
+		ORDER BY _wx_user_openid.ctime DESC 
+		LIMIT ${start},${limit}
+	</select>
+	
+	<select id="listwxUserCount" parameterType="dto" resultType="java.lang.Integer">
+			SELECT
+				COUNT(1)
+			FROM
+			_wx_user_openid
+			WHERE 1=1
+			<if test="sTime != '' and sTime != null">
+				AND _wx_user_openid.ctime>='${sTime}'	
+			</if>
+			<if test="eTime != '' and eTime != null">
+				AND '${eTime}'>=_wx_user_openid.ctime
+			</if>
+			<if test="name != '' and name != null">
+				AND nickname LIKE '%${name}%'
+			</if>
+			<if test="sex != '' and sex != null">
+				AND sex =${sex}
+			</if>
+			<if test="province != '' and province != null and province != '所有地'">
+				AND province LIKE '%${province}%'
+			</if>
+			<if test="city != '' and city != null and city != '所有地'">
+				AND city LIKE '%${city}%'
+			</if>	
+	</select>
+</mapper>

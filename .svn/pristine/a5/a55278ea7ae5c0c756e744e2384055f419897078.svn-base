@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Params">
+	
+	<!-- LIST -->
+	<select id="listParams" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_param._pid AS pId,_rjkx_sys_param._key AS pKey,
+			_rjkx_sys_param._value AS pValue,_rjkx_sys_param._desc AS pDesc,
+			_rjkx_sys_param._remark AS pRemark
+		FROM _rjkx_sys_param
+	</select>
+	<select id="listParamsCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sys_param
+	</select>
+	
+	<!-- ADD -->
+	<insert id="addParams" parameterType="dto">
+		INSERT INTO _rjkx_sys_param(
+		_rjkx_sys_param._key,_rjkx_sys_param._value,
+		_rjkx_sys_param._desc)
+		VALUES(#{pKey},#{pValue},#{pDesc})
+	</insert>
+	
+	<!-- EDIT -->
+	<update id="editParams" parameterType="dto">
+		UPDATE _rjkx_sys_param SET
+			_rjkx_sys_param._key = #{pKey},
+			_rjkx_sys_param._value = #{pValue},
+			_rjkx_sys_param._desc = #{pDesc}
+		WHERE
+			_rjkx_sys_param._pid = #{pId}
+	</update>
+	
+	<!-- DELETE -->
+	<delete id="delParams" parameterType="dto">
+		DELETE FROM _rjkx_sys_param WHERE _rjkx_sys_param._pid = #{id}
+	</delete>
+	
+</mapper>

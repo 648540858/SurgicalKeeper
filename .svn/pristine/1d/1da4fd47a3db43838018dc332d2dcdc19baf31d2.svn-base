@@ -1,0 +1,16 @@
+.center_data{margin-left: 1.5 rem;}
+.queryType {float: left;margin: 1rem 0rem 0rem 2rem;height: 26px;}
+
+
+.center_btn1 {margin: 1 rem;float: right;width: 87.5%;}
+.center_btn2{margin: 1 rem;float: right;width: 85%;}
+
+.center_btn_1{float: left; margin: 1rem 2rem 1rem 0rem;}
+.center_btn_1  select{height: 26px;width: 90px;margin-left: 0.5rem;}
+.center_btn_2{float: left;margin: 1rem 2rem 1rem 0rem;}
+.center_btn_3 {margin: 1rem 2rem 1rem 0rem;float: left;}
+.center_btn_3 input{ width: 8rem;}
+.center_btn_4{margin: -0.1rem 2rem 1rem 0rem;float: right;}
+.center_btn_4 button{padding: 0.6rem;width: 60px;margin-top: 0.5rem;}
+
+.center_table{ padding: 2rem;}

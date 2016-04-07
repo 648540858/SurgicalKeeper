@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 公共模块(接口):获得树  -->
+<mapper namespace="CommonAdminTree">
+	<!-- 城市树 -->
+	<select id="getCityTree" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS `id`,
+			_area_name AS `name`,
+			_leaf AS leaf 
+		FROM _rjkx_area
+		WHERE
+			_status = 1
+			AND _parent_id = #{pId}
+	</select>
+	
+	<!-- 疾病子类树 -->
+	<select id="sicknessSubTree" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS `id`,
+			_name AS `name`,
+			_leaf AS leaf 
+		FROM _rjkx_sickness_sub 
+		WHERE _s_id=#{sId} 
+			AND _parentid=#{pId} 
+			AND _status = 1
+	</select>
+	
+	<!-- 某医院的科室列表 -->
+	<select id="getHospDeptList" parameterType="dto" resultType="dto">
+		SELECT _rjkx_r_hospital_dep._dep_id AS `code`,
+			_rjkx_hospital_department._name AS `name` 
+		FROM _rjkx_r_hospital_dep 
+			INNER JOIN _rjkx_hospital_department ON _rjkx_r_hospital_dep._dep_id=_rjkx_hospital_department._id 
+		WHERE _rjkx_r_hospital_dep._hospital_id=#{hospId} 
+			AND _rjkx_hospital_department._status=1
+	</select>
+	
+	<!-- 医院for城市 -->
+	<select id="getHospByCityTree" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS `id`,
+			_name AS `name`,
+			1 AS leaf 
+		FROM _rjkx_hospital
+		WHERE
+			_status = 1
+			AND _area_id = #{pId}
+	</select>
+	
+	<!-- 疾病属性列表 -->
+	<select id="getSickAttrList" parameterType="dto" resultType="dto">
+		SELECT _name AS `name`,_id AS `code` 
+		FROM _rjkx_sickness_attr 
+		WHERE _status=1
+	</select>
+	
+	<!-- 疾病大类 -->
+	<select id="getSickness" parameterType="dto" resultType="dto">
+		SELECT
+			_id AS `id`,
+			_name AS `name`,
+			_id AS sId,
+			0 AS leaf 
+		FROM _rjkx_sickness 
+		WHERE _status = 1
+	</select>
+	
+	<!-- 部门树 -->
+	<select id="getDeptTree" parameterType="dto" resultType="dto">
+		SELECT
+			_did AS `id`,
+			_name AS `name`,
+			_leaf AS leaf 
+		FROM _rjkx_sys_dept
+		WHERE
+			_state = 1
+			AND _parentid = #{pId} 
+		ORDER BY _sortno
+	</select>
+	
+	<!-- 菜单树 -->
+	<select id="getMenuTree" parameterType="dto" resultType="dto">
+		SELECT
+			_mid AS `id`,
+			_name AS `name`,
+			_leaf AS leaf 
+		FROM _rjkx_sys_menu
+		WHERE _parentid = #{pId} 
+		ORDER BY _sortno
+	</select>
+	
+	<!-- 医生for医院 -->
+	<select id="getDoctorTree" parameterType="dto" resultType="dto">
+		SELECT _id AS `id`,
+			_name AS `name`,
+			1 AS leaf 
+		FROM _rjkx_doctor 
+		WHERE _hospital_id=#{pId} AND _status=1
+	</select>
+</mapper>

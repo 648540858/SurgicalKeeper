@@ -1,0 +1,114 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+
+<title>医疗科室维护</title>
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/bootstrap/css/bootstrap.min.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/include/manager/statistics/css/treatment.css" />
+</head>
+<body>
+
+	<div class="center_data" id="tempPatsList">	
+		<h4>&nbsp;&nbsp;就诊信息管理</h4>
+		<div class="btn-group ">
+		 	<select class="queryType ">
+		 		<option value="0">普通查找(默认)</option>
+		 		<option value="1">精确查找</option>
+		 	</select>
+		</div>
+		<div class="center_btn1"  >
+			<div class="center_btn_1" >
+			
+				<b>省：</b> 
+				<select class="sheng" ></select>
+				<b>市：</b> 
+				<select class="shi"></select>
+			</div>
+			<div class="center_btn_2" >	
+				<b> 开始查询时间：</b><input type="text" class="sTime">
+				<b> 结束查询时间：</b><input type="text" class="eTime">
+			</div>
+			<div class="center_btn_3" style="display: none;">
+			<b>医生姓名：</b> 
+				<input type="text" class="queryContent">
+			</div>
+			<div class="center_btn_4" >
+				<button  class="btn_query" >统计</button>
+			</div>
+		</div>
+		
+	</div>
+	
+<div class="center_table" >
+ <table class="table table-hover">
+   <thead>
+     <tr>
+       <th>省</th>
+       <th>市</th>
+       <th>医院</th>
+       <th>医生</th>
+       <th>精准预约数</th>
+       <th>VIP会诊数</th>
+       <th>关注引入量</th>
+     </tr>
+   </thead>
+   <tbody id="content" ></tbody>
+	<script id="list" type="text/html">
+
+ 		{{each ROOT as value i}}
+     		<tr>
+				<td>{{value.shengName}}</td>
+				<td>{{value.shiName}}</td>
+				<td>{{value.hName}}</td>
+				<td>{{value.dName}}</td>
+				<td><a href="#" onclick="getdetail({{value.dId}},0,{{value.patientNum}})">{{value.patientNum}}</a></td>
+				<td><a href="#" onclick="getdetail({{value.dId}},1,{{value.vipNum}})">{{value.vipNum}}</a></td>
+				<td>{{value.attention}}</td>
+		{{/each}}
+   </script>
+ </table>
+ </div>
+
+<!-- 就诊详情页 -->
+	<div class="hide">  
+		<div id="detail">
+			 <table class="table table-hover">
+			 	 <thead>     
+				 <tr>
+			       <th>就诊人</th>
+			       <th>时间</th>
+			       <th>金额</th>
+			     </tr>
+			   </thead>
+			   <tbody id="detailContent" ></tbody>
+				<script id="detailList" type="text/html">
+ 					{{each ROOT as value i}}
+     					<tr>
+						<td>{{value.pName}}</td>
+						<td>{{value.sTime}}</td>
+						<td>{{value.amount}}</td>
+					{{/each}}	
+   				</script>
+			 </table>
+		</div>	
+	</div>
+	
+	
+
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/jquery/jquery.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/artTemplate/artTemplate.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/js/bootstrap-datetimepicker.zh-CN.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/js/commonUtils.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/statistics/js/treatment.js"></script>
+
+<script type="text/javascript">
+	var root="<%=request.getContextPath()%>";
+	var codeArray=${applicationScope.APPLICATION_SYSTEM_CODE_VAR};
+</script>
+</body>
+</html>

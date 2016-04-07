@@ -1,0 +1,179 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>了解病情 选对医生</title>
+<c:set var="root"
+	value="${pageContext.request.contextPath}/resources/wx" />
+<c:set var="ctx" value="${pageContext.request.contextPath}" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, minimum-scale=1.0 , maximum-scale=1.0, user-scalable=0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" type="text/css" href="${root}/css/style.css">
+<script type="text/javascript" src="${root}/js/jquery-1.10.1.min.js"></script>
+<script type="text/javascript">
+	$(function() {
+		$(".own_head .leftnav").click(function() {
+			if ($(".own_del").is(":hidden")) {
+				$(".own_del,.cover").fadeIn();
+			} else {
+				$(".own_del,.cover").fadeOut();
+			}
+		});
+		$(".cover").click(function() {
+			$(this).fadeOut();
+			$(".own_del").fadeOut();
+		});
+
+	});
+	
+    $(document).keydown(function(event){ 
+    	if(event.keyCode==13){
+    		
+    	$("#searchDoctors").submit(); 
+    	
+    	} 
+    	
+    }); 
+
+	$(function() {
+		$("b[id^='doctorIntro_']").each(function() {
+			$(this).click(function() {
+				var id = $(this).attr("id");
+				id = id.split("_")[1];
+				if ($("#intro_" + id).is(":hidden")) {
+					$("#intro_" + id + ",.cover,.cha").fadeIn();
+				} else {
+					$("#intro_" + id + ",.cover,.cha").fadeOut();
+				}
+				$(".cover").click(function() {
+					$(this).fadeOut();
+					$("#intro_" + id).fadeOut();
+				});
+				$(".cha").click(function() {
+					$(this).fadeOut();
+					$("#intro_" + id + ", .cover").fadeOut();
+				});
+
+			})
+		});
+
+	});
+
+	toOrderDoctorStep = function(dId, scheduleType) {
+		$('#doctorId').val(dId);
+		$('#scheduleType').val(scheduleType);
+		$('#toOrderDoctor').submit();
+	}
+	
+	function selectArea(id) {
+		$('#aId').val(id);
+		$("div[id^='area_']").removeClass('del_bg');
+		$("div[id^='area_']").addClass('del_box');
+		$("#area_"+id).addClass('del_bg');
+		var areaName = $("#area_"+id).text();
+		$("#navmenu").html(areaName);
+		
+		if ($(".own_del").is(":hidden")) {
+			$(".own_del,.cover").fadeIn();
+		} else {
+			$(".own_del,.cover").fadeOut();
+		}
+		$("#searchDoctors").submit(); 
+	}
+	function chooseDoctors(){
+		$("#chooseDoctors").submit();
+	}
+</script>
+
+
+</head>
+<body class="body_bgone">
+	<header class="own_head"> <span class="rightnav" onclick= "chooseDoctors()" >选医</span>
+	<form action="${ctx}/wxItf/selectDoctorsCriteria.freda" method="post"
+		id="chooseDoctors">
+		<input type="hidden" name="appToken" id="appToken" value="123" />
+		<input type="hidden" id="loginId" name="loginId" value="${loginId}">
+	</form>
+	<form action="${ctx}/wxItf/searchDoctors.freda" method="post"
+		id="searchDoctors">
+	<div class="so_selcte">
+		<div class="own_so">
+			<input name="keyWord" type="text" id = "searchKey" class="so_input" placeholder="搜索医生/科室/疾病" />
+			<input type="hidden" name="aId" id="aId" value="${aId }"/>
+			<input type="hidden" id="loginId" name="loginId" value="${loginId}">
+			<input type="hidden" name="appToken" id="appToken" value="123" />
+		</div>
+	</div>
+	</form>
+	<span class="leftnav" id="navmenu">
+	    <c:forEach var="area" items="${areaList}" varStatus="status">
+	    	<c:if test="${area.aId==aId}">${area.aName}</c:if>
+    	</c:forEach>
+	</span> </header>
+	<div class="own_me">管家推荐 让您选对的医生</div>
+	<div class="fast_box">
+		<ul>
+			<c:forEach var="doctor" items="${doctorList}">
+				<li>
+					<div class="left_pic">
+						<img src="${ctx}/${doctor.icon}">
+					</div>
+					<div class="right_in">
+						<b id="doctorIntro_${doctor.doctorId}">${doctor.dname}<i
+							class="i_img"><img src="${root}/images/d_pic10.png"></i></b> <br>${doctor.deptRank}
+						${doctor.rank} <br>${doctor.hName}
+						<c:if test="${doctor.scheduleType == 1}">
+							<input name="" type="button"
+								onclick="toOrderDoctorStep('${doctor.doctorId}','${doctor.scheduleType}')"
+								class="btn_add" value="快速挂号">
+						</c:if>
+						<c:if test="${doctor.scheduleType == 2}">
+							<input name="" type="button"
+								onclick="toOrderDoctorStep('${doctor.doctorId}','${doctor.scheduleType}')"
+								class="btn_green" value="快速预约">
+						</c:if>
+					</div>
+					<div class="cb"></div>
+				</li>
+				<div class="kuai_ceng" id="intro_${doctor.doctorId}">
+					<h1>
+						<img src="${root}/images/d_pic31.png" class="cha" /> 医生介绍
+					</h1>
+					<div class="intro" style=" line-height:1.8rem;">${doctor.intro}</div>
+				</div>
+			</c:forEach>
+		</ul>
+	</div>
+	<div class="cover"></div>
+	<div class="own_del">
+		<ul>
+		<c:forEach var="area" items="${areaList}" varStatus="status">
+				<c:choose>
+					<c:when test="${status.index == 0 }">
+						 <li><div class="del_bg" onclick="selectArea('${area.aId}')" id="area_${area.aId}">${area.aName}</div></li>
+					</c:when>
+					<c:otherwise>
+						<li><div class="del_box" onclick="selectArea('${area.aId}')" id="area_${area.aId}">${area.aName}</div></li>
+					</c:otherwise>
+				</c:choose>
+	   </c:forEach>
+			<div class="cb"></div>
+		</ul>
+	</div>
+
+	<form action="${ctx}/wxItf/toOrderDoctor.freda" method="post"
+		name="toOrderDoctor" id="toOrderDoctor">
+		<input type="hidden" name="doctorId" id="doctorId" /> <input
+			type="hidden" name="scheduleType" id="scheduleType" /> <input
+			type="hidden" name="appToken" id="appToken" value="123" /> <input
+			type="hidden" id="loginId" name="loginId" value="${loginId}">
+			<input type="hidden" name="doctorId" id="doctorId" />
+			<input type="hidden" name="patientSicknessId" id="patientSicknessId" value="${patientSicknessId}"/>
+	</form>
+</body>
+</html>

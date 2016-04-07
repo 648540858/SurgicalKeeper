@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AppV1">
+	<!-- 登录 -->
+	<select id="doctorLogin" parameterType="dto" resultType="dto">
+		SELECT _rjkx_doctor._id AS docId,
+			_rjkx_doctor._name AS docName,
+			_rjkx_doctor._age AS docAge,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='SEX' AND _code=_rjkx_doctor._sex) AS docSex,
+			_rjkx_doctor._qrcode AS qrCode,
+			_rjkx_doctor._icon AS headPhoto 
+		FROM _rjkx_doctor  
+		WHERE _rjkx_doctor._telephone=#{mobile} 
+			AND _rjkx_doctor._password=#{pwd} 
+			AND _rjkx_doctor._status=1
+	</select>
+	
+	<!-- 查询密码 -->
+	<select id="getDoctorPwd" parameterType="dto" resultType="dto">
+		SELECT _rjkx_doctor._id AS docId,
+			_rjkx_doctor._password AS pwd 
+		FROM _rjkx_doctor  
+		WHERE _rjkx_doctor._telephone=#{mobile}
+			AND _rjkx_doctor._status=1
+	</select>
+	
+	<!-- 更新医生头像 -->
+	<update id="updateDoctorHeadPhoto" parameterType="dto">
+		UPDATE _rjkx_doctor SET _icon=#{imgUrl} 
+		WHERE _id=#{userid}
+	</update>
+	
+	<!-- 更新患者头像 -->
+	<update id="updatePatientHeadPhoto" parameterType="dto">
+		UPDATE _rjkx_patient SET _icon=#{imgUrl} 
+		WHERE _id=#{userid}
+	</update>
+	
+	<!-- 查询广告条 -->
+	<select id="queryNewsAdvert" parameterType="dto" resultType="dto">
+		SELECT
+			id AS newsId,
+			adv_title AS newsTitle,
+			adv_img AS newsImg
+		FROM
+			_rjkx_adv_news
+		WHERE
+			adv_status = 1
+		ORDER BY id DESC
+	</select>
+	
+	<!-- 查询医生订单数量 -->
+	<select id="queryDoctorOrderCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT count(1) FROM (
+		SELECT 
+			_rjkx_patient_order._doctor_id AS docId,
+			_rjkx_patient_order._patient_id AS pId,
+			(SELECT _turename from _rjkx_patient WHERE _id=_rjkx_patient_order._patient_id) AS pName,
+			(SELECT GROUP_CONCAT(_rjkx_sickness._name) FROM _rjkx_patient_sickness 
+				INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_patient_sickness._id=_rjkx_r_p_s_sickness._p_s_id 
+				INNER JOIN _rjkx_sickness ON _rjkx_r_p_s_sickness._sickness_id=_rjkx_sickness._id 
+				WHERE _rjkx_patient_sickness._patient_id= _rjkx_patient_order._patient_id) AS pSick,
+			(SELECT _desc FROM _rjkx_patient_sickness WHERE _rjkx_patient_sickness._patient_id= _rjkx_patient_order._patient_id) AS pDesc,
+			_rjkx_patient_order._sch_stime AS sTime,
+			_rjkx_patient_order._order_status AS oStatus,
+			0 AS vip 
+		FROM _rjkx_patient_order
+		WHERE _doctor_id=#{userid} 
+			AND (_rjkx_patient_order._order_status=3 
+				OR _rjkx_patient_order._order_status=4 
+				OR _rjkx_patient_order._order_status=5)
+		UNION ALL 
+		SELECT _rjkx_vip_sch._doc_id AS dId,
+			_rjkx_vip_consultation._patient_id AS pId,
+			_rjkx_vip_consultation._patient_name AS pName,
+			_rjkx_vip_consultation._sickness AS pSick,
+			_rjkx_vip_consultation._sick_desc AS pDesc,
+			_rjkx_vip_sch._sch_time AS sTime,
+			_rjkx_vip_order._status AS oStatus,
+			1 AS vip 
+		FROM _rjkx_vip_order
+			INNER JOIN _rjkx_vip_sch on _rjkx_vip_sch._vip_order_id=_rjkx_vip_order._id AND _rjkx_vip_sch._status=1  
+			INNER JOIN  _rjkx_vip_consultation ON _rjkx_vip_consultation._id=_rjkx_vip_order._vip_id
+		WHERE _rjkx_vip_sch._doc_id=#{userid} 
+			AND (_rjkx_vip_order._status=3 OR _rjkx_vip_order._status=4)) tempa
+	</select>
+	
+	<!-- 查询医生订单 -->
+	<select id="queryDoctorOrder" parameterType="dto" resultType="dto">
+		SELECT * FROM (
+		SELECT 
+			_rjkx_patient_order._doctor_id AS docId,
+			_rjkx_patient_order._patient_id AS pId,
+			(SELECT _turename from _rjkx_patient WHERE _id=_rjkx_patient_order._patient_id) AS pName,
+			(SELECT GROUP_CONCAT(_rjkx_sickness._name) FROM _rjkx_patient_sickness 
+				INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_patient_sickness._id=_rjkx_r_p_s_sickness._p_s_id 
+				INNER JOIN _rjkx_sickness ON _rjkx_r_p_s_sickness._sickness_id=_rjkx_sickness._id 
+				WHERE _rjkx_patient_sickness._patient_id= _rjkx_patient_order._patient_id) AS pSick,
+			(SELECT _desc FROM _rjkx_patient_sickness WHERE _rjkx_patient_sickness._patient_id= _rjkx_patient_order._patient_id) AS pDesc,
+			_rjkx_patient_order._sch_stime AS sTime,
+			_rjkx_patient_order._order_status AS oStatus,
+			0 AS vip 
+		FROM _rjkx_patient_order
+		WHERE _doctor_id=#{userid} 
+			AND (_rjkx_patient_order._order_status=3 
+				OR _rjkx_patient_order._order_status=4 
+				OR _rjkx_patient_order._order_status=5)
+		UNION ALL 
+		SELECT _rjkx_vip_sch._doc_id AS dId,
+			_rjkx_vip_consultation._patient_id AS pId,
+			_rjkx_vip_consultation._patient_name AS pName,
+			_rjkx_vip_consultation._sickness AS pSick,
+			_rjkx_vip_consultation._sick_desc AS pDesc,
+			_rjkx_vip_sch._sch_time AS sTime,
+			_rjkx_vip_order._status AS oStatus,
+			1 AS vip 
+		FROM _rjkx_vip_order
+			INNER JOIN _rjkx_vip_sch on _rjkx_vip_sch._vip_order_id=_rjkx_vip_order._id AND _rjkx_vip_sch._status=1  
+			INNER JOIN  _rjkx_vip_consultation ON _rjkx_vip_consultation._id=_rjkx_vip_order._vip_id
+		WHERE _rjkx_vip_sch._doc_id=#{userid} 
+			AND (_rjkx_vip_order._status=3 OR _rjkx_vip_order._status=4)) tempa ORDER BY sTime DESC 
+		LIMIT ${start},${limit}
+	</select>
+	
+	<!-- 查询医生当天订单 -->
+	<select id="queryDoctorTodayOrder" parameterType="dto" resultType="dto">
+		SELECT * FROM (
+		SELECT 
+			_rjkx_patient_order._doctor_id AS docId,
+			_rjkx_patient_order._patient_id AS pId,
+			(SELECT _turename from _rjkx_patient WHERE _id=_rjkx_patient_order._patient_id) AS pName,
+			(SELECT GROUP_CONCAT(_rjkx_sickness._name) FROM _rjkx_patient_sickness 
+				INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_patient_sickness._id=_rjkx_r_p_s_sickness._p_s_id 
+				INNER JOIN _rjkx_sickness ON _rjkx_r_p_s_sickness._sickness_id=_rjkx_sickness._id 
+				WHERE _rjkx_patient_sickness._patient_id= _rjkx_patient_order._patient_id) AS pSick,
+			(SELECT _desc FROM _rjkx_patient_sickness WHERE _rjkx_patient_sickness._patient_id= _rjkx_patient_order._patient_id) AS pDesc,
+			_rjkx_patient_order._sch_stime AS sTime,
+			_rjkx_patient_order._order_status AS oStatus,
+			0 AS vip 
+		FROM _rjkx_patient_order
+		WHERE _doctor_id=#{userid} AND DATE(_rjkx_patient_order._sch_stime)=CURDATE() 
+			AND (_rjkx_patient_order._order_status=3 
+				OR _rjkx_patient_order._order_status=4 
+				OR _rjkx_patient_order._order_status=5)
+		UNION ALL 
+		SELECT _rjkx_vip_sch._doc_id AS dId,
+			_rjkx_vip_consultation._patient_id AS pId,
+			_rjkx_vip_consultation._patient_name AS pName,
+			_rjkx_vip_consultation._sickness AS pSick,
+			_rjkx_vip_consultation._sick_desc AS pDesc,
+			_rjkx_vip_sch._sch_time AS sTime,
+			_rjkx_vip_order._status AS oStatus,
+			1 AS vip 
+		FROM _rjkx_vip_order
+			INNER JOIN _rjkx_vip_sch on _rjkx_vip_sch._vip_order_id=_rjkx_vip_order._id AND _rjkx_vip_sch._status=1  
+			INNER JOIN  _rjkx_vip_consultation ON _rjkx_vip_consultation._id=_rjkx_vip_order._vip_id
+		WHERE _rjkx_vip_sch._doc_id=#{userid} AND DATE(_rjkx_vip_sch._sch_time)=CURDATE() 
+			AND (_rjkx_vip_order._status=3 OR _rjkx_vip_order._status=4)) tempa ORDER BY sTime DESC
+	</select>
+	
+	<!-- 查询圈子内容列表数量 -->
+	<select id="queryNewsListCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT count(1) 
+		FROM _rjkx_group_news 
+		WHERE _type = #{msgtype} AND _rjkx_group_news._status = 1
+	</select>
+	
+	<!-- 查询圈子内容列表 -->
+	<select id="queryNewsList" parameterType="dto" resultType="dto">
+		SELECT
+			id AS msgId,
+			_type AS msgType,
+			_title AS msgTitle,
+			_content AS msgContent,
+			_media_url AS mediaUrl,
+			IF(CHAR_LENGTH(IFNULL(_img,''))>0,_img,'http://attched.yiyuan591.com/dataupload/lecture/photo/LECTURE_PAV_6224990476792542.jpg') AS msgImg,
+			_optype AS opType,
+			_opid AS opId,
+			_opname AS opName,
+			_ctime AS sTime,
+			_read AS readCount,
+			(select count(1) FROM _rjkx_group_news_reply where news_id=_rjkx_group_news.id) AS reCount,
+			(select count(1) FROM _rjkx_group_news_fav where news_id=_rjkx_group_news.id) AS favCount,
+			(select count(1) FROM _rjkx_group_news_zan where news_id=_rjkx_group_news.id) AS zanCount 
+		FROM _rjkx_group_news 
+		WHERE _type = #{msgtype} AND _rjkx_group_news._status = 1 
+		ORDER BY _ctime DESC 
+		LIMIT ${start},${limit}
+	</select>
+	
+	<!-- 查询热门圈子内容列表 -->
+	<select id="queryHotsNewsList" parameterType="dto" resultType="dto">
+		SELECT * FROM (
+		SELECT
+			id AS msgId,
+			_type AS msgType,
+			_title AS msgTitle,
+			_content AS msgContent,
+			_media_url AS mediaUrl,
+			IF(CHAR_LENGTH(IFNULL(_img,''))>0,_img,'http://attched.yiyuan591.com/dataupload/lecture/photo/LECTURE_PAV_6224990476792542.jpg') AS msgImg,
+			_optype AS opType,
+			_opid AS opId,
+			_opname AS opName,
+			_ctime AS sTime,
+			_read AS readCount,
+			(select count(1) FROM _rjkx_group_news_reply where news_id=_rjkx_group_news.id) AS reCount,
+			(select count(1) FROM _rjkx_group_news_fav where news_id=_rjkx_group_news.id) AS favCount,
+			(select count(1) FROM _rjkx_group_news_zan where news_id=_rjkx_group_news.id) AS zanCount 
+		FROM _rjkx_group_news 
+		WHERE _type = #{msgtype} AND _rjkx_group_news._status = 1 
+		ORDER BY _read DESC limit 10) mtemp
+	</select>
+	
+	<!-- 查询某人发布的圈子内容列表数量 -->
+	<select id="queryNewsListCountForUserid" parameterType="dto" resultType="java.lang.Integer">
+		SELECT count(1) 
+		FROM _rjkx_group_news 
+		WHERE _type = #{msgtype} AND _rjkx_group_news._status = 1 AND _opid=#{userid}
+	</select>
+	
+	<!-- 查询某人发布的圈子内容列表 -->
+	<select id="queryNewsListForUserid" parameterType="dto" resultType="dto">
+		SELECT
+			id AS msgId,
+			_type AS msgType,
+			_title AS msgTitle,
+			_content AS msgContent,
+			_media_url AS mediaUrl,
+			IF(CHAR_LENGTH(IFNULL(_img,''))>0,_img,'http://attched.yiyuan591.com/dataupload/lecture/photo/LECTURE_PAV_6224990476792542.jpg') AS msgImg,
+			_optype AS opType,
+			_opid AS opId,
+			_opname AS opName,
+			_ctime AS sTime,
+			_read AS readCount,
+			(select count(1) FROM _rjkx_group_news_reply where news_id=_rjkx_group_news.id) AS reCount,
+			(select count(1) FROM _rjkx_group_news_fav where news_id=_rjkx_group_news.id) AS favCount,
+			(select count(1) FROM _rjkx_group_news_zan where news_id=_rjkx_group_news.id) AS zanCount 
+		FROM _rjkx_group_news 
+		WHERE _type = #{msgtype} AND _rjkx_group_news._status = 1 AND _opid=#{userid} 
+		ORDER BY _ctime DESC 
+		LIMIT ${start},${limit}
+	</select>
+	
+	<!-- 删除圈子内容-->
+	<delete id="delNews" parameterType="dto">
+		DELETE FROM _rjkx_group_news 
+		WHERE id=#{msgId} 
+			AND user_id=#{userid} 
+			AND user_type=#{usertype}
+	</delete>
+	
+	<!-- 删除圈子关联收藏内容-->
+	<delete id="delNewsJoinFav" parameterType="dto">
+		DELETE FROM _rjkx_group_news_fav 
+		WHERE news_id=#{msgId}
+	</delete>
+	
+	<!-- 删除圈子关联回复内容-->
+	<delete id="delNewsJoinReply" parameterType="dto">
+		DELETE FROM _rjkx_group_news_reply 
+		WHERE news_id=#{msgId}
+	</delete>
+	
+	<!-- 删除圈子关联点赞-->
+	<delete id="delNewsJoinZan" parameterType="dto">
+		DELETE FROM _rjkx_group_news_zan 
+		WHERE news_id=#{msgId}
+	</delete>
+	
+	<!-- 查询某人金币量 -->
+	<select id="queryMoneyForUserid" parameterType="dto" resultType="dto">
+		SELECT
+			total_money AS totalMoney,
+			used_money AS usedMoney 
+		FROM
+			_rjkx_user_money
+		WHERE
+			user_id = #{userid} AND user_type=#{usertype} limit 1
+	</select>
+	
+	<!-- 查询圈子收藏列表数量 -->
+	<select id="queryNewsFavListCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			count(1) 
+		FROM _rjkx_group_news
+			INNER JOIN _rjkx_group_news_fav ON _rjkx_group_news.id = _rjkx_group_news_fav.news_id
+				AND _rjkx_group_news_fav.user_id = #{userid} AND _rjkx_group_news_fav.user_type=#{usertype}
+		WHERE _rjkx_group_news._status = 1
+	</select>
+	
+	<!-- 查询圈子收藏内容列表 -->
+	<select id="queryNewsFavList" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_group_news_fav.id AS favId,
+			_rjkx_group_news.id AS msgId,
+			_rjkx_group_news._type AS msgType,
+			_rjkx_group_news._title AS msgTitle,
+			_rjkx_group_news._content AS msgContent,
+			_rjkx_group_news._media_url AS mediaUrl,
+			IF(CHAR_LENGTH(IFNULL(_rjkx_group_news._img,''))>0,_img,'http://attched.yiyuan591.com/dataupload/lecture/photo/LECTURE_PAV_6224990476792542.jpg') AS msgImg,
+			_rjkx_group_news._optype AS opType,
+			_rjkx_group_news._opid AS opId,
+			_rjkx_group_news._opname AS opName,
+			_rjkx_group_news_fav.ctime AS sTime,
+			_rjkx_group_news._read AS readCount,
+			(select count(1) FROM _rjkx_group_news_reply where news_id=_rjkx_group_news.id) AS reCount,
+			(select count(1) FROM _rjkx_group_news_fav where news_id=_rjkx_group_news.id) AS favCount,
+			(select count(1) FROM _rjkx_group_news_zan where news_id=_rjkx_group_news.id) AS zanCount 
+		FROM _rjkx_group_news
+			INNER JOIN _rjkx_group_news_fav ON _rjkx_group_news.id = _rjkx_group_news_fav.news_id
+				AND _rjkx_group_news_fav.user_id = #{userid} AND _rjkx_group_news_fav.user_type=#{usertype} 
+		WHERE _rjkx_group_news._status = 1 
+		ORDER BY _rjkx_group_news_fav.ctime DESC 
+		LIMIT ${start},${limit}
+	</select>
+	
+	<!-- 查找某人有没有点赞 -->
+	<select id="findUserNewsZan" parameterType="dto" resultType="dto">
+		SELECT id,news_id 
+		FROM _rjkx_group_news_zan 
+		WHERE user_id = #{userid} 
+			AND user_type=#{usertype} 
+			AND news_id=#{msgId}
+	</select>
+	
+	<!-- 某人点赞 -->
+	<insert id="addUserNewsZan" parameterType="dto">
+		INSERT INTO _rjkx_group_news_zan(user_id,user_type,news_id,ctime) 
+		VALUES(#{userid},#{usertype},#{msgId},NOW())
+	</insert>
+	
+	<!-- 查找某人有没有收藏 -->
+	<select id="findUserNewsFav" parameterType="dto" resultType="dto">
+		SELECT id,news_id 
+		FROM _rjkx_group_news_fav 
+		WHERE user_id = #{userid} 
+			AND user_type=#{usertype} 
+			AND news_id=#{msgId}
+	</select>
+	
+	<!-- 某人点收藏 -->
+	<insert id="addUserNewsFav" parameterType="dto">
+		INSERT INTO _rjkx_group_news_fav(user_id,user_type,news_id,ctime) 
+		VALUES(#{userid},#{usertype},#{msgId},NOW())
+	</insert>
+	
+	<!-- 删除收藏 -->
+	<delete id="delNewsFav" parameterType="dto">
+		DELETE FROM _rjkx_group_news_fav 
+		WHERE id=#{favId} 
+			AND user_id=#{userid} 
+			AND user_type=#{usertype}
+	</delete>
+	
+	<!-- 修改圈子内容 -->
+	<update id="updateNews" parameterType="dto">
+		UPDATE _rjkx_group_news SET _title=#{title},
+			_content=#{content},
+			_media_url=#{meidaUrl} 
+		WHERE id=#{msgId} 
+			AND _opid=#{userid} 
+			AND _optype=#{usertype}
+	</update>
+	
+	<!-- 添加圈子内容 -->
+	<insert id="addNews" parameterType="dto" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO _rjkx_group_news(`_type`,`_title`,`_content`,`_media_url`,
+			`_status`,`_read`,`_optype`,`_opid`,`_opname`,`_ctime`) 
+		VALUES(#{msgType},#{title},#{content},#{mediaUrl},
+			1,0,#{usertype},#{userid},#{username},NOW())
+	</insert>
+	
+	<!-- 更新圈子阅读量 -->
+	<update id="updateNewsRead" parameterType="dto">
+		UPDATE _rjkx_group_news SET _read=_read+1 
+		WHERE id=#{msgId}
+	</update>
+	
+	<!-- 读取圈子阅读量 -->
+	<update id="findNewsRead" parameterType="dto">
+		SELECT id,IFNULL(_read,0) AS readCount 
+		FROM _rjkx_group_news 
+		WHERE id=#{msgId}
+	</update>
+	
+	<!-- 回复圈子内容 -->
+	<insert id="addNewsReply" parameterType="dto">
+		INSERT INTO _rjkx_group_news_reply(user_id,user_type,news_id,content,ctime) 
+		VALUES(#{userid},#{usertype},#{msgId},#{content},NOW())
+	</insert>
+	
+	<!-- 删除回复圈子内容 -->
+	<delete id="delNewsReply" parameterType="dto">
+		DELETE FROM _rjkx_group_news_reply 
+		WHERE id=#{replyId} 
+			AND user_id=#{userid} 
+			AND user_type=#{usertype}
+	</delete>
+
+	<!-- 查找回复圈子内容 -->
+	<select id="findNewsReplyList" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_group_news_reply.id AS replyId,
+			_rjkx_group_news_reply.content AS replyContent,
+			_rjkx_group_news_reply.ctime AS replyTime,
+			_rjkx_group_news_reply.user_id AS replyUserId,
+			_rjkx_group_news_reply.user_type AS replyUserType,
+			IF(_rjkx_group_news_reply.user_type = 3,
+				(SELECT _name FROM _rjkx_doctor WHERE _id = _rjkx_group_news_reply.user_id),
+				(SELECT IFNULL(_turename,'患者') FROM _rjkx_patient WHERE _id = _rjkx_group_news_reply.user_id)) AS replyUserName 
+		FROM
+			_rjkx_group_news_reply 
+		WHERE _rjkx_group_news_reply.news_id=#{msgId} 
+		ORDER BY _rjkx_group_news_reply.ctime DESC
+	</select>
+		
+	<!-- 添加意见反馈 -->
+	<insert id="addFeedBack" parameterType="dto">
+		INSERT INTO _rjkx_feedback(_login_id,user_type,_content,_ctime) 
+		VALUES(#{userid},#{usertype},#{content},NOW())
+	</insert>
+	
+	<delete id="appDeleteForClientid" parameterType="dto">
+		DELETE FROM _rjkx_user_app WHERE clientid=#{clientid}
+	</delete>
+	<insert id="appRegClientid" parameterType="dto">
+		INSERT INTO _rjkx_user_app(user_id,user_type,clientid,client_type) 
+		VALUES(#{userid},#{usertype},#{clientid},#{clientType})
+	</insert>
+	
+	<!-- 查找用户信息 -->
+	<select id="findUserForId" parameterType="dto" resultType="dto">
+		SELECT _id AS dId,
+			<if test="usertype==3">
+			IFNULL(_name,'医生') AS dName 
+			</if>
+			<if test="usertype==4">
+			IFNULL(_turename,'患者') AS dName 
+			</if>
+		FROM 
+			<if test="usertype==3">
+			_rjkx_doctor 
+			</if>
+			<if test="usertype==4">
+			_rjkx_patient 
+			</if>
+		WHERE _id=#{userid}
+	</select>
+</mapper>

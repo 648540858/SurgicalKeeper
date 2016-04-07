@@ -1,0 +1,245 @@
+package com.rjkx.sk.itf.common.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.pingplusplus.Pingpp;
+import com.pingplusplus.model.Charge;
+import com.pingplusplus.model.Transfer;
+import com.rjkx.sk.itf.common.web.WeiXinItfBaseController;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.utils.SystemCons;
+import com.rjkx.sk.system.utils.WebUtil;
+/**
+ * Ping++获取签名charge
+  * @ClassName: PingppController
+  * @Description: TODO
+  * @author yiyuan-Rally
+  * @date 2015年11月10日 上午9:39:42 
+  * @version V1.0
+ */
+@Controller
+@RequestMapping(value="/pingpp")
+public class PingppController extends WeiXinItfBaseController
+{
+	
+	static
+	{
+		Pingpp.apiKey = appProperties.getValue("pay.pingpp.apiKey");
+	}
+	
+	/**
+	 * 获取CHARGE
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月10日 上午9:48:09
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/getCharge")
+	public String getCharge(HttpServletRequest request, HttpServletResponse response) throws Exception
+	{
+		Dto pDto = super.getParamsAsDto(request);
+		
+		Map<String, Object> chargeParams = new HashMap<String, Object>();
+	    chargeParams.put("order_no",  pDto.getAsString("order_no"));
+	    chargeParams.put("amount",  ((int)(Double.parseDouble(pDto.getAsString("amount"))*100)));
+	    chargeParams.put("channel",pDto.getAsString("channel"));
+	    chargeParams.put("currency","cny");
+	    chargeParams.put("client_ip",request.getRemoteAddr());
+	    chargeParams.put("subject",pDto.getAsString("subject"));
+	    chargeParams.put("body",pDto.getAsString("body"));
+	    
+	    if(FredaUtils.isNotEmpty(pDto.getAsString("open_id")))
+	    {
+	    	Map<String, String> extra  = new HashMap<String, String>();
+	    	extra.put("open_id", pDto.getAsString("open_id"));
+	    	chargeParams.put("extra",extra);	    	
+	    }
+	    
+	    Map<String, String> app = new HashMap<String, String>();
+	    app.put("id", appProperties.getValue("pay.pingpp.appid"));
+	    chargeParams.put("app",app);
+	    
+	    Charge charge = Charge.create(chargeParams);
+	    
+	    super.write(charge.toString(), response);
+	    
+		return null;
+	}
+	/**
+	 * 跨域输出CHARGE
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年12月14日 下午2:18:53
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/getChargeV2")
+	public String getChargeV2(HttpServletRequest request, HttpServletResponse response) throws Exception
+	{
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+		
+		Map<String, Object> chargeParams = new HashMap<String, Object>();
+	    chargeParams.put("order_no",  pDto.getAsString("order_no"));
+	    chargeParams.put("amount",  ((int)(Double.parseDouble(pDto.getAsString("amount"))*100)));
+	    chargeParams.put("channel",pDto.getAsString("channel"));
+	    chargeParams.put("currency","cny");
+	    chargeParams.put("client_ip",request.getRemoteAddr());
+	    chargeParams.put("subject",pDto.getAsString("subject"));
+	    chargeParams.put("body",pDto.getAsString("body"));
+	    
+	    if(FredaUtils.isNotEmpty(pDto.getAsString("open_id")))
+	    {
+	    	Map<String, String> extra  = new HashMap<String, String>();
+	    	extra.put("open_id", pDto.getAsString("open_id"));
+	    	chargeParams.put("extra",extra);	    	
+	    }
+	    
+	    Map<String, String> app = new HashMap<String, String>();
+	    app.put("id", appProperties.getValue("pay.pingpp.appid"));
+	    chargeParams.put("app",app);
+	    
+	    Charge charge = Charge.create(chargeParams);
+	    
+	    super.writeForZepto(charge.toString(), request, response);
+	    
+		return null;
+	}
+	/**
+	 * 退款请求
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月10日 上午11:13:02
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/refundOrder")
+	public String refundOrder(HttpServletRequest request, HttpServletResponse response) throws Exception
+	{
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+		
+		Charge ch = Charge.retrieve(pDto.getAsString("ch_id"));
+		
+		Map<String, Object> refundMap = new HashMap<String, Object>();
+	    refundMap.put("amount",  ((int)(Double.parseDouble(pDto.getAsString("amount"))*100)));
+	    refundMap.put("description", pDto.getAsString("description"));
+	    
+	    ch.getRefunds().create(refundMap);
+	    
+	    super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+	
+		return null;
+	}
+	
+	/**
+	 * 退款请求
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月10日 上午11:13:02
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/refundOrderV2")
+	public String refundOrderV2(HttpServletRequest request, HttpServletResponse response) throws Exception
+	{
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+		
+		Charge ch = Charge.retrieve(pDto.getAsString("ch_id"));
+	    Map<String, Object> refundMap = new HashMap<String, Object>();
+	    refundMap.put("amount",  ((int)(Double.parseDouble(pDto.getAsString("amount"))*100)));
+	    refundMap.put("description", pDto.getAsString("description"));
+	    
+	    ch.getRefunds().create(refundMap);
+	    
+	    super.setTipsForZepto(true, "success", request, response);
+	
+		return null;
+	}
+	/**
+	 * 提现
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月11日 上午9:31:59
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/withdrawCash")
+	public String withdrawCash(HttpServletRequest request, HttpServletResponse response) throws Exception
+	{
+		Dto pDto = super.getParamsAsDto(request);
+		
+		Map<String, Object> transferMap = new HashMap<String, Object>();
+		
+		transferMap.put("amount",  ((int)(Double.parseDouble(pDto.getAsString("amount"))*100)));
+	    transferMap.put("currency", "cny");
+	    transferMap.put("type",  "b2c");
+	    transferMap.put("order_no",  pDto.getAsString("order_no"));
+	    transferMap.put("channel",  "wx_pub");
+	    transferMap.put("recipient", pDto.getAsString("open_id"));
+	    transferMap.put("description", pDto.getAsString("description"));
+	    
+	    Map<String, String> app = new HashMap<String, String>();
+	    app.put("id", appProperties.getValue("pay.pingpp.appid"));
+	    transferMap.put("app", app);
+	    
+	    Transfer.create(transferMap);
+		
+	    super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+	    
+		return null;
+	}
+	
+	/**
+	 * 跨域请求.提现..
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月11日 上午9:31:59
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/withdrawCashV2")
+	public String withdrawCashV2(HttpServletRequest request, HttpServletResponse response) throws Exception
+	{
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+		
+		Map<String, Object> transferMap = new HashMap<String, Object>();
+		
+		transferMap.put("amount",  ((int)(Double.parseDouble(pDto.getAsString("amount"))*100)));
+	    transferMap.put("currency", "cny");
+	    transferMap.put("type",  "b2c");
+	    transferMap.put("order_no",  pDto.getAsString("order_no"));
+	    transferMap.put("channel",  "wx_pub");
+	    transferMap.put("recipient", pDto.getAsString("open_id"));
+	    transferMap.put("description", pDto.getAsString("description"));
+	    
+	    Map<String, String> app = new HashMap<String, String>();
+	    app.put("id", appProperties.getValue("pay.pingpp.appid"));
+	    transferMap.put("app", app);
+	    
+	    Transfer transfer = Transfer.create(transferMap);
+		
+	    super.setTipsForZepto(true, transfer.getStatus(), request, response);
+	    
+		return null;
+	}
+}

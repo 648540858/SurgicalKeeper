@@ -1,0 +1,69 @@
+package com.rjkx.sk.admin.cms.service.impl;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.rjkx.sk.admin.cms.service.LectureServiceItf;
+import com.rjkx.sk.admin.core.web.AdminBaseServiceImpl;
+import com.rjkx.sk.system.datastructure.Dto;
+/**
+ * LECTURE SERVICE
+  * @ClassName: LectureServiceImpl
+  * @Description: TODO
+  * @author yiyuan-Rally
+  * @date 2015年10月22日 上午9:24:17 
+  * @version V1.0
+ */
+@Service(value="lectureServiceImpl")
+public class LectureServiceImpl extends AdminBaseServiceImpl implements LectureServiceItf
+{
+	/*
+	  * <p>Title: addLecture</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.LectureServiceItf#addLecture(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void addLecture(Dto pDto)
+	{
+		super.getFredaDao().insert("Lecture.addLecture", pDto);
+	}
+	/*
+	  * <p>Title: editLecture</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.LectureServiceItf#editLecture(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@Override
+	public void editLecture(Dto pDto)
+	{
+		super.getFredaDao().update("Lecture.editLecture", pDto);
+	}
+	/*
+	  * <p>Title: delLecture</p>
+	  * <p>Description: </p>
+	  * @param pDto
+	  * @see com.rjkx.sk.admin.cms.service.impl.LectureServiceItf#delLecture(com.rjkx.sk.system.datastructure.Dto)
+	  */
+	
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED)
+	public void delLecture(Dto pDto)
+	{
+		String[] ids = pDto.getAsString("ids").split(",");
+		
+		for(String id : ids)
+		{
+			pDto.put("id", id);
+			
+			super.getFredaDao().delete("Lecture.delLecture", pDto);
+		}
+	}
+}

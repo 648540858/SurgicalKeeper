@@ -1,0 +1,34 @@
+package com.rjkx.sk.admin.setting.service;
+
+import com.rjkx.sk.system.datastructure.Dto;
+
+public interface AuthorityServiceItf {
+
+	/**
+	 * Menu to Role
+	  * 
+	  * @author wkgi-Rally
+	  * @date 2015年9月24日 上午10:45:14
+	  * @param pDto
+	 */
+	void setMenuForRole(Dto pDto);
+
+	/**
+	 * User to Role
+	  * 
+	  * @author wkgi-Rally
+	  * @date 2015年9月24日 上午10:45:29
+	  * @param pDto
+	 */
+	void setUserForRole(Dto pDto);
+
+	/**
+	 * Role to User
+	  * 
+	  * @author wkgi-Rally
+	  * @date 2015年9月24日 上午10:45:41
+	  * @param pDto
+	 */
+	void setRoleForUser(Dto pDto);
+
+}

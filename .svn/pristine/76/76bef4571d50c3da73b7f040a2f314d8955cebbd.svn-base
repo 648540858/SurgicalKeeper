@@ -1,0 +1,1051 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="WeiXin">
+
+	<!-- 管家关爱 START -->
+	<select id="searchSicknesses" parameterType="dto" resultType="dto" >
+		SELECT
+			_rjkx_sickness._id AS sId,_rjkx_sickness._name AS sName,
+			GROUP_CONCAT(_rjkx_sickness_attr._id) AS attrIdStr,
+			GROUP_CONCAT(_rjkx_sickness_attr._name) AS attrNameStr,
+			GROUP_CONCAT(_rjkx_sickness_attr._icon) AS attrIconStr,
+			_rjkx_r_sickness_attr._content AS saText
+		FROM _rjkx_r_sickness_attr
+		INNER JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_sickness_attr._sickness_id
+		INNER JOIN _rjkx_sickness_attr ON _rjkx_sickness_attr._id = _rjkx_r_sickness_attr._attr_id
+		WHERE
+			_rjkx_sickness._status = 1
+			AND _rjkx_sickness_attr._status = 1
+		<if test="keyWord != null and keyWord != ''">  
+        	AND (_rjkx_sickness._name LIKE '%${keyWord}%' 
+        	OR  _rjkx_sickness._desc  LIKE '%${keyWord}%')
+    	</if>
+		GROUP BY _rjkx_r_sickness_attr._sickness_id
+		ORDER BY _rjkx_sickness._id ASC
+	</select>
+	
+	<select id="allSicknesses"  resultType="dto" >
+		SELECT
+			_rjkx_sickness._id AS sId,_rjkx_sickness._name AS sName,
+			GROUP_CONCAT(_rjkx_sickness_attr._id) AS attrIdStr,
+			GROUP_CONCAT(_rjkx_sickness_attr._name) AS attrNameStr,
+			GROUP_CONCAT(_rjkx_sickness_attr._icon) AS attrIconStr,
+			_rjkx_r_sickness_attr._content AS saText
+		FROM _rjkx_r_sickness_attr
+		INNER JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_sickness_attr._sickness_id
+		INNER JOIN _rjkx_sickness_attr ON _rjkx_sickness_attr._id = _rjkx_r_sickness_attr._attr_id
+		WHERE
+			_rjkx_sickness._status = 1
+			AND _rjkx_sickness_attr._status = 1
+		GROUP BY _rjkx_r_sickness_attr._sickness_id
+		ORDER BY _rjkx_sickness._id ASC
+	</select>
+	
+	<select id="getAttrAndText" parameterType="dto" resultType="dto">
+		SELECT
+			GROUP_CONCAT(_rjkx_sickness_attr._id) AS attrIdStr,
+			GROUP_CONCAT(_rjkx_sickness_attr._name) AS attrNameStr,
+			GROUP_CONCAT(_rjkx_sickness_attr._icon) AS attrIconStr,
+			_rjkx_r_sickness_attr._content AS saText
+		FROM _rjkx_r_sickness_attr
+		INNER JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_sickness_attr._sickness_id 	AND _rjkx_r_sickness_attr._sickness_id = #{sId}
+		INNER JOIN _rjkx_sickness_attr ON _rjkx_sickness_attr._id = _rjkx_r_sickness_attr._attr_id
+		WHERE
+			_rjkx_sickness_attr._status = 1 
+		GROUP BY _rjkx_r_sickness_attr._sickness_id
+		ORDER BY _rjkx_r_sickness_attr._id ASC
+	</select>
+	
+	<select id="getText" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_r_sickness_attr._content AS saText
+		FROM _rjkx_r_sickness_attr
+		WHERE
+			_rjkx_r_sickness_attr._attr_id = #{aId}
+			AND _rjkx_r_sickness_attr._sickness_id = #{sId}
+	</select>
+
+	<!-- 管家关爱 END -->
+	
+	<!-- 健康课堂 START -->
+	<select id="getLecturesList"  resultType="dto">
+		SELECT 
+			_rjkx_doctor_lecture._id AS lid,
+			_rjkx_doctor_lecture._company AS company,
+			_rjkx_doctor_lecture._speakers AS speakers,
+			_rjkx_doctor_lecture._start_time AS sTime,
+			_rjkx_doctor_lecture._end_time AS eTime,
+			_rjkx_doctor_lecture._favicon AS favicon,
+			_rjkx_doctor_lecture._title AS title,
+			_rjkx_doctor_lecture._doctor_id AS doctorId,
+      		COUNT(_rjkx_doctor_lecture_enroll._id) enrollCount, 
+			_rjkx_doctor_lecture._hospital_id AS hospitalId
+ 		FROM _rjkx_doctor_lecture
+		LEFT JOIN _rjkx_doctor_lecture_enroll ON _rjkx_doctor_lecture_enroll._lecture_id = _rjkx_doctor_lecture._id
+ 		WHERE _rjkx_doctor_lecture._status=1
+		GROUP BY _rjkx_doctor_lecture._id DESC
+    	ORDER BY _rjkx_doctor_lecture._ctime DESC
+        
+	</select>
+	
+	<select id="getLectureDetail" parameterType="dto" resultType="dto">
+		SELECT 
+			_rjkx_doctor_lecture._id AS lId,
+			_rjkx_doctor_lecture._company AS company,
+			_rjkx_doctor_lecture._speakers AS speakers,
+			 DATE_FORMAT(_rjkx_doctor_lecture._start_time,'%Y-%m-%d') AS sTime,
+			_rjkx_doctor_lecture._favicon AS favicon,
+			_rjkx_doctor_lecture._media_url AS mediaUrl,
+			_rjkx_doctor_lecture._content AS content,
+			_rjkx_doctor_lecture._title AS title,
+			_rjkx_doctor_lecture._read_count as rCount,
+			_rjkx_doctor_lecture._doctor_id AS doctorId,
+			_rjkx_doctor_lecture._hospital_id AS hospitalId
+ 		FROM _rjkx_doctor_lecture 
+ 		WHERE 
+ 			_rjkx_doctor_lecture._id = #{lId}
+	</select>
+	<!-- 健康课堂 报名 -->
+	<select id="getEnRollCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_doctor_lecture_enroll
+		WHERE
+			_rjkx_doctor_lecture_enroll._patient_id = #{uId}
+			AND _rjkx_doctor_lecture_enroll._lecture_id = #{lId}
+	</select>
+	
+	<insert id="addEnRoll" parameterType="dto">
+		INSERT INTO _rjkx_doctor_lecture_enroll(
+			_rjkx_doctor_lecture_enroll._lecture_id,
+			_rjkx_doctor_lecture_enroll._patient_id,
+			_rjkx_doctor_lecture_enroll._ctime
+		)VALUES(#{lId},#{uId},NOW())
+	</insert>
+	
+	<!-- 查询讲座报名人数 -->
+	<select id="getEnRollLectureCountById" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1) AS enrollCount
+		FROM _rjkx_doctor_lecture_enroll
+		WHERE
+			_rjkx_doctor_lecture_enroll._lecture_id = #{lId}
+	</select>
+	<!-- 健康课堂 END -->
+	<!-- 个人中心 START -->
+	<select id="getPatientInfo" parameterType="dto" resultType="dto">
+		SELECT            
+			_rjkx_patient._id AS uId,               
+			_rjkx_patient._area_id AS areaId,         
+			_rjkx_patient._parent_id AS parentId,       
+			_rjkx_patient._relation AS relation,        
+			_rjkx_patient._turename AS tureName,                
+			_rjkx_patient._birthdate AS birthdate,        
+			_rjkx_patient._sex AS sex, 
+			_rjkx_patient._age AS age,              
+			_rjkx_patient._identity_id AS identityId,      
+			_rjkx_patient._nation AS nation,           
+			_rjkx_patient._address AS address,          
+			_rjkx_patient._email AS email,            
+			_rjkx_patient._mobile AS mobile,           
+			_rjkx_patient._telephone AS telephone,        
+			_rjkx_patient._qq_id AS qqId,            
+			_rjkx_patient._weixin_id AS weixinId,        
+			_rjkx_patient._status AS STATUS,           
+			_rjkx_patient._icon AS icon,             
+			_rjkx_patient._available_balance AS availableBalance,
+			_rjkx_patient._freeze_blance AS freezeBlance,                
+			_rjkx_patient._openid AS openId                           
+		FROM _rjkx_patient
+		WHERE 1=1		
+		<if test="uId != null and uId != ''">  
+        	AND _rjkx_patient._id = #{uId}  
+    	</if>
+    	<if test="openId != null and openId != ''">  
+        	AND _rjkx_patient._openid = #{openId}  
+    	</if>
+    	<if test="mobile != null and mobile != ''">  
+        	AND _rjkx_patient._mobile = #{mobile}  
+    	</if> 
+    	<if test="patientId != null and patientId != ''">  
+        	AND _rjkx_patient._id = #{patientId}    
+    	</if>
+    	<if test="loginId != null and loginId != ''">  
+        	AND _rjkx_patient._parent_id = #{loginId}    
+    	</if> 
+    	 ORDER BY
+		_rjkx_patient._id ASC
+    	limit 1
+	</select>
+	<!-- 查询登录人信息 -->
+	<select id="getLoginUserInfo" parameterType="dto" resultType="dto">
+		SELECT            
+			_rjkx_patient._id AS loginId,                      
+			_rjkx_patient._mobile AS mobile,                
+			_rjkx_patient._openid AS openId,
+			_rjkx_patient._available_balance AS availableBalance,
+			_rjkx_patient._freeze_blance AS freezeBlance                              
+		FROM _rjkx_patient
+		WHERE 1=1		
+
+    	<if test="openId != null and openId != ''">  
+        	AND _rjkx_patient._openid = #{openId}  
+    	</if>
+    	<if test="mobile != null and mobile != ''">  
+        	AND _rjkx_patient._mobile = #{mobile}  
+    	</if> 
+    	<if test="loginId != null and loginId != ''">  
+        	AND _rjkx_patient._id = #{loginId}    
+    	</if> 
+    	 ORDER BY
+		_rjkx_patient._id ASC
+    	limit 1
+	</select>
+	
+	<select id="findPatientByLoginIdAndPatientId" parameterType="dto" resultType="dto">
+		SELECT            
+			_rjkx_patient._id AS patientId,               
+			_rjkx_patient._area_id AS areaId,         
+			_rjkx_patient._parent_id AS parentId,       
+			_rjkx_patient._relation AS relation,        
+			_rjkx_patient._turename AS tureName,                
+			_rjkx_patient._birthdate AS birthdate,        
+			_rjkx_patient._sex AS sex, 
+			_rjkx_patient._age AS age,              
+			_rjkx_patient._identity_id AS identityId,      
+			_rjkx_patient._nation AS nation,           
+			_rjkx_patient._address AS address,          
+			_rjkx_patient._email AS email,            
+			_rjkx_patient._mobile AS mobile,           
+			_rjkx_patient._telephone AS telephone,        
+			_rjkx_patient._qq_id AS qqId,            
+			_rjkx_patient._weixin_id AS weixinId,        
+			_rjkx_patient._status AS STATUS,           
+			_rjkx_patient._icon AS icon,             
+			_rjkx_patient._available_balance AS availableBalance,
+			_rjkx_patient._freeze_blance AS freezeBlance,                
+			_rjkx_patient._openid AS openId                           
+		FROM _rjkx_patient
+		WHERE 1=1		
+    	<if test="patientId != null and patientId != ''">  
+        	AND _rjkx_patient._id = #{patientId}    
+    	</if>
+    	<if test="loginId != null and loginId != ''">  
+        	AND _rjkx_patient._parent_id = #{loginId}    
+    	</if> 
+    	 ORDER BY
+		_rjkx_patient._id ASC
+    	limit 1
+	</select>
+	<!-- 我的病例 -->
+	<select id="mySickNesses" resultType="dto">
+	SELECT  
+		_rjkx_patient._turename AS tureName,
+		_rjkx_patient._id AS uId,
+		_rjkx_patient_sickness._desc AS patientInfo,
+		_rjkx_sickness._name AS sName,
+		_rjkx_patient_sickness._ctime AS cTime
+	FROM _rjkx_patient_sickness 
+	INNER JOIN _rjkx_patient 
+	ON _rjkx_patient_sickness._patient_id=_rjkx_patient._id
+	INNER JOIN _rjkx_r_p_s_sickness
+	ON _rjkx_r_p_s_sickness._p_s_id = _rjkx_patient._id
+	INNER JOIN _rjkx_sickness
+	ON _rjkx_sickness._id = _rjkx_r_p_s_sickness._sickness_id
+	WHERE
+		_rjkx_patient._openid = #{openId} 
+	ORDER BY
+		_rjkx_patient_sickness._ctime DESC
+	</select>
+	
+	<!-- 个人中心 END -->
+	
+	<!-- 自主选医生 END -->
+	<!-- 疾病列表 -->
+	<select id="getSicknessList" resultType="dto">
+	SELECT 
+		_rjkx_sickness._id AS sId,
+		_rjkx_sickness._type_id AS typeId,
+		_rjkx_sickness._name AS name,
+		_rjkx_sickness._desc AS info
+	FROM _rjkx_sickness
+	WHERE
+		_rjkx_sickness._status =1
+	ORDER BY _rjkx_sickness._id ASC
+	</select>
+	<!-- 医院科室列表 -->
+	<select id="getDepartmentList" resultType="dto">
+	SELECT 
+		_rjkx_hospital_department._id AS dId,
+		_rjkx_hospital_department._name AS name,
+		_rjkx_hospital_department._desc AS info,
+		_rjkx_hospital_department._type AS type
+	FROM _rjkx_hospital_department
+	ORDER BY _rjkx_hospital_department._id ASC
+	</select>
+	<!-- 医院列表 -->
+	<select id="getHospitalList" parameterType="dto" resultType="dto">
+	SELECT
+		_rjkx_hospital._id AS hId,       
+		_rjkx_hospital._area_id AS aId,  
+		_rjkx_hospital._type_id AS typeId,  
+		_rjkx_hospital._name AS name,     
+		_rjkx_hospital._desc AS info,     
+		_rjkx_hospital._address AS address,  
+		_rjkx_hospital._telephone AS telephone,
+		_rjkx_hospital._h_l_id AS level,   
+		_rjkx_hospital._logo AS logo,     
+		_rjkx_hospital._email AS email    
+	FROM _rjkx_hospital
+	WHERE 
+		_rjkx_hospital._status=1
+	<if test="areaId != null and areaId != ''"> 
+    	AND _rjkx_hospital._area_id = #{areaId}
+	</if>
+	
+	</select>
+	<!-- 医生预约时间列表 -->
+	<select id="selectScheduleDoctors" parameterType="dto" resultType="dto">
+	SELECT
+		_rjkx_doctor._id AS doctorId,
+		_rjkx_doctor._depid AS dId,        
+		_rjkx_doctor._hospital_id hId,
+		_rjkx_doctor._name AS dname,
+		_rjkx_doctor._dept_rank AS deptRank,     
+		_rjkx_doctor._rank AS rank,          
+		_rjkx_doctor._icon AS icon,
+		_rjkx_doctor_schedule._schedule_type AS scheduleType
+	FROM _rjkx_doctor
+	INNER JOIN _rjkx_doctor_schedule                      
+    ON _rjkx_doctor._id = _rjkx_doctor_schedule._doctor_id
+	WHERE 1=1
+	<if test="scheduleType != null and scheduleType != ''"> 
+    	AND _rjkx_doctor_schedule._schedule_type= #{scheduleType}
+	</if>
+	<if test="startTime != null">                                                    
+        AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> #{startTime}
+	</if>
+	<if test="endTime != null">                                                    
+        AND _rjkx_doctor_schedule._end_time <![CDATA[<=]]> #{endTime}
+	</if>
+	GROUP BY _rjkx_doctor._id ASC	
+	</select>
+	<!-- 医生综合查询列表 -->
+	<select id="selectDoctors" parameterType="dto" resultType="dto">
+	SELECT
+		_rjkx_doctor._id AS doctorId,           
+		_rjkx_doctor._depid AS dId,        
+		_rjkx_doctor._hospital_id hId,
+		_rjkx_doctor._name AS dname,               
+		_rjkx_doctor._sex AS sex,           
+		_rjkx_doctor._age AS age,          
+		_rjkx_doctor._phone AS phone,         
+		_rjkx_doctor._telephone AS telephone,     
+		_rjkx_doctor._email AS email,         
+		_rjkx_doctor._intro AS intro,         
+		_rjkx_doctor._work_time as workTime,     
+		_rjkx_doctor._good_at AS goodAt,       
+		 dsys._text AS deptRank,     
+		 rsys._text AS rank,          
+		_rjkx_doctor._icon AS icon,          
+		_rjkx_doctor._dep_address AS depAddress,   
+		_rjkx_doctor._order_address AS orderAddress,
+		_rjkx_hospital._name AS hName,
+		_rjkx_doctor_schedule._schedule_type AS scheduleType
+	FROM _rjkx_doctor
+		<if test="sId != null and sId != ''">  
+			INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id=_rjkx_doctor._id AND _rjkx_r_doctor_sickness._sickness_id=#{sId}
+		</if>
+		<if test="sickNessIds != null and sickNessIds != ''">  
+			INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id=_rjkx_doctor._id 
+		</if>
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+		<if test="dId != null and dId != ''">  
+			INNER JOIN _rjkx_hospital_department ON _rjkx_hospital_department._id = _rjkx_doctor._depid AND _rjkx_hospital_department._id = #{dId}
+		</if> 
+		INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor._id = _rjkx_doctor_schedule._doctor_id
+		INNER JOIN _rjkx_sys_code AS dsys ON _rjkx_doctor._dept_rank = dsys._code AND dsys._list = 'DOC_DEPT_RANK'
+	    INNER JOIN _rjkx_sys_code AS rsys ON _rjkx_doctor._rank = rsys._code AND rsys._list = 'DOC_RANK' 
+	    <if test="loginId != null and loginId != '' and criteria == null and (keyWord == null or keyWord == '')">
+			INNER JOIN (SELECT _rjkx_r_doctor_sickness._doctor_id
+			FROM _rjkx_patient_sickness 
+			INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_patient_sickness._id=_rjkx_r_p_s_sickness._p_s_id
+			INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_p_s_sickness._sickness_id = _rjkx_r_doctor_sickness._sickness_id
+			INNER JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_patient_sickness._patient_id
+			WHERE
+			_rjkx_patient._parent_id = #{loginId}) tempa ON _rjkx_doctor._id=tempa._doctor_id 
+		</if>
+		<if test="keyWord != null and keyWord != ''"> 
+	    	INNER JOIN (SELECT d._id FROM _rjkx_doctor d 
+	    			INNER JOIN _rjkx_hospital ON d._hospital_id=_rjkx_hospital._id 
+	    			WHERE 1=1 
+	    			<if test="aId != null and aId != ''">  
+				        AND _rjkx_hospital._area_id= #{aId} 
+				    </if> 
+				    AND (_rjkx_hospital._name LIKE '%${keyWord}%' OR d._name LIKE '%${keyWord}%') 
+	    		UNION ALL 
+	    		SELECT d._id FROM _rjkx_doctor d 
+					INNER JOIN _rjkx_hospital_department ON d._depid = _rjkx_hospital_department._id 
+					WHERE (_rjkx_hospital_department._name LIKE '%${keyWord}%') 
+				UNION ALL 
+				SELECT d._id FROM _rjkx_doctor d 
+					INNER JOIN _rjkx_r_doctor_sickness ON d._id = _rjkx_r_doctor_sickness._doctor_id 
+					INNER JOIN _rjkx_sickness ON _rjkx_r_doctor_sickness._sickness_id=_rjkx_sickness._id 
+					WHERE (_rjkx_sickness._name LIKE '%${keyWord}%')) tempb ON _rjkx_doctor._id=tempb._id
+		</if>
+	WHERE 1=1
+	    <if test="sickNessIds != null and sickNessIds != ''">  
+	        AND (_rjkx_r_doctor_sickness._sickness_id IN (${sickNessIds})) 
+	    </if>
+	    <if test="aId != null and aId != ''">  
+	        AND _rjkx_hospital._area_id= #{aId} 
+	    </if>
+	    <if test="hId != null and hId != ''">  
+	        AND _rjkx_doctor._hospital_id = #{hId} 
+	    </if>
+	    <if test="scheduleType != null and scheduleType != ''"> 
+	    	AND _rjkx_doctor_schedule._schedule_type= #{scheduleType}
+		</if>
+		<if test="startTime != null">                                                    
+	        AND _rjkx_doctor_schedule._start_time <![CDATA[>=]]> #{startTime}
+		</if>
+		<if test="endTime != null">                                                    
+	        AND _rjkx_doctor_schedule._end_time <![CDATA[<=]]> #{endTime}
+		</if>
+		GROUP BY _rjkx_doctor._id,_rjkx_doctor_schedule._schedule_type 
+	    ORDER BY _rjkx_hospital._h_l_id DESC,_rjkx_doctor._rank DESC
+	</select>
+	
+	<!-- 区域列表 -->
+	<select id="commonAreaList" parameterType="dto" resultType="dto">
+	SELECT 
+		_rjkx_area._id AS aId,
+		_rjkx_area._area_name AS aName
+	FROM _rjkx_area 
+	WHERE 
+	_rjkx_area._common =1 
+	AND _rjkx_area._status =1
+	AND _rjkx_area._leaf =1 
+	ORDER BY _rjkx_area._id ASC
+	</select>
+	<!-- 根据ID查询区域-->
+	<select id="getAreaById" parameterType="dto" resultType="dto">
+	SELECT 
+		_rjkx_area._id AS aId,
+		_rjkx_area._area_name AS aName
+	FROM _rjkx_area 
+	WHERE 
+	_rjkx_area._common =1 
+	AND _rjkx_area._status =1
+    AND _rjkx_area._id = #{aId}
+ 
+	</select>
+	<!-- 自主选医生 END -->
+	<!-- 用户注册 START -->
+	<!-- 添加患者信息-->
+	<insert id="addPatient" parameterType="dto" useGeneratedKeys="true" keyProperty="patientId" >
+		INSERT INTO _rjkx_patient(
+			_rjkx_patient._area_id,          
+			_rjkx_patient._parent_id,        
+			_rjkx_patient._relation,         
+			_rjkx_patient._turename,         
+			_rjkx_patient._loginname,       
+			_rjkx_patient._password,         
+			_rjkx_patient._birthdate,        
+			_rjkx_patient._sex,              
+			_rjkx_patient._identity_id,      
+			_rjkx_patient._nation,           
+			_rjkx_patient._address,          
+			_rjkx_patient._email,            
+			_rjkx_patient._mobile,           
+			_rjkx_patient._telephone,        
+			_rjkx_patient._qq_id,            
+			_rjkx_patient._weixin_id,        
+			_rjkx_patient._status,           
+			_rjkx_patient._icon,                
+			_rjkx_patient._ctime,                       
+			_rjkx_patient._openid,
+			_rjkx_patient._age         
+
+		)VALUES(
+		<choose>
+			<when test="areaId == null">
+				null,
+			</when>
+			<otherwise>
+				#{areaId},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="parentId == null">
+				null,
+			</when>
+			<otherwise>
+				#{parentId},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="relation == null">
+				null,
+			</when>
+			<otherwise>
+				#{relation},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="tureName == null">
+				null,
+			</when>
+			<otherwise>
+				#{tureName},
+			</otherwise>
+		</choose>
+		#{mobile},
+		<choose>
+			<when test="password == null">
+				'',
+			</when>
+			<otherwise>
+				#{password},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="birthdate == null">
+				null,
+			</when>
+			<otherwise>
+				#{birthdate},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="sex == null">
+				null,
+			</when>
+			<otherwise>
+				#{sex},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="identityId == null">
+				null,
+			</when>
+			<otherwise>
+				#{identityId},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="nation == null">
+				null,
+			</when>
+			<otherwise>
+				#{nation},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="address == null">
+				'',
+			</when>
+			<otherwise>
+				#{address},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="email == null">
+				'',
+			</when>
+			<otherwise>
+				#{email},
+			</otherwise>
+		</choose>
+		#{mobile},
+		<choose>
+			<when test="telephone == null">
+				'',
+			</when>
+			<otherwise>
+				#{telephone},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="qqId == null">
+				'',
+			</when>
+			<otherwise>
+				#{qqId},
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="weixinId == null">
+				'',
+			</when>
+			<otherwise>
+				#{weixinId},
+			</otherwise>
+		</choose>
+		#{status},
+		<choose>
+			<when test="icon == null">
+				'',
+			</when>
+			<otherwise>
+				#{icon},
+			</otherwise>
+		</choose>
+		NOW(),#{openId},
+		<choose>
+			<when test="age == null">
+				null
+			</when>
+			<otherwise>
+				#{age}
+			</otherwise>
+		</choose>
+		)
+	</insert>
+	<!-- 编辑用户信息 -->
+	<update id="editPatient" parameterType="dto" useGeneratedKeys="true" keyProperty="patientId" >
+		UPDATE _rjkx_patient
+		SET 
+			<if test="areaId != null and areaId != ''"> 
+			_rjkx_patient._area_id = #{areaId} ,
+			</if>
+			<if test="parentId != null and parentId != ''">            
+			_rjkx_patient._parent_id = #{parentId}, 
+			</if>
+			<if test="relation != null and relation != ''">       
+			_rjkx_patient._relation = #{relation}, 
+			</if>
+			<if test="tureName != null and tureName != ''">          
+			_rjkx_patient._turename = #{tureName},
+			</if>
+			<if test="loginName != null and loginName != ''">          
+			_rjkx_patient._loginname = #{loginName}, 
+			</if>
+			<if test="password != null and password != ''">      
+			_rjkx_patient._password = #{password}, 
+			</if>
+			<if test="birthdate != null and birthdate != ''">        
+			_rjkx_patient._birthdate = #{birthdate},
+			</if>
+			<if test="sex != null and sex != ''">        
+			_rjkx_patient._sex = #{sex}, 
+			</if>
+			<if test="identityId != null and identityId != ''">             
+			_rjkx_patient._identity_id = #{identityId}, 
+			</if> 
+			<if test="nation != null and nation != ''">    
+			_rjkx_patient._nation = #{nation}, 
+			</if>
+			<if test="address != null and address != ''">          
+			_rjkx_patient._address = #{address}, 
+			</if>
+			<if test="email != null and email != ''">         
+			_rjkx_patient._email = #{email}, 
+			</if> 
+			<if test="mobile != null and mobile != ''">          
+			_rjkx_patient._mobile = #{mobile}, 
+			</if> 
+			<if test="telephone != null and telephone != ''">          
+			_rjkx_patient._telephone = #{telephone}, 
+			</if> 
+			<if test="qqId != null and qqId != ''">         
+			_rjkx_patient._qq_id = #{qqId}, 
+			</if>
+			<if test="weixinId != null and weixinId != ''">            
+			_rjkx_patient._weixin_id = #{weixinId},
+			</if>
+			<if test="status != null and status != ''">        
+			_rjkx_patient._status = #{status},
+			</if> 
+			<if test="icon != null and icon != ''">          
+			_rjkx_patient._icon = #{icon},
+			</if>                	
+			<if test="openId != null and openId != ''">                       
+			_rjkx_patient._openid = #{openId},
+			</if>
+			<if test="age != null and age != ''">
+			_rjkx_patient._age = #{age}, 
+			</if>
+			<if test="availableBalance != null and availableBalance != ''">
+			_rjkx_patient._available_balance =_rjkx_patient._available_balance + #{availableBalance}, 
+			</if> 
+			<if test="freezeBlance != null and freezeBlance != ''">
+			_rjkx_patient._freeze_blance =_rjkx_patient._freeze_blance + #{freezeBlance}, 
+			</if> 
+			_rjkx_patient._ctime = NOW() 
+		WHERE 1=1
+			<if test="mobile != null and mobile != ''">
+    		AND _rjkx_patient._mobile = #{mobile}
+    		</if>
+    		<if test="patientId != null and patientId != ''">
+    		AND _rjkx_patient._id = #{patientId}
+    		</if>
+    		<if test="parentId != null and parentId != ''">
+    		AND _rjkx_patient._parent_id = #{parentId}
+    		</if>   		
+	</update>
+	<!-- 判断是否存在手机用户-->
+	<select id="getPatientCountByMobile" parameterType="dto" resultType="java.lang.Integer">
+	SELECT 
+		COUNT(_rjkx_patient._id)
+	FROM _rjkx_patient 
+	WHERE 
+	 _rjkx_patient._mobile = #{mobile}
+ 
+	</select>
+	<!-- 添加患者病例-->
+	<insert id="addPatientSickness" parameterType="dto" useGeneratedKeys="true" keyProperty="patientSicknessId" >
+		INSERT INTO _rjkx_patient_sickness(
+			_rjkx_patient_sickness._patient_id,
+			_rjkx_patient_sickness._desc,
+			_rjkx_patient_sickness._ctime
+		)VALUES(#{patientId},#{pDesc},NOW())
+	</insert>
+	<!-- 添加患者病例和疾病关系-->
+	<insert id="addPatientSicknessRelationSickness" parameterType="dto">
+		INSERT INTO _rjkx_r_p_s_sickness(
+			_rjkx_r_p_s_sickness._p_s_id,
+			_rjkx_r_p_s_sickness._sickness_id
+		)VALUES(#{patientSicknessId},#{sicknessId})
+	</insert>
+	<!-- 用户注册  END -->
+	<!-- 用户注册绑定 START -->
+	<!-- 添加binding信息 -->
+	<insert id="addBinding" parameterType="dto" >
+		INSERT INTO _rjkx_patient_binding(
+			_rjkx_patient_binding._mobile,
+			_rjkx_patient_binding._verify_code,
+			_rjkx_patient_binding._utime,
+			_rjkx_patient_binding._status
+		)VALUES(#{mobile},#{verifyCode},NOW(),#{status})
+	</insert>
+	<!-- 获取binding信息 -->
+	<select id="getBindingInfo" parameterType="dto" resultType="dto">
+		SELECT 
+			_rjkx_patient_binding._mobile AS mobile,
+			_rjkx_patient_binding._verify_code AS verifyCode,
+			_rjkx_patient_binding._utime AS updateTime
+		FROM _rjkx_patient_binding
+		WHERE 1=1
+		<if test="status != null and status != ''">  
+    	AND _rjkx_patient_binding._status = #{status}
+     	</if> 
+     	<if test="mobile != null and mobile != ''">  
+    	AND _rjkx_patient_binding._mobile = #{mobile}
+     	</if> 
+	</select>
+	<!-- 修改binding信息 -->
+	<update id="editBindingInfo" parameterType="dto">
+		UPDATE _rjkx_patient_binding
+		SET
+			<if test="status != null and status != ''"> 
+			_rjkx_patient_binding._status = #{status},
+			</if> 
+			<if test="verifyCode != null and verifyCode != ''">  
+			_rjkx_patient_binding._verify_code = #{verifyCode},
+			</if>
+			_rjkx_patient_binding._utime = NOW()
+		WHERE 
+    		_rjkx_patient_binding._mobile = #{mobile}		
+	</update>
+	<!-- 用户注册绑定 END -->
+
+	<!-- 获取医生评价 -->
+	<select id="getDoctorReviewList" parameterType="dto" resultType="dto">
+		SELECT 
+			_rjkx_patient._turename AS patientName,
+			_rjkx_patient._icon AS icon,
+			_rjkx_doctor_review._content AS content,  
+			_rjkx_doctor_review._level AS level,     
+			_rjkx_doctor_review._ctime AS cTime
+		FROM _rjkx_doctor_review
+		INNER JOIN _rjkx_patient 
+		ON _rjkx_doctor_review._patient_id=_rjkx_patient._id
+		WHERE 
+		_rjkx_doctor_review._doctor_id = #{doctorId}
+	</select>
+	
+	<!-- 查询医生的时间片段 -->
+	<select id="getDoctorTimeSlice" parameterType="dto" resultType="dto">
+		SELECT 
+			_rjkx_doctor_schedule._id AS scheduleId,
+			DATE_FORMAT(_rjkx_doctor_schedule._start_time,'%H:%i') AS startTime			
+		FROM _rjkx_doctor_schedule
+		LEFT JOIN _rjkx_order_schedule 
+		ON _rjkx_doctor_schedule._id=_rjkx_order_schedule._schedule_id 
+		WHERE
+			_rjkx_doctor_schedule._status=1
+		AND _rjkx_doctor_schedule._schedule_type = #{scheduleType}
+		AND DATE(_rjkx_doctor_schedule._end_time) = #{chooseDate} 
+		AND _rjkx_doctor_schedule._doctor_id = #{doctorId}
+		AND (_rjkx_order_schedule._id is NULL)
+		AND _rjkx_doctor_schedule._start_time > NOW()
+		ORDER BY _rjkx_doctor_schedule._start_time ASC
+			
+	</select>
+	
+	<!-- 根据ID查询时间碎片 -->
+	<select id="getTimeSliceById" parameterType="dto" resultType="dto">
+		SELECT 
+			_rjkx_doctor_schedule._id AS scheduleId,
+			_rjkx_doctor_schedule._start_time AS scheduleTime,
+			_rjkx_doctor_schedule._address AS address,
+			DATE_FORMAT(_rjkx_doctor_schedule._start_time,'%H:%i') AS startTime,
+			DATE_FORMAT(_rjkx_doctor_schedule._end_time,'%H:%i') AS endTime
+		FROM _rjkx_doctor_schedule
+		WHERE
+			_rjkx_doctor_schedule._status=1
+		AND _rjkx_doctor_schedule._id = #{scheduleId}
+
+	</select>
+	
+	<!-- 查询医生信息 -->
+	<select id="getDoctorInfoById" parameterType="dto" resultType="dto">
+	SELECT
+		_rjkx_doctor._id AS doctorId,           
+		_rjkx_doctor._depid AS dId,        
+		_rjkx_doctor._hospital_id hId,
+		_rjkx_doctor._name AS dname,               
+		_rjkx_doctor._sex AS sex,                   
+		_rjkx_doctor._intro AS intro,           
+		_rjkx_doctor._good_at AS goodAt,       
+		 dsys._text AS deptRank,     
+		 rsys._text AS rank,          
+		_rjkx_doctor._icon AS icon,          
+		_rjkx_doctor._dep_address AS depAddress,   
+		_rjkx_doctor._order_address AS orderAddress,
+		_rjkx_hospital_department._name AS deptName,
+		_rjkx_hospital._name AS hName
+	FROM _rjkx_doctor
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+		INNER JOIN _rjkx_hospital_department ON _rjkx_hospital_department._id = _rjkx_doctor._depid
+		INNER JOIN _rjkx_sys_code AS dsys ON _rjkx_doctor._dept_rank = dsys._code AND dsys._list = 'DOC_DEPT_RANK'
+	    INNER JOIN _rjkx_sys_code AS rsys ON _rjkx_doctor._rank = rsys._code AND rsys._list = 'DOC_RANK'
+	
+	WHERE  
+	  _rjkx_hospital._id= #{doctorId} 
+	</select>
+	<!-- 根据预约类型获取价格 -->
+	<select id="getOrderPriceByScheduleType" parameterType="dto" resultType="java.math.BigDecimal">
+	SELECT 
+		_rjkx_order_price._price AS orderPrice
+	FROM _rjkx_order_price
+	WHERE
+		_rjkx_order_price._type = #{scheduleType}
+	AND _rjkx_order_price._status=1
+	LIMIT 1
+	</select>
+	
+	<!-- 根据医生预约片段ID查询订单预约表 -->
+	<select id="findOrderScheduleCountByScheduleId" parameterType="dto" resultType="java.lang.Integer">
+	SELECT  COUNT(_rjkx_order_schedule._id) 
+	FROM _rjkx_order_schedule
+	WHERE
+		_rjkx_order_schedule._schedule_id = #{docScId}
+	</select>
+	
+	<!-- 根据患者病情查询医生 -->
+	<select id="findDoctorsByPatientSickness" parameterType="dto" resultType="dto">
+	SELECT 
+		_rjkx_doctor._id AS doctorId,           
+		_rjkx_doctor._depid AS dId,        
+		_rjkx_doctor._hospital_id hId,
+		_rjkx_doctor._name AS dname,               
+		_rjkx_doctor._sex AS sex,           
+		_rjkx_doctor._age AS age,          
+		_rjkx_doctor._phone AS phone,         
+		_rjkx_doctor._telephone AS telephone,     
+		_rjkx_doctor._email AS email,         
+		_rjkx_doctor._intro AS intro,         
+		_rjkx_doctor._work_time as workTime,     
+		_rjkx_doctor._good_at AS goodAt,       
+		 dsys._text AS deptRank,     
+		 rsys._text AS rank,          
+		_rjkx_doctor._icon AS icon,          
+		_rjkx_doctor._dep_address AS depAddress,   
+		_rjkx_doctor._order_address AS orderAddress,
+		_rjkx_hospital._name AS hName,
+		_rjkx_doctor_schedule._schedule_type AS scheduleType
+	FROM _rjkx_doctor
+		INNER JOIN _rjkx_sys_code AS dsys ON _rjkx_doctor._dept_rank = dsys._code AND dsys._list = 'DOC_DEPT_RANK'
+		INNER JOIN _rjkx_sys_code AS rsys ON _rjkx_doctor._rank = rsys._code AND rsys._list = 'DOC_RANK'
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+		INNER JOIN _rjkx_doctor_schedule ON _rjkx_doctor._id = _rjkx_doctor_schedule._doctor_id	
+		INNER JOIN (SELECT _rjkx_r_doctor_sickness._doctor_id
+		FROM _rjkx_patient_sickness 
+		INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_patient_sickness._id=_rjkx_r_p_s_sickness._p_s_id
+		INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_p_s_sickness._sickness_id = _rjkx_r_doctor_sickness._sickness_id
+		INNER JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_patient_sickness._patient_id
+		WHERE
+			_rjkx_patient._parent_id = #{loginId}
+		GROUP BY _rjkx_r_doctor_sickness._doctor_id ASC) tempa ON _rjkx_doctor._id=tempa._doctor_id 
+	WHERE _rjkx_doctor_schedule._start_time<![CDATA[>]]>NOW() 
+	<if test="scheduleType != null and scheduleType != ''">  
+    	AND _rjkx_doctor_schedule._schedule_type = #{scheduleType}
+     	</if> 
+	GROUP BY _rjkx_doctor._id ASC
+	</select>
+	<!-- 根据openID查询患者id -->
+	<select id="findPatientId" parameterType="dto" resultType="java.lang.Long">
+		SELECT  _rjkx_patient._id AS id 
+		FROM _rjkx_patient 
+		WHERE _openid = #{openId} limit 1
+	</select>
+	<!-- 根据登录人ID查询患者 -->
+	<select id="findPatientsByLoginId" parameterType="dto" resultType="dto">
+		SELECT 
+			_rjkx_patient._id AS patientId,
+			_rjkx_patient._turename AS tureName
+		FROM _rjkx_patient
+		WHERE 
+			 _rjkx_patient._parent_id= #{loginId}
+		ORDER BY _rjkx_patient._id ASC
+	</select>
+	<!-- 添加会诊记录-->
+	<insert id="addVIPConsultation" parameterType="dto">
+		INSERT INTO _rjkx_vip_consultation(        
+			_rjkx_vip_consultation._mi_city,     
+			_rjkx_vip_consultation._see_city,    
+			_rjkx_vip_consultation._login_id,    
+			_rjkx_vip_consultation._patient_name,
+			_rjkx_vip_consultation._patient_id,  
+			_rjkx_vip_consultation._mobile,      
+			_rjkx_vip_consultation._start_time,  
+			_rjkx_vip_consultation._end_time,    
+			_rjkx_vip_consultation._sickness,    
+			_rjkx_vip_consultation._sick_desc,   
+			_rjkx_vip_consultation._status,      
+			_rjkx_vip_consultation._ctime            
+		)VALUES(
+			#{miCity},
+			#{seeCity},
+			#{loginId},
+			#{patientName},
+			#{patientId},
+			#{mobile},
+			#{startTime},
+			#{endTime},
+			#{sickness},
+			#{sickDesc},
+			#{status},
+			NOW())
+	</insert>
+	<!-- 根据疾病id获取病情信息-->
+	<select id="getSicknessById" parameterType="dto" resultType="dto">
+	SELECT 
+		_rjkx_sickness._id AS sId,
+		_rjkx_sickness._type_id AS typeId,
+		_rjkx_sickness._name AS name,
+		_rjkx_sickness._desc AS info
+	FROM _rjkx_sickness
+	WHERE
+		_rjkx_sickness._id = #{sicknessId}
+	</select>
+	
+	<!-- 根据患者ID查询病历-->
+	<select id="findPatientSicknessCase" parameterType="dto" resultType="dto">
+	SELECT
+		_rjkx_patient_sickness._patient_id AS patientId,  
+		_rjkx_patient_sickness._desc AS pDesc,
+		_rjkx_doctor._name AS doctorName,
+		_rjkx_hospital._name AS hospitalName,
+		DATE_FORMAT(_rjkx_patient_order._ctime,'%Y %m-%d') AS orderTime
+	FROM _rjkx_patient_sickness
+	INNER JOIN _rjkx_order_schedule 
+	ON _rjkx_patient_sickness._id = _rjkx_order_schedule._p_s_id
+	INNER JOIN _rjkx_doctor
+	ON _rjkx_order_schedule._doctor_id = _rjkx_doctor._id
+	INNER JOIN _rjkx_hospital
+	ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+	INNER JOIN _rjkx_patient_order
+	ON _rjkx_patient_order._subscribe_id = _rjkx_order_schedule._id
+	WHERE 
+		_rjkx_patient_order._patient_id = #{patientId}
+	AND 
+		_rjkx_patient_order._order_status = 3
+	ORDER BY _rjkx_patient_order._ctime DESC
+	</select>
+	<!-- 添加会诊记录-->
+	<insert id="addFeedback" parameterType="dto">
+	INSERT INTO _rjkx_feedback(        
+		_rjkx_feedback._login_id,  
+		_rjkx_feedback._content,   
+		_rjkx_feedback._ctime     	       
+	)VALUES(
+		#{loginId},
+		#{content},
+		NOW())
+	</insert>
+	<!-- 添加医生评论-->
+	<insert id="addDoctorReview" parameterType="dto">
+	INSERT INTO _rjkx_doctor_review(        
+		 _rjkx_doctor_review._doctor_id,  
+		 _rjkx_doctor_review._patient_id, 
+		 _rjkx_doctor_review._order_id,   
+		 _rjkx_doctor_review._gift_id,    
+		 _rjkx_doctor_review._content,    
+		 _rjkx_doctor_review._level,      
+		 _rjkx_doctor_review._ctime,      
+		 _rjkx_doctor_review._status     	       
+	)VALUES(
+		#{doctorId},
+		#{patientId},
+		#{orderId},
+		<choose>
+			<when test="giftId == null and giftId != ''">
+				null,
+			</when>
+			<otherwise>
+				#{giftId},
+			</otherwise>
+		</choose>
+		#{content},
+		#{level},
+		NOW(),
+		#{status})
+	</insert>
+	
+	<!-- 查询礼物列表-->
+	<select id="getDoctorGiftList"  resultType="dto">
+		SELECT 
+			_rjkx_doctor_review_gift._id AS giftId,
+			_rjkx_doctor_review_gift._name AS name,
+			_rjkx_doctor_review_gift._icon AS icon,
+			_rjkx_doctor_review_gift._amount AS amount
+		FROM _rjkx_doctor_review_gift
+		ORDER BY _rjkx_doctor_review_gift._amount DESC
+	</select>
+	<!-- 查询病人病情列表-->
+	<select id="findPatientSicknesses" parameterType="dto" resultType="dto">
+		SELECT 
+			_rjkx_patient_sickness._id AS psId,
+			_rjkx_patient_sickness._patient_id AS patientId,
+			_rjkx_patient_sickness._desc AS info
+		FROM _rjkx_patient_sickness
+		WHERE
+			_rjkx_patient_sickness._patient_id = #{patientId}
+		ORDER BY _rjkx_patient_sickness._id DESC
+	</select>
+	<!-- 查询订单的提醒内容-->
+	<select id="findOrderSms" parameterType="dto" resultType="dto">
+		SELECT _rjkx_doctor._name AS doctorName,
+			DATE_FORMAT(_rjkx_order_schedule._start_time,'%m月%d日') AS days,
+			WEEKDAY(_rjkx_order_schedule._start_time) AS wd,
+			DATE_FORMAT(_rjkx_order_schedule._start_time,'%H:%i') AS stime,
+			DATE_FORMAT(_rjkx_order_schedule._end_time,'%H:%i') AS etime,
+			_rjkx_order_schedule._address,
+			_rjkx_patient._turename,
+			_rjkx_patient._mobile 
+		FROM _rjkx_patient_order INNER JOIN _rjkx_order_schedule ON _rjkx_patient_order._subscribe_id=_rjkx_order_schedule._id 
+		INNER JOIN _rjkx_doctor ON _rjkx_order_schedule._doctor_id=_rjkx_doctor._id 
+		INNER JOIN _rjkx_patient ON _rjkx_patient_order._patient_id=_rjkx_patient._id 
+		WHERE _rjkx_patient_order._id=#{orderId} LIMIT 1
+	</select>
+	<!-- 查询城市id-->
+	<select id="findCityId" parameterType="dto" resultType="dto">
+		SELECT _id AS cityId 
+		FROM _rjkx_area 
+		WHERE _area_name=#{cityName} LIMIT 1
+	</select>
+</mapper>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sickness">
+	
+	<select id="listAllSicknessTypeForCombox" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness_type._id AS code,
+			_rjkx_sickness_type._name AS name
+		FROM _rjkx_sickness_type
+		WHERE
+			_rjkx_sickness_type._status = 1
+		ORDER BY _rjkx_sickness_type._id ASC
+	</select>
+	
+	<select id="listSickness" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness._id AS sId,
+			_rjkx_sickness._type_id AS stId,
+			_rjkx_sickness_type._name AS stName,
+			_rjkx_sickness._name AS sName,
+			_rjkx_sickness._desc AS sDesc,
+			_rjkx_sickness._status AS sStatus
+		FROM _rjkx_sickness
+		INNER JOIN _rjkx_sickness_type ON _rjkx_sickness_type._id = _rjkx_sickness._type_id
+		WHERE
+			1=1
+			<if test="queryContent != null">
+				AND _rjkx_sickness._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="listSicknessCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sickness
+		WHERE
+			1=1
+			<if test="queryContent != null">
+				AND _rjkx_sickness._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<insert id="addSickness" parameterType="dto">
+		INSERT INTO _rjkx_sickness(
+			_rjkx_sickness._type_id,
+			_rjkx_sickness._name,
+			_rjkx_sickness._desc,
+			_rjkx_sickness._status
+		)VALUES(#{stId},#{sName},#{sDesc},#{sStatus})
+	</insert>
+	
+	<update id="editSickness" parameterType="dto">
+		UPDATE _rjkx_sickness
+		SET
+			_rjkx_sickness._type_id = #{stId},
+			_rjkx_sickness._name = #{sName},
+			_rjkx_sickness._desc = #{sDesc},
+			_rjkx_sickness._status = #{sStatus} 
+		WHERE
+			_rjkx_sickness._id = #{sId}
+	</update>
+	
+	<delete id="delSickness" parameterType="dto">
+		DELETE FROM _rjkx_sickness WHERE _rjkx_sickness._id = #{id}
+	</delete>
+	
+	<select id="listAttr" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness_attr._id AS saId,
+			_rjkx_sickness_attr._name AS saName,
+			_rjkx_sickness_attr._status AS saStatus,
+			_rjkx_sickness_attr._ctime AS sacTime,
+			_rjkx_sickness_attr._utime AS sauTime,
+			_rjkx_sickness_attr._icon AS saIcon
+		FROM _rjkx_sickness_attr
+		WHERE
+			1=1
+			<if test="queryContent != null">
+				AND _rjkx_sickness_attr._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="listAttrCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sickness_attr
+		WHERE
+			1=1
+			<if test="queryContent != null">
+				AND _rjkx_sickness_attr._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<insert id="addAttr" parameterType="dto">
+		INSERT INTO _rjkx_sickness_attr(
+			_rjkx_sickness_attr._name,
+			_rjkx_sickness_attr._status,
+			_rjkx_sickness_attr._icon,
+			_rjkx_sickness_attr._ctime,
+			_rjkx_sickness_attr._utime
+		)VALUES(#{saName},#{saStatus},#{saIcon},NOW(),NOW())
+	</insert>
+	
+	<update id="editAttr" parameterType="dto">
+		UPDATE _rjkx_sickness_attr
+		SET 
+			_rjkx_sickness_attr._name = #{saName},
+			_rjkx_sickness_attr._status = #{saStatus},
+			_rjkx_sickness_attr._icon = #{saIcon},
+			_rjkx_sickness_attr._utime = NOW()
+		WHERE
+			_rjkx_sickness_attr._id = #{saId}
+	</update>
+	
+	<delete id="delAttr" parameterType="dto">
+		DELETE FROM _rjkx_sickness_attr WHERE _rjkx_sickness_attr._id = #{id}
+	</delete>
+	
+	<select id="listSicknessSub" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness_sub._id AS subId,
+			_rjkx_sickness_sub._name AS subName,
+			_rjkx_sickness_sub._desc AS subDesc,
+			_rjkx_sickness_sub._sortno AS subSort,
+			_rjkx_sickness_sub._parentid AS pId,
+			_rjkx_sickness_sub._s_id AS subSId,
+			_rjkx_sickness_sub._leaf AS subLeaf,
+			_rjkx_sickness_sub._status AS subStatus
+		FROM _rjkx_sickness_sub 
+		WHERE
+			_rjkx_sickness_sub._s_id = #{sId}
+			AND (_rjkx_sickness_sub._id = #{pId}
+			OR _rjkx_sickness_sub._parentid = #{pId})
+	</select>
+	
+	<select id="listSicknessSubCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sickness_sub 
+		WHERE
+			_rjkx_sickness_sub._s_id = #{sId}
+			AND (_rjkx_sickness_sub._id = #{pId}
+			OR _rjkx_sickness_sub._parentid = #{pId})
+	</select>
+	
+	<insert id="addSicknessSub" parameterType="dto">
+		INSERT INTO _rjkx_sickness_sub(
+			_rjkx_sickness_sub._name,
+			_rjkx_sickness_sub._s_id,
+			_rjkx_sickness_sub._desc,
+			_rjkx_sickness_sub._sortno,
+			_rjkx_sickness_sub._parentid,
+			_rjkx_sickness_sub._leaf,
+			_rjkx_sickness_sub._status
+		)VALUES(#{subName},#{subSId},#{subDesc},#{subSort},#{pId},1,#{subStatus})
+	</insert>
+	
+	<update id="editSicknessSub" parameterType="dto">
+		UPDATE _rjkx_sickness_sub SET
+			_rjkx_sickness_sub._name = #{subName},
+			_rjkx_sickness_sub._desc = #{subDesc},
+			_rjkx_sickness_sub._sortno = #{subSort},
+			_rjkx_sickness_sub._status = #{subStatus}
+		WHERE
+			_rjkx_sickness_sub._id = #{subId}
+	</update>
+	
+	<delete id="delSicknessSub" parameterType="dto">
+		DELETE FROM _rjkx_sickness_sub WHERE _rjkx_sickness_sub._id = #{subId}
+	</delete>
+	
+	<update id="setSicknessSubLeaf" parameterType="dto">
+		UPDATE _rjkx_sickness_sub SET _rjkx_sickness_sub._leaf = #{leaf} WHERE _rjkx_sickness_sub._id = #{pId}
+	</update>
+	
+</mapper>

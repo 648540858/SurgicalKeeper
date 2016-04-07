@@ -1,0 +1,11 @@
+@charset "utf-8";
+
+.left_tree{float:left;width:23%;height:100%;top:0;left:20px;border-right:5px solid gray;background:#D7DEF0;}
+.left_tree_title{height:30px;width:100%;text-align:center;border-bottom:5px solid gray }
+
+.center_data{float:right;width:76%;height:auto;top:0;left:0;}
+.center_btn{width:100%;height:auto;top:0;left:10px;}
+.center_btn_1{float:left;width:54%;height:auto;top:0;left:0;margin-left:5px;}
+#input_query{width:200px}
+.center_btn_2{float:right;width:auto;height:auto;top:0;left:0;}
+.center_table{float:left;height:auto;width:76%;top:0;left:5px;font-size: 12px;}

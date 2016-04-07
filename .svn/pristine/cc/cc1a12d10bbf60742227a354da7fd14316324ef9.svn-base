@@ -1,0 +1,348 @@
+$(function(){
+	$("#uStatus option").remove();
+	$("#uSex option").remove();
+	$("#uLocked option").remove();
+	var id_arr=getCodeArray('STATE');
+	for(var i=0;i<id_arr.length;i++) {
+		$("#uStatus").append("<option value='"+id_arr[i].code+"'>"+id_arr[i].name+"</option>");
+	}
+	id_arr=getCodeArray('SEX');
+	for(var i=0;i<id_arr.length;i++) {
+		$("#uSex").append("<option value='"+id_arr[i].code+"'>"+id_arr[i].name+"</option>");
+	}
+	id_arr=getCodeArray('LOCKED');
+	for(var i=0;i<id_arr.length;i++) {
+		$("#uLocked").append("<option value='"+id_arr[i].code+"'>"+id_arr[i].name+"</option>");
+	}
+	
+	//给添加按钮绑定事件，激活弹窗
+	$("#btn_add").click(function(){
+		$("#submit-mode").val("add");
+		$("#modalTitle").text("添加医院信息");
+		$("#uName").val("");
+		$("#uAccount").val("");
+		$("#uPwd").val("");
+		$("#uTel").val("");
+		$("#uDesc").val("");
+		
+		$('#uStatus')[0].selectedIndex = 0;
+		$('#uSex')[0].selectedIndex = 0;
+		$('#uLocked')[0].selectedIndex = 0;
+		$("#modal_addEdit").modal("toggle");
+	});
+	
+	//编辑按钮绑定事件
+	$("#btn_edit").click(function(){
+		$("#submit-mode").val("edit");
+		$("#modalTitle").text("编辑医院信息");
+		editShow();
+	});
+	//删除按钮绑定事件
+	$("#btn_delete").click(function(){
+		deleteUser();
+	});
+	
+	//绑定角色按钮绑定事件
+	$("#btn_bindRole").click(function(){
+		bindRoleShow();
+	});
+	
+	//绑定角色提交按钮绑定
+	$("#btn_save_bindRole").click(function(){
+		bindRoleSave();
+	});
+	
+	//绑定复选框事件
+	$("#topcheck").click(function(){
+		checkbox("grup", "topcheck"); 
+	});
+	
+	validateAddEdit();
+	
+	deptTreeshow();
+});
+
+validateAddEdit=function(){
+	
+	$('#validate_addEdit').validate({
+        //设置离焦即验证，主要针对required:true, 因为它默认提交时验证
+		onfocusout: function(element) { $(element).valid(); },
+        rules: {
+        	uName: {required:true},
+        	uAccount: {required:true},
+        	uPwd: {required:true}
+        },
+        errorPlacement: function(error, element) {  
+		    error.appendTo(element.parent());  
+    	},
+        messages : {
+            uName: { 
+        		required: "<span style='line-height: 35px;color:red;font-weight: normal;'>名称还没填写！</span>"
+            },
+            uAccount: {
+            	required: "<span style='line-height: 35px;color:red;font-weight: normal;'>帐号还没填写！</span>"
+            },
+            uPwd: {
+            	required: "<span style='line-height: 35px;color:red;font-weight: normal;'>密码还没填写！</span>"
+            }
+    	}
+    });
+	$("#btn-save-addEdit").click(function(){
+		saveAddEdit();
+	});
+};
+
+//编辑回显
+editShow=function(){
+	//回显清空内容
+	var ids=getCheckId("grup");
+	
+	if(ids.length==0){
+		alert("未选择要编辑的项目！！！");
+	}else if(ids.indexOf(",")>0){
+		alert("请选择单个项目进行编辑");
+	}else if($.isNumeric(Number(ids)) ){
+		//显示弹窗
+		$("#modal_addEdit").modal("toggle");
+		
+		sendAjax(root+"/organizationv2/getUser.do",{
+			uId:ids},
+			function(data){
+				//设置回显的值
+				$("#uName").val(data.uName);
+				$("#uAccount").val(data.uAccount);
+				$("#uTel").val(data.uTel);
+				$("#uDesc").val(data.uDesc);
+				$("#uSex").val(data.uSex);
+				$("#uStatus").val(data.uStatus);
+				$("#uLocked").val(data.uLocked);
+			}
+		);
+	}
+};
+
+//删除确认
+deleteUser=function(){
+	var ids=getCheckId("grup");
+	if(ids.length==0){
+		alert("未选择要删除的项目！！！")
+	}else{
+		confirmWin("你确认要删除吗？","subDelete");
+	}
+};
+
+//删除提交
+subDelete=function(){
+	var ids=getCheckId("grup");
+
+	sendAjax(root+"/organizationv2/delUser.do",{
+		ids:ids},
+		function(data){
+			if(data.bflag==1){
+				alert(data.msg);
+				queryUser();
+			}else{
+				alert(data.msg);
+			}
+		}
+	);
+};
+
+//添加与编辑保存按钮事件
+saveAddEdit=function(){
+	var type=$("#submit-mode").val();
+	if(type=="add"){
+			sendAjax(root+"/organizationv2/addUser.do",{
+				dId:dId,
+				uName:$("#uName").val(),
+				uAccount:$("#uAccount").val(),
+				uPwd:$("#uPwd").val(),
+				uTel:$("#uTel").val(),
+				uDesc:$("#uDesc").val(),
+				uSex:$("#uSex").val(),
+				uStatus:$("#uStatus").val(),
+				uLocked:$("#uLocked").val()},
+				function(data){
+					if(data.bflag==1){
+						alert(data.msg);
+						 //添加成功关闭对话窗口
+						 $("#modal_addEdit").modal("toggle");
+						 queryUser();
+					}else{
+						alert(data.msg);
+					}
+				}
+			);
+	}else if(type=="edit"){
+		var ids=getCheckId("grup");
+		sendAjax(root+"/organizationv2/editUser.do",{
+				dId:dId,
+				uName:$("#uName").val(),
+				uAccount:$("#uAccount").val(),
+				uPwd:$("#uPwd").val(),
+				uTel:$("#uTel").val(),
+				uDesc:$("#uDesc").val(),
+				uSex:$("#uSex").val(),
+				uStatus:$("#uStatus").val(),
+				uLocked:$("#uLocked").val(),
+				uId:ids},
+			function(data){
+				if(data.bflag==1){
+					alert(data.msg);
+					 //成功关闭对话窗口
+					 $("#modal_addEdit").modal("toggle");
+					 queryUser();
+				}else{
+					alert(data.msg);
+				}
+			}
+		);
+	}
+};
+
+var dId=0;
+deptTreeshow=function(){
+	var setting = {
+		async : {
+			enable : true,
+			url : getUrl
+		},
+		data : {
+			simpleData : {
+				enable : true
+			}
+		},
+		view : {
+			showIcon : true,
+			showLine: true
+		},
+		callback : {
+			onClick : treeClick
+		// 单机触发的事件
+		}
+	};
+	
+	sendAjax(root+"/commonAdminTree/deptTree.do",{pId:1},
+		function(data){
+			$.fn.zTree.init($("#tree_dept"), setting, [ {
+				"id" : "1",
+				"name" : '北京瑞吉康星',
+				"isParent" : true,
+				"leaf" : 0,
+				children : data
+			} ]);
+		}
+	);
+}
+function getUrl(treeId, treeNode) {
+	var param = "pId=" + treeNode.id;
+	return root + "/commonAdminTree/deptTree.do?" + param;
+}
+
+treeClick=function(e,treeId,treeNode,clickFlag){
+	if(treeNode.leaf==1){
+		dId=treeNode.id;
+		queryUser();
+	}else{
+		dId=0;
+		templateHtml("list",{},"content");
+	}
+}
+/**
+ * 查询工具方法
+ */
+queryUser=function(){
+	var url=root+"/organizationv2/listUser.do";
+	sendAjax(url,{dId:dId},
+			function(data){
+				templateHtml("list",data,"content");
+			}
+		);
+}
+
+//绑定角色树形结构显示
+bindRoleShow=function(){
+	
+	var ids=getCheckId("grup");
+	if(ids.length==0){
+		alert("未选择要绑定的项目！");
+	}else if(ids.indexOf(",")>0){
+		alert("请选择单个项目进行绑定");
+	}else if($.isNumeric(Number(ids)) ){
+		$("#modal_bindRole").modal("toggle");
+		var setting={
+			async: {
+				enable: true,
+				type:"post",
+				contentType: "application/x-www-form-urlencoded",
+				url: root+"/authorityv2/roleTreeWithUserForCombo.do",
+				autoParam: ['id=node'],
+				otherParam: {"uId" : ids}
+			},
+			data: {
+				key: {
+					name: "text",
+					checked: "checked",
+					children: "nodes"
+				}
+			},
+			check: {
+				enable: true,
+				chkStyle: "checkbox",
+				chkboxType: { "Y": "p", "N": "s" }
+			},
+			view:{
+				expandSpeed: "slow",
+				selectedMulti: true,
+				showIcon: true,
+				showLine: true,
+				showTitle: false
+			}
+		};
+		
+		//给全选按钮添加事件
+		$("#check_all_bind").click(function name() {
+			var checkstatu=$("#check_all_bind").is(":checked");
+			if(checkstatu==true){
+				$.fn.zTree.getZTreeObj("tree_role").checkAllNodes(true);
+			}else if(checkstatu==false){
+				$.fn.zTree.getZTreeObj("tree_role").checkAllNodes(false);
+			}
+		});
+		
+		var t = $("#tree_role");
+		t = $.fn.zTree.init(t, setting);
+	}
+	
+};
+
+//绑定角色信息提交
+bindRoleSave=function() {
+	var treeObj = $.fn.zTree.getZTreeObj("tree_role");
+    var nodes = treeObj.getCheckedNodes(true);
+    var uId=getCheckId("grup");
+    var ids="";
+   
+    for (var i = 0; i < nodes.length; i++) {
+    	var id=nodes[i].id,
+    	ids = ids+id+",";
+    }
+	//定义最后一个逗号的前一个索引
+	var lastd=ids.lastIndexOf(",");
+	ids=ids.slice(0,lastd);
+
+	sendAjax(root+"/authorityv2/setUserForRole.do",{
+				ids:ids,
+				uId:uId},
+		function(data){
+			if(data.bflag==1){
+				alert(data.msg);
+				 //添加成功关闭对话窗口
+				 $("#modal_bindRole").modal("toggle");
+				 queryUser();
+			}else{
+				alert(data.msg);
+			}
+		}
+	);
+};

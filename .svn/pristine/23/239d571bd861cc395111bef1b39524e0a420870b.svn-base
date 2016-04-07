@@ -1,0 +1,149 @@
+package com.rjkx.sk.admin.basic.controller;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.rjkx.sk.admin.basic.service.CorrelationServiceItf;
+import com.rjkx.sk.admin.core.web.AdminBaseController;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.SystemCons;
+/**
+ * 关联关系
+  * @ClassName: CorrelationController
+  * @Description:
+  * @author yiyuan-Rally
+  * @date 2015年10月16日 上午10:10:39 
+  * @version V1.0
+ */
+@Controller
+@RequestMapping(value="/correlation")
+public class CorrelationController extends AdminBaseController
+{
+	
+	private CorrelationServiceItf correService;
+	
+	/**
+	 * 疾病选择 For 医院科室
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年10月16日 上午10:17:19
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/sicknessTreeWithHosDeptForComb")
+	public String sicknessTreeWithHosDeptForComb(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		super.write(JsonHelper.encodeObject2Json(correService.sicknessTreeWithHosDeptForComb(super.getParamsAsDto(request))), response);
+		
+		return null;
+	}
+	/**
+	 * 
+	  * 医院科室选择 For 医院
+	  * @author yiyuan-Rally
+	  * @date 2015年10月16日 上午10:20:38
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/hosDeptTreeWithHosForComb")
+	public String hosDeptTreeWithHosForComb(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		super.write(JsonHelper.encodeObject2Json(correService.hosDeptTreeWithHosForCombo(super.getParamsAsDto(request))), response);
+		
+		return null;
+	}
+	/**
+	 * 
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年10月20日 上午8:47:51
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/sicknessTreeWithDocForComb")
+	public String sicknessTreeWithDocForComb(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		super.write(JsonHelper.encodeObject2Json(correService.sicknessTreeWithDoctorForCombo(super.getParamsAsDto(request))), response);
+		
+		return null;
+	}
+	/**
+	 * 添加疾病与科室的关联
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年10月16日 上午10:23:39
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/sicknessToHosDept")
+	public String sicknessToHosDept(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		correService.addSicknessToHosDept(super.getParamsAsDto(request));
+		
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		
+		return null;
+	}
+	/**
+	 * 添加医院科室与医院的关联
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年10月16日 上午10:23:58
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/hosDeptToHos")
+	public String hosDeptToHos(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		correService.addHosDeptToHos(super.getParamsAsDto(request));
+		
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		
+		return null;
+	}
+	/**
+	 * 
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年10月20日 上午8:48:24
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value="/sicknessToDoctor")
+	public String sicknessToDoctor(HttpServletRequest request,HttpServletResponse response)throws Exception
+	{
+		correService.addSicknessToDoctor(super.getParamsAsDto(request));
+		
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+		
+		return null;
+	}
+	
+	public CorrelationServiceItf getCorreService() 
+	{
+		return correService;
+	}
+	@Resource(name="correlationServiceImpl")
+	public void setCorreService(CorrelationServiceItf correService) 
+	{
+		this.correService = correService;
+	}
+	
+	
+}

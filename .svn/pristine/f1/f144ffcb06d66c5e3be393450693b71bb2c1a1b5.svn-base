@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Lecture">
+	
+	<select id="listLecture" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor_lecture._id AS lId,
+			_rjkx_doctor_lecture._speakers AS lSp,
+			_rjkx_doctor_lecture._title AS lTitle,
+			_rjkx_doctor_lecture._start_time AS lStime,
+			_rjkx_doctor_lecture._end_time AS lEtime,
+			_rjkx_doctor_lecture._content AS lContent,
+			_rjkx_doctor_lecture._read_count AS lCount,
+			_rjkx_doctor_lecture._status AS lStatus,
+			_rjkx_doctor_lecture._company AS lCom,
+			_rjkx_doctor_lecture._favicon AS lPhoto,
+			_rjkx_doctor_lecture._media_url AS lmUrl
+		FROM _rjkx_doctor_lecture
+	</select>
+	<select id="listLectureCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_doctor_lecture
+	</select>
+	
+	<insert id="addLecture" parameterType="dto">
+		INSERT INTO _rjkx_doctor_lecture(
+			_rjkx_doctor_lecture._speakers,
+			_rjkx_doctor_lecture._title,
+			_rjkx_doctor_lecture._start_time,
+			_rjkx_doctor_lecture._end_time,
+			_rjkx_doctor_lecture._content,
+			_rjkx_doctor_lecture._read_count,
+			_rjkx_doctor_lecture._status,
+			_rjkx_doctor_lecture._company,
+			_rjkx_doctor_lecture._favicon,
+			_rjkx_doctor_lecture._media_url,
+			_rjkx_doctor_lecture._ctime
+		)VALUES(#{lSp},#{lTitle},#{lStime},#{lEtime},#{lContent},0,#{lStatus},#{lCom},#{lPhoto},#{lmUrl},NOW())
+	</insert>
+	
+	<update id="editLecture" parameterType="dto">
+		UPDATE _rjkx_doctor_lecture SET
+			_rjkx_doctor_lecture._speakers = #{lSp},
+			_rjkx_doctor_lecture._title = #{lTitle},
+			_rjkx_doctor_lecture._start_time = #{lStime},
+			_rjkx_doctor_lecture._end_time = #{lEtime},
+			_rjkx_doctor_lecture._content = #{lContent},
+			_rjkx_doctor_lecture._status = #{lStatus},
+			_rjkx_doctor_lecture._company = #{lCom},
+			_rjkx_doctor_lecture._favicon = #{lPhoto},
+			_rjkx_doctor_lecture._media_url = #{lmUrl}
+		WHERE
+			_rjkx_doctor_lecture._id = #{lId}
+	</update>
+	
+	<delete id="delLecture" parameterType="dto">
+		DELETE FROM _rjkx_doctor_lecture WHERE _rjkx_doctor_lecture._id = #{id}
+	</delete>
+	
+</mapper>

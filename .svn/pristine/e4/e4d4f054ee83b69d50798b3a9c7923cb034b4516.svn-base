@@ -1,0 +1,1133 @@
+package com.rjkx.sk.itf.weixin.controller;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.rjkx.sk.itf.common.web.WeiXinItfBaseController;
+import com.rjkx.sk.itf.weixin.pojo.TemplateData;
+import com.rjkx.sk.itf.weixin.pojo.WxTemplate;
+import com.rjkx.sk.itf.weixin.service.WeiXinItfServiceV2Itf;
+import com.rjkx.sk.itf.weixin.utils.MessageUtil;
+import com.rjkx.sk.itf.weixin.utils.WeiXinCons;
+import com.rjkx.sk.itf.weixin.utils.WeiXinTokenThread;
+import com.rjkx.sk.itf.weixin.utils.WeiXinUtils;
+import com.rjkx.sk.manager.common.context.FredaContext;
+import com.rjkx.sk.manager.common.utils.BasicUtils;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.datastructure.ResultDataBean;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.utils.SystemCons;
+import com.rjkx.sk.system.utils.WebUtil;
+
+
+/**
+ * 微信接口 V2.0
+ * 
+ * @ClassName: WeiXinItfControllerV2_0
+ * @Description:
+ * @author yiyuan-Rally
+ * @date 2015年11月27日 上午9:12:22
+ * @version V2.0
+ */
+@Controller
+@RequestMapping(value = "/wxItfV2")
+public class WeiXinItfControllerV2 extends WeiXinItfBaseController {
+	@Autowired
+	@Resource(name = "weiXinItfServiceV2Impl")
+	private WeiXinItfServiceV2Itf itfService;
+
+	/******************************* 与微信端通信 **************************************/
+	/**
+	 * 通过微信的Code获取OpenId
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月10日 下午2:52:48
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getMainUser")
+	public String getMainUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(itfService.getMainUserId(WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/******************************* 医愿骨科 **************************************/
+	/**
+	 * 获取Sickness
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月3日 下午3:19:33
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listSickness")
+	public String listSickness(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listSickness")), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取级联关系
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月3日 下午3:19:44
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listSicknessSub")
+	public String listSicknessSub(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listSicknessSub", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取leaf=1的级联的所有Attr属性与第一个Content
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月3日 下午3:19:58
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listAttr")
+	public String listAttr(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listSicknessAttr", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取每个Attr的Content
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月3日 下午3:20:37
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getAttrContent")
+	public String getAttrContent(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json((Dto) super.getFredaReader().queryForObject("WxV2.getAttrContent", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 骨科医院..搜索..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月17日 下午1:28:19
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/querySickForGkyy")
+	public String querySickForGkyy(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.querySickSub", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/********************** 健康讲堂 **************************/
+	/**
+	 * LIST
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年11月27日 上午9:41:37
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/lecturesList")
+	public String lecturesList(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listLec"), SystemCons.DATE_TIME_FORMART), request, response);
+
+		return null;
+	}
+
+	/**
+	 * CONTENT
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月4日 上午11:17:25
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getLecturesContent")
+	public String getLecturesContent(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+
+		itfService.editReadCount(pDto);
+
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForObject("WxV2.loadLecInfo", pDto), SystemCons.DATE_TIME_FORMART), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 报名
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月4日 上午11:19:06
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/enrollLec")
+	public String enrollLec(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		if (itfService.enrollLec(WebUtil.getPraramsAsDto(request))) {
+			super.setTipsForZepto(true, "报名成功!", request, response);
+		} else {
+			super.setTipsForZepto(false, "报名失败,请勿重复报名!", request, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 点赞
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月4日 上午11:43:43
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/dianZanForlec")
+	public String dianZanForlec(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		if (itfService.dianCanForLec(WebUtil.getPraramsAsDto(request))) {
+			super.setTipsForZepto(true, "add", request, response);
+		} else {
+			super.setTipsForZepto(true, "sub", request, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 获取短信验证码
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月7日 上午10:13:08
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getMsgCode")
+	public String getMsgCode(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		String code = FredaUtils.createRandom(true,6);
+		// 发送短信接口验证码
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+		FredaContext.getInstance().getSmsService().sendVerCodeSMS(pDto.getAsString("mobile"), code);
+		super.writeForZepto(code, request, response);
+		return null;
+	}
+
+	/**
+	 * 创建用户
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月7日 上午10:37:05
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/createUser")
+	public String createUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		String userId = itfService.createUser(WebUtil.getPraramsAsDto(request));
+
+		if (userId != null) {
+			super.setTipsForZepto(true, userId, request, response);
+		} else {
+			super.setTipsForZepto(false, "-1", request, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 添加就诊人
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月7日 下午1:23:52
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/addSicknessPat")
+	public String addSicknessPat(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		if (itfService.addSicknessPat(WebUtil.getPraramsAsDto(request))) {
+			super.setTipsForZepto(true, "添加就诊人成功..", request, response);
+		} else {
+			super.setTipsForZepto(false, "就诊人重复添加..", request, response);
+		}
+
+		return null;
+	}
+
+	/**
+	 * 修改PAT
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月25日 下午1:48:34
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/editSicknessPat")
+	public String editSicknessPat(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.setTipsForZepto(itfService.editSicknessPat(WebUtil.getPraramsAsDto(request)), "", request, response);
+
+		return null;
+	}
+
+	/**
+	 * 加载就诊人信息
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月25日 下午1:49:18
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/loadSicknessPat")
+	public String loadSicknessPat(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForObject("WxV2.loadPatInfoForEdit", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/********************************************************************************************************/
+	/**
+	 * 个人中心页面数据获取
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月8日 上午9:13:27
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/myCenterInit")
+	public String myCenterInit(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(itfService.myCenterInit(WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 抓取就诊人列表
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月8日 下午2:16:32
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listMyPats")
+	public String listMyPats(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listMyPats", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 删除就诊人..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月8日 下午7:16:13
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/delPat")
+	public String delPat(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		itfService.delPat(WebUtil.getPraramsAsDto(request));
+
+		super.setTipsForZepto(true, "删除就诊人成功..", request, response);
+
+		return null;
+	}
+
+	/**
+	 * 抓取每个患者的病历信息
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月8日 下午2:22:20
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listPatDedical")
+	public String listPatDedical(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listPatDedical", WebUtil.getPraramsAsDto(request)), SystemCons.DATE_TIME_FORMART), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 抓取订单列表(根据订单状态)
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月8日 下午2:22:45
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listOrderByStatus")
+	public String listOrderByStatus(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listOrderList", WebUtil.getPraramsAsDto(request)), SystemCons.DATE_TIME_FORMART), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 抓取历史订单列表
+	 * 
+	 * @author yiyuan-lichun
+	 * @date 2015年12月8日 下午2:22:45
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listHistoryOrder")
+	public String listHistoryOrder(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listHistoryOrderList", WebUtil.getPraramsAsDto(request)), SystemCons.DATE_TIME_FORMART), request, response);
+
+		return null;
+	}
+
+	/************************************* 挂号流程 *************************************/
+	/**
+	 * 获取可用城市城市
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月9日 上午10:10:06
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listCity")
+	public String listCity(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listAllUCity")), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 自助选医页面数据初始化
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月9日 上午10:21:43
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/zzQueryPageDataInit")
+	public String zzQueryPageDataInit(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(itfService.zzQueryPageDataInit(WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 推荐医生查询
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月9日 上午10:09:06
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/queryDoc")
+	public String queryDoc(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		ResultDataBean data = itfService.queryDoc(WebUtil.getPraramsAsDto(request));
+
+		super.writeForZepto(JsonHelper.encodeList2PageJson(data.getData(), data.getTotalCount()), request, response);
+
+		return null;
+	}
+
+	@RequestMapping(value = "/queryYyDoc")
+	public String queryYyDoc(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		List<?> data = super.getFredaReader().queryForList("WxV2.queryYyDoc", WebUtil.getPraramsAsDto(request));
+
+		super.writeForZepto(JsonHelper.encodeList2PageJson(data, null), request, response);
+
+		return null;
+	}
+	/**
+	 * 获取医生简介与善于
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月9日 下午7:58:07
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/loadDocIntro")
+	public String loadDocIntro(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForObject("WxV2.loadDocIntro", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取医生信息..最近7天排期信息..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月10日 上午9:32:59
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/schDataInit")
+	public String schDataInit(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(itfService.loadDocAndSch(WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取具体排期的地点与时间信息
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月10日 上午9:36:03
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/loadSchAddr")
+	public String loadSchAddr(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForObject("WxV2.loadSchAddr", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 创建订单
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月10日 下午8:00:50
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/createOrder")
+	public String createOrder(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+
+		if (itfService.createOrder(pDto)) {
+			super.setTipsForZepto(true, pDto.getAsString("orderId"), request, response);
+		} else {
+			super.setTipsForZepto(false, "医生此预约时间..被其他人抢走了..", request, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 支付订单成功后调用..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月11日 下午12:30:08
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/payOrderToNext")
+	public String payOrderToNext(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+
+		if (itfService.payOrderToNext(pDto)) {
+			/* 发送支付成功预约提醒短信 */
+			// Long orderId=pDto.getAsLong("orderId");//订单号
+			Dto rdto = (Dto) super.getFredaReader().queryForObject("WxV2.findOrderSms", pDto);
+			if (FredaUtils.isNotEmpty(rdto)) {
+				String[] wd = { "周一", "周 二", "周三", "周四", "周五", "周六", "周日" };
+				String smscontent = rdto.getAsString("doctorName") + "," + rdto.getAsString("days") + "(" + wd[rdto.getAsInteger("wd")] + ")" + rdto.getAsString("stime") + "~" + rdto.getAsString("etime") + "," + rdto.getAsString("_address");
+//				FredaContext.getInstance().getSmsService().sendSystemSMS(rdto.getAsString("_turename"), rdto.getAsString("_mobile"), 2, smscontent, 5);
+				/* 告知客服 */
+				String jsonString=request.getServletContext().getAttribute(SystemCons.APPLICATION_SYSTEM_CODE_VAR).toString();
+				String mobile=BasicUtils.getParamVarCode(jsonString, "TIP_KF_SMSMOBILE");
+				String openWeiXinId=BasicUtils.getParamVarCode(jsonString, "TIP_KF_WXID");
+				if(mobile!=null&&mobile.length()==11){
+					smscontent = "精准预约申请提醒：就诊人：" + rdto.getAsString("_turename") + "，请登录后台进行处理";
+					FredaContext.getInstance().getSmsService().sendSystemSMS("客服专员", mobile, 3, smscontent, 5);
+				}
+				if(openWeiXinId!=null&&openWeiXinId.length()>0){
+//					String kfMsg="{\"touser\":\""+openWeiXinId+"\",\"msgtype\":\"text\",\"text\":{\"content\":\""+smscontent+"\"}}";
+//					WeiXinUtils.sendKfMsg(WeiXinTokenThread.ACCESS_TOKEN, kfMsg);
+					String url=WeiXinCons.WX_SAFE_DOMAIN+"/WxPro/wx/orderTip.jsp";
+					
+					WxTemplate t = new WxTemplate(); 
+		            t.setUrl(url);
+		            t.setTouser(openWeiXinId);
+		            t.setTopcolor("#000000");
+		            t.setTemplate_id(WeiXinUtils.TEMPLATEMESSAGE_ID_DOCSCAN);
+		            Map<String,TemplateData> m = new HashMap<String,TemplateData>();  
+		            
+		            TemplateData first = new TemplateData();
+		            first.setColor("#173177");  
+		            first.setValue("温馨提示:就诊人:"+rdto.getAsString("_turename")+",快速精准预约以下医生");  
+		            m.put("first", first);
+		            TemplateData td1 = new TemplateData();
+		            td1.setColor("#173177");  
+		            td1.setValue(rdto.getAsString("doctorName"));
+		            m.put("keyword1", td1);
+		            TemplateData td2 = new TemplateData();
+		            td2.setColor("#173177");
+		            td2.setValue(rdto.getAsString("hospName"));
+		            m.put("keyword2", td2);
+		            TemplateData tdr = new TemplateData();
+		            tdr.setColor("#173177");  
+		            tdr.setValue("请登录管理后台及时处理!");
+		            m.put("remark", tdr);
+		            t.setData(m);
+					
+					WeiXinUtils.sendTemplateMsg(WeiXinTokenThread.ACCESS_TOKEN,JsonHelper.encodeObject2Json(t));
+				}
+			}
+
+			super.setTipsForZepto(true, pDto.getAsString("orderId"), request, response);
+		} else {
+			super.setTipsForZepto(false, "支付失败...", request, response);
+		}
+
+		return null;
+	}
+
+	/**
+	 * 退款请求后.调用..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月11日 下午12:30:19
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/reFundOrderToNext")
+	public String reFundOrderToNext(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		if (itfService.refundToNext(WebUtil.getPraramsAsDto(request))) {
+			super.setTipsForZepto(true, "", request, response);
+		} else {
+			super.setTipsForZepto(false, "", request, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 评论并选择支付以后时与评论一起..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月11日 下午12:33:20
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/praiseOrderToNext")
+	public String praiseOrderToNext(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		if (itfService.pingFenToNext(WebUtil.getPraramsAsDto(request))) {
+			super.setTipsForZepto(true, "", request, response);
+		} else {
+			super.setTipsForZepto(false, "", request, response);
+		}
+
+		return null;
+	}
+
+	/**
+	 * 加载patient
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月11日 上午10:23:44
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/loadPatInfo")
+	public String loadPatInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForObject("WxV2.loadPatInfo", WebUtil.getPraramsAsDto(request)), SystemCons.DATE_TIME_FORMART), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 添加VIP会诊
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月11日 上午10:21:22
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/addVipConsultation")
+	public String addVipConsultation(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+		itfService.addVipConsultation(pDto);
+
+		String smscontent = "VIP会诊申请提醒：就诊人：" + pDto.getAsString("patName") + "，请登录后台进行处理";
+		FredaContext.getInstance().getSmsService().sendSystemSMS("林木森", "13910380495", 3, smscontent, 5);
+
+		super.setTipsForZepto(true, "提交成功..", request, response);
+
+		return null;
+	}
+
+	/**
+	 * 充值后与体现前..修改余额
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月11日 下午12:36:52
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/editBalance")
+	public String editBalance(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = WebUtil.getPraramsAsDto(request);
+
+		itfService.editBalance(pDto);
+
+		super.setTipsForZepto(true, (String) super.getFredaReader().queryForObject("WxV2.getBalance", pDto), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获得余额
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月14日 上午10:30:50
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/loadBalance")
+	public String loadBalance(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto((String) super.getFredaReader().queryForObject("WxV2.getBalance", WebUtil.getPraramsAsDto(request)), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 余额支付
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月11日 下午12:55:10
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/balancePay")
+	public String balancePay(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		if (itfService.payBalance(WebUtil.getPraramsAsDto(request))) {
+			super.setTipsForZepto(true, "支付成功..", request, response);
+		} else {
+			super.setTipsForZepto(false, "支付失败..余额不足..", request, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 获取需要支付的金额..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月14日 下午3:53:05
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/loadAmount")
+	public String loadAmount(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForObject("WxV2.loadOrderAmount", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取退款订单数据..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月14日 下午8:48:22
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/loadOrderForRefund")
+	public String loadOrderForRefund(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForObject("WxV2.loadOrderForRefund", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取成功后的Order 信息
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月14日 下午11:08:30
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/loadSuccessOrderInfo")
+	public String loadSuccessOrderInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForObject("WxV2.loadOrderSuccessInfo", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月15日 上午11:22:06
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listSongHua")
+	public String listSongHua(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getFredaReader().queryForList("WxV2.listSongHua")), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取微信JS SDK的初始化参数..
+	 * 
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月18日 上午8:56:12
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getWxJsMap")
+	public String getWxJsMap(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.writeForZepto(JsonHelper.encodeObject2Json(super.getWeiXinJsApiMap(WebUtil.getPraramsAsDto(request).getAsString("uexUrl"))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 添加反馈
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月22日 上午10:37:17
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/addFeedBack")
+	public String addFeedBack(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		super.setTipsForZepto(itfService.addFeedBack(WebUtil.getPraramsAsDto(request)), "", request, response);
+
+		return null;
+	}
+
+	/**
+	 * 第一次分享后增加余额..如果不是则不执行任何..
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月22日 下午1:48:55
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/isFirstFenXiangAndAddBalance")
+	public String isFirstFenXiangAndAddBalance(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.setTipsForZepto(itfService.firstFenXiangAndAddBalance(WebUtil.getPraramsAsDto(request)), "", request, response);
+
+		return null;
+	}
+
+	/**
+	 * 此次订单.是否已经评分
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2015年12月22日 下午5:27:15
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/isPingFen")
+	public String isPingFen(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		super.writeForZepto(JsonHelper.encodeObject2Json((Dto) super.getFredaReader().queryForObject("WxV2.isPingFen", WebUtil.getPraramsAsDto(request))), request, response);
+
+		return null;
+	}
+
+	/**
+	 * 获取VIP订单支付信息如果为空则是无须支付
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2016年1月19日 下午1:31:26
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getVipOrderPayInfo")
+	public String getVipOrderPayInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto rDto = itfService.getVipOrderPayInfo(WebUtil.getPraramsAsDto(request));
+
+		if (FredaUtils.isNotEmpty(rDto)) {
+			rDto.setSuccess(true);
+
+			super.writeForZepto(JsonHelper.encodeObject2Json(rDto), request, response);
+		} else {
+			super.setTipsForZepto(false, "", request, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 支付成功以后的回调
+	 * 
+	 * @author yiyuan-Rally
+	 * @date 2016年1月19日 下午1:33:18
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/paySuccessCallBack")
+	public String paySuccessCallBack(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		super.setTipsForZepto(itfService.payVipCallBack(WebUtil.getPraramsAsDto(request)), "", request, response);
+
+		return null;
+	}
+
+	/**
+	 * 绑定微信服务器-用于接口认证
+	 *
+	 * @param request
+	 *            请求
+	 * @return 响应内容
+	 */
+	@RequestMapping(value = "/weixinBind", method = RequestMethod.GET)
+	@ResponseBody
+	protected final String weiXinBind(HttpServletRequest request) {
+		if (isLegal(request)) {
+			// 绑定微信服务器成功
+			return request.getParameter("echostr");
+		} else {
+			// 绑定微信服务器失败
+			return "";
+		}
+	}
+
+	/***
+	 * 微信事件和消息处理
+	 * 
+	 * @author yiyuan-LiChun
+	 * @date 2016年2月21日 下午1:31:49
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/weixinBind", method = RequestMethod.POST)
+	public String weiXinBindEvent(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		if (isLegal(request)) {
+			Dto pDto = MessageUtil.parseXml(request);
+//			System.out.println(pDto.toString());
+			String sRet = this.itfService.processMessage(pDto);
+//			System.out.println(sRet);
+			super.write(sRet, response);
+		} else {
+			super.write("", response);
+		}
+		return null;
+	}
+
+	/***
+	 * 获取用户列表openid
+	 * 
+	 * @author yiyuan-LiChun
+	 * @date 2016年2月8日 上午9:54:11
+	 * @param request
+	 * @return
+	 * @throws IOException
+	 */
+	@RequestMapping(value = "/getuserlistopenid")
+	public String getWxUserListOpenId(HttpServletRequest request) throws IOException {
+		this.itfService.getWxUserList();
+		
+		request.setAttribute("data", "OK");
+
+		return "/WEB-INF/pages/userlist";
+	}
+	
+	/**
+	 * 
+	 * @Title: 查询医生是否绑定 
+	 * @author:panlinlin
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/queryDocByOpenId")
+	public String queryDocByOpenId(HttpServletRequest request, HttpServletResponse response) throws Exception {
+			
+		Dto data=(Dto) super.getFredaReader().queryForObject("WxV2.queryDocByOpenId", WebUtil.getPraramsAsDto(request));
+		
+		super.writeForZepto(JsonHelper.encodeObject2Json(data), request, response);
+
+		return null;
+	}
+	
+	/***
+	 * 查询医生的订单
+	  * 
+	  * @author yiyuan-LiChun
+	  * @date 2016年3月2日 下午12:56:04
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/queryApprByDocId")
+	public String queryApprByDocId(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto dto = WebUtil.getPraramsAsDto(request);
+		
+		List<?> data = super.getFredaReader().queryForList("WxV2.queryApprByDocId", dto);
+		
+		super.writeForZepto(JsonHelper.encodeObject2Json(data, SystemCons.DATE_TIME_FORMART_1), request, response);
+
+		return null;
+	}
+	
+	/**
+	 * 
+	 * @Title: 绑定医生的openId 
+	 * @author:panlinlin
+	 * @data:2016年3月2日
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/bindDoc")
+	public String bindDoc(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		String docId=null;
+		try {
+			docId = itfService.bindDoc(WebUtil.getPraramsAsDto(request));
+			if (docId != null) {
+				super.setTipsForZepto(true, docId, request, response);
+			} else {
+				super.setTipsForZepto(false, "-1", request, response);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			super.setTipsForZepto(false, "系统异常", request, response);
+		}
+		return null;
+	}
+	
+	/**
+	 * 查询疾病
+	 * @Title: querySickness 
+	 * @author:panlinlin
+	 * @data:2016年3月25日
+	 * @Description:
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 * @return: String
+	 */
+	@RequestMapping(value = "/querySickness")
+	public String querySickness(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto dto = WebUtil.getPraramsAsDto(request);
+		
+		List<?> data = super.getFredaReader().queryForList("WxV2.querySickness", dto);
+		
+		super.writeForZepto(JsonHelper.encodeList2PageJson(data, null),request,response);
+		
+		return null;
+	}
+	
+	/***
+	 * 获取医生名片信息
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/queryDocById")
+	public String queryDocById(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto dto = WebUtil.getPraramsAsDto(request);
+		
+		Dto data =(Dto) super.getFredaReader().queryForObject("WxV2.queryDocById", dto);
+		
+		super.writeForZepto(JsonHelper.encodeObject2Json(data),request,response);
+		
+		return null;
+	}
+}

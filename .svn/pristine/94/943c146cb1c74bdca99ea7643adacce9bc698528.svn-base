@@ -1,0 +1,148 @@
+package com.rjkx.sk.itf.app.service.impl;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.rjkx.sk.itf.app.service.AppItfService;
+import com.rjkx.sk.manager.common.context.FredaContext;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.datastructure.impl.BaseDto;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.web.base.BaseServiceImpl;
+
+@Service(value = "appItfServiceImpl")
+public class AppItfServiceImpl extends BaseServiceImpl implements AppItfService{
+
+	@Override
+	public void appRegClient(Dto pDto) {
+		super.getFredaDao().delete("AppV1.appDeleteForClientid", pDto);
+		super.getFredaDao().insert("AppV1.appRegClientid",pDto);
+	}
+	
+	@Override
+	public void appUnRegClient(Dto pDto) {
+		super.getFredaDao().delete("AppV1.appDeleteForClientid", pDto);
+		//CommonItfUtils.removeEhcache(pDto.getAsString("imeiStr"));
+	}
+	
+	@Override
+	public void updateHeadPhoto(Dto pDto) {
+		if(pDto.getAsInteger("usertype")==3){
+			super.getFredaDao().update("AppV1.updateDoctorHeadPhoto",pDto);
+		}
+		if(pDto.getAsInteger("usertype")==4){
+			super.getFredaDao().update("AppV1.updatePatientHeadPhoto",pDto);
+		}
+	}
+
+	@Override
+	public void addFeedBack(Dto pDto) {
+		super.getFredaDao().insert("AppV1.addFeedBack",pDto);
+	}
+
+	@Override
+	public void delFavNews(Dto pDto) {
+		super.getFredaDao().delete("AppV1.delNewsFav",pDto);
+	}
+	
+	@Transactional(propagation = Propagation.REQUIRED)
+	@Override
+	public void delNews(Dto pDto) {
+		if(super.getFredaDao().delete("AppV1.delNews",pDto)>0){
+			super.getFredaDao().delete("AppV1.delNewsJoinFav",pDto);
+			super.getFredaDao().delete("AppV1.delNewsJoinReply",pDto);
+			super.getFredaDao().delete("AppV1.delNewsJoinZan",pDto);
+		}
+	}
+
+	@Override
+	public void addNewsZan(Dto pDto) {
+		if(super.getFredaDao().queryForList("AppV1.findUserNewsZan",pDto).size()<1){
+			super.getFredaDao().delete("AppV1.addUserNewsZan",pDto);
+		}
+	}
+	
+	@Override
+	public void addNewsFav(Dto pDto) {
+		if(super.getFredaDao().queryForList("AppV1.findUserNewsFav",pDto).size()<1){
+			super.getFredaDao().delete("AppV1.addUserNewsFav",pDto);
+		}
+	}
+
+	@Override
+	public void updateNews(Dto pDto) {
+		super.getFredaDao().update("AppV1.updateNews",pDto);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void addNews(Dto pDto) {
+		Dto rDto=(Dto)super.getFredaDao().queryForObject("AppV1.findUserForId",pDto);
+		if(FredaUtils.isNotEmpty(rDto)){
+			pDto.put("username", rDto.getAsString("dName"));
+		}
+		super.getFredaDao().update("AppV1.addNews",pDto);
+		
+		//添加推送消息
+		Dto data=new BaseDto();
+		if(pDto.getAsInteger("msgtype")==1){//话题
+			data.put("msgtype", 2);
+		}
+		if(pDto.getAsInteger("msgtype")==2){//文章
+			data.put("msgtype", 3);
+		}
+		if(pDto.getAsInteger("msgtype")==3){//视频
+			data.put("msgtype", 4);
+		}
+		if(pDto.getAsInteger("msgtype")==4){//学术
+			data.put("msgtype", 5);
+		}
+		int nId = pDto.getAsInteger("id");
+		data.put("title", nId);
+		
+		Dto tDto=new BaseDto();
+//		tDto.put("toid",0);//用户id
+//		tDto.put("totype", 3);//医生，如为患者：4
+		tDto.put("clientid", "");
+		tDto.put("tagname", "tag_usertype_3");//医生群推
+		tDto.put("title", "新圈子内容");
+		tDto.put("msg", JsonHelper.encodeObject2Json(data));
+		FredaContext.getInstance().getMsgPushService().pushMessage(tDto);
+	}
+
+	@Override
+	public long addNewsRead(Dto pDto) {
+		super.getFredaDao().update("AppV1.updateNewsRead",pDto);
+		Dto rDto=(Dto)super.getFredaDao().queryForObject("AppV1.findUserForId",pDto);
+		if(FredaUtils.isNotEmpty(rDto)){
+			return rDto.getAsLong("readCount");
+		}
+		return 0;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void addNewsReply(Dto pDto) {
+		super.getFredaDao().insert("AppV1.addNewsReply",pDto);
+		//添加推送消息
+		Dto data=new BaseDto();
+		data.put("msgtype", 6);
+		data.put("title", pDto.getAsLong("msgId"));
+		
+		Dto tDto=new BaseDto();
+//		tDto.put("toid",0);//用户id
+//		tDto.put("totype", 3);//医生，如为患者：4
+		tDto.put("clientid", "");
+		tDto.put("tagname", "tag_usertype_3");//医生群推
+		tDto.put("title", "新圈子内容回复");
+		tDto.put("msg", JsonHelper.encodeObject2Json(data));
+		FredaContext.getInstance().getMsgPushService().pushMessage(tDto);
+	}
+	
+	@Override
+	public void delNewsReply(Dto pDto) {
+		super.getFredaDao().insert("AppV1.delNewsReply",pDto);
+	}
+}

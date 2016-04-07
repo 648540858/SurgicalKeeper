@@ -1,0 +1,68 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+<title>了解病情 选对医生</title>
+<c:set var="root" value="${pageContext.request.contextPath}/resources/wx" />
+<c:set var="ctx" value="${pageContext.request.contextPath}" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0 , maximum-scale=1.0, user-scalable=0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" type="text/css" href="${root}/css/style.css"/>
+<script type="text/javascript" src="${root}/js/jquery-1.10.1.min.js"></script>
+<script type="text/javascript">
+var ajaxRoot = '<%=request.getContextPath() %>';
+
+function toMyCenter(){
+	self.location.href="https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx21449a3c51607b9f&redirect_uri=http://test.waikegj.com/SurgicalKeeper/wxItf/myCenterPageInit.freda?appToken=123&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect";
+}
+$(document).ready(function(){
+	 $.ajax({type:'POST',
+        url:ajaxRoot +'/wxItf/getPatientOrderStatusCount.freda',
+		 data:{"patientId":'${pDto.loginId}',"appToken":'123'},
+		 dataType: "json",
+		beforeSend:function(){
+		  
+		},
+	   success:function(data){ 
+		if(data.success == true){
+			var totalCount = 0;
+			for (var i = 0; i < data.data.length; i++) { 
+				 if(data.data[i].orderStatus == 1){
+					 totalCount +=data.data[i].orderCount;
+				 }
+				 if(data.data[i].orderStatus == 2){
+					 totalCount +=data.data[i].orderCount;
+				 }
+				 if(data.data[i].orderStatus == 3){
+					 totalCount +=data.data[i].orderCount;
+				 }
+	        }
+			$('.right_yuan').text(totalCount);
+		}else{
+			alert("数据有误~"); 
+		}
+        
+    }
+});
+	
+});
+</script>
+
+</head>
+<body class="body_bgone">
+	<header class="success_head header_bg1">
+    	退款
+    		<div class="my_pic" onclick="javascript:toMyCenter();">
+				<img src="${root}/images/d_pic3.png" class="right_img"/>
+				<a href="javascript:void(0)"><span class="right_yuan">0</span></a>
+			</div>  
+    </header>
+    <div class="successbox mt6">退款成功<br>款项将退回你的微信支付账号</div>
+    
+</body>
+</html>

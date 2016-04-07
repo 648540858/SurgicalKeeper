@@ -1,0 +1,143 @@
+package com.rjkx.sk.itf.weixin.utils;
+
+import java.io.InputStream;
+import java.io.Writer;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import com.rjkx.sk.itf.weixin.pojo.BaseMessage;
+import com.rjkx.sk.itf.weixin.pojo.ImageMessage;
+import com.rjkx.sk.itf.weixin.pojo.MusicMessage;
+import com.rjkx.sk.itf.weixin.pojo.NewsMessage;
+import com.rjkx.sk.itf.weixin.pojo.TextMessage;
+import com.rjkx.sk.itf.weixin.pojo.VideoMessage;
+import com.rjkx.sk.itf.weixin.pojo.VoiceMessage;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.datastructure.impl.BaseDto;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.core.util.QuickWriter;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import com.thoughtworks.xstream.io.xml.XppDriver;
+
+public final class MessageUtil {
+	// 请求消息类型：文本
+	public static final String REQ_MESSAGE_TYPE_TEXT = "text";
+	// 请求消息类型：图片
+	public static final String REQ_MESSAGE_TYPE_IMAGE = "image";
+	// 请求消息类型：语音
+	public static final String REQ_MESSAGE_TYPE_VOICE = "voice";
+	// 请求消息类型：视频
+	public static final String REQ_MESSAGE_TYPE_VIDEO = "video";
+	// 请求消息类型：地理位置
+	public static final String REQ_MESSAGE_TYPE_LOCATION = "location";
+	// 请求消息类型：链接
+	public static final String REQ_MESSAGE_TYPE_LINK = "link";
+
+	// 请求消息类型：事件推送
+	public static final String REQ_MESSAGE_TYPE_EVENT = "event";
+
+	// 事件类型:subscribe(订阅)
+	public static final String EVENT_TYPE_SUBSCRIBE = "subscribe";
+	// 事件类型:unsubscribe(取消订阅)
+	public static final String EVENT_TYPE_UNSUBSCRIBE = "unsubscribe";
+	// 事件类型:scan(关注用户扫描带参数的二维码)
+	public static final String EVENT_TYPE_SCAN = "SCAN";
+	// 事件类型:location(上报地理位置)
+	public static final String EVENT_TYPE_LOCATION = "LOCATION";
+	// 事件类型:CLICK(自定义菜单)
+	public static final String EVENT_TYPE_CLICK = "CLICK";
+
+	// 响应消息类型:文本
+	public static final String RESP_MESSAGE_TYPE_TEXT = "text";
+	// 响应消息类型:图片
+	public static final String RESP_MESSAGE_TYPE_IMAGE = "image";
+	// 响应消息类型:语音
+	public static final String RESP_MESSAGE_TYPE_VOICE = "voice";
+	// 响应消息类型:视频
+	public static final String RESP_MESSAGE_TYPE_VIDEO = "video";
+	// 响应消息类型:音乐
+	public static final String RESP_MESSAGE_TYPE_MUSIC = "music";
+	// 响应消息类型:图文
+	public static final String RESP_MESSAGE_TYPE_NEWS = "news";
+	// 响应消息类型:转多客服
+	public static final String RESP_MESSAGE_TYPE_TRANSFER_CUSTOMER_SERVICE = "transfer_customer_service";
+
+	@SuppressWarnings("unchecked")
+	public static Dto parseXml(HttpServletRequest request) throws Exception {
+		Dto dto = new BaseDto();
+
+		InputStream inputStream = request.getInputStream();
+		SAXReader reader = new SAXReader();
+		Document document = reader.read(inputStream);
+		Element root = document.getRootElement();
+		List<Element> elementList = root.elements();
+		for (Element e : elementList) {
+			dto.put(e.getName(), e.getText());
+		}
+		inputStream.close();
+		inputStream = null;
+
+		return dto;
+	}
+
+	private static XStream xstream = new XStream(new XppDriver() {
+		public HierarchicalStreamWriter createWriter(Writer out) {
+			return new PrettyPrintWriter(out) {
+				boolean cdata = true;
+
+				@SuppressWarnings("rawtypes")
+				public void startNode(String name, Class clazz) {
+					super.startNode(name, clazz);
+				}
+
+				protected void writeText(QuickWriter writer, String text) {
+					if (cdata) {
+						writer.write("<![CDATA[");
+						writer.write(text);
+						writer.write("]]>");
+					} else {
+						writer.write(text);
+					}
+				}
+			};
+		}
+	});
+	
+	public static String messageToXml(Object message) {
+		if(message instanceof TextMessage){
+			xstream.alias("xml", TextMessage.class);
+			return xstream.toXML(message);
+		}
+		if(message instanceof BaseMessage){
+			xstream.alias("xml", BaseMessage.class);
+			return xstream.toXML(message);
+		}
+		if(message instanceof ImageMessage){
+			xstream.alias("xml", ImageMessage.class);
+			return xstream.toXML(message);
+		}
+		if(message instanceof VoiceMessage){
+			xstream.alias("xml", VoiceMessage.class);
+			return xstream.toXML(message);
+		}
+		if(message instanceof VideoMessage){
+			xstream.alias("xml", VideoMessage.class);
+			return xstream.toXML(message);
+		}
+		if(message instanceof MusicMessage){
+			xstream.alias("xml", MusicMessage.class);
+			return xstream.toXML(message);
+		}
+		if(message instanceof NewsMessage){
+			xstream.alias("xml", NewsMessage.class);
+			return xstream.toXML(message);
+		}
+		return "";
+	}
+}

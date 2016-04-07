@@ -1,0 +1,138 @@
+package com.rjkx.sk.admin.common.service.impl;
+
+import java.util.List;
+
+import com.rjkx.sk.admin.common.service.BasicDataService;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.web.base.BaseServiceImpl;
+/**
+ * 
+ * @author rally
+ *
+ */
+public class BasicDataServiceImpl extends BaseServiceImpl implements BasicDataService
+{
+	/**
+	 * SICKNESS TREE
+	 */
+	@SuppressWarnings("unchecked")
+	public List<?> sicknessTreeInit(Dto pDto)
+	{
+		if(pDto.getAsString("node").equals("-1"))
+		{
+			return super.getFredaDao().queryForList("Basic.sicknessTreeInit", pDto);			
+		}
+		else
+		{
+			String[] pIdAndsId = pDto.getAsString("node").split("-");
+			
+			pDto.put("pId", pIdAndsId[1]);
+			
+			pDto.put("sId", pIdAndsId[0]);
+			
+			return super.getFredaDao().queryForList("Basic.sicknessSubTreeInit", pDto);			
+		}
+	}
+	/**
+	 * CITY TREE
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<?> cityTreeInit(Dto pDto) 
+	{
+		pDto.put("pId", pDto.getAsString("node"));
+		
+		return super.getFredaDao().queryForList("Basic.cityTreeInit", pDto);
+	}
+	/**
+	 *CITY AND HOS TREE 
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<?> cityTreeUntilHosInit(Dto pDto) 
+	{
+		pDto.put("pId", pDto.getAsString("node"));
+		
+		List<?> data = super.getFredaDao().queryForList("Basic.cityTreeInit", pDto);
+		
+		if(FredaUtils.isEmpty(data))
+		{
+			data = super.getFredaDao().queryForList("Basic.listHosByCity", pDto);
+		}
+		else
+		{
+			this.setListLeaf(data, 0);
+		}
+		return data;
+	}
+	
+	/**
+	 * CITY AND HOS AND DOC TREE
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<?> cityAndHosAndDocTreeInit(Dto pDto) 
+	{
+		String[] node = pDto.getAsString("node").split("-");
+		
+		pDto.put("pId", node[1]);
+		
+		List<?> data = null;
+		
+		if(node[0].equals("c"))
+		{
+			data = super.getFredaDao().queryForList("Basic.listCityForTotalTree", pDto);
+			
+			if(FredaUtils.isEmpty(data))
+			{
+				data = super.getFredaDao().queryForList("Basic.listHosForTotalTree", pDto);
+			}
+			else
+			{
+				return this.setListLeaf(data, 0);
+			}
+		}
+		else if(node[0].equals("h"))
+		{
+			data = super.getFredaDao().queryForList("Basic.listDocForTotalTree", pDto);
+		}
+		else
+		{}
+		
+		return data;
+	}
+	
+	/**
+	 * SICKNESS SUB TREE
+	 */
+	@SuppressWarnings("unchecked")
+	public List<?> sicknessSubTreeInit(Dto pDto)
+	{
+		String[] pIdAndsId = pDto.getAsString("node").split("-");
+		
+		pDto.put("pId", pIdAndsId[1]);
+		
+		pDto.put("sId", pIdAndsId[0]);
+		
+		return super.getFredaDao().queryForList("Basic.sicknessSubTreeInitForManager", pDto);
+	}
+	
+	/**
+	 * 设置节点LEAF
+	 * @param data
+	 * @param leaf
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private List<?> setListLeaf(List<?> data,final int leaf)
+	{
+		for(int i=0;i<data.size();i++)
+		{
+			Dto rowDto = (Dto) data.get(i);
+			
+			rowDto.put("leaf", leaf);
+		}
+		return data;
+	}
+}

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="MenuV2">
+	
+	<!-- LIST -->
+	<select id="listMenu" parameterType="dto" resultType="dto">
+		SELECT
+			_mid AS mId,
+			_name AS mName,
+			_icon AS mIcon,
+			_sortno AS mSortNo,
+			_desc AS mDesc,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='MENU_TYPE' AND _code=_rjkx_sys_menu._type) AS mType,
+			_request AS mRequest,
+			(SELECT _text FROM _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_sys_menu._state) AS mState 
+		FROM _rjkx_sys_menu 
+		WHERE _parentid = #{pId} 
+		ORDER BY _sortno
+	</select>
+	
+	<select id="listMenuCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_sys_menu
+		WHERE _rjkx_sys_menu._parentid = #{pId}
+	</select>
+	
+	<select id="getMenu" parameterType="dto" resultType="dto">
+		SELECT
+			_mid AS mId,
+			_name AS mName,
+			_icon AS mIcon,
+			_sortno AS mSortNo,
+			_desc AS mDesc,
+			_type AS mType,
+			_request AS mRequest,
+			_state AS mState 
+		FROM _rjkx_sys_menu 
+		WHERE _mid = #{mId}
+	</select>
+	
+	<!-- ADD -->
+	<insert id="addMenu" parameterType="dto">
+		INSERT INTO _rjkx_sys_menu(_name,_icon,_sortno,_desc,_type,_parentid,_leaf,_request,_state,_ctime) 
+		VALUES(#{mName},#{mIcon},#{mSortNo},#{mDesc},#{mType},#{pId},1,#{mRequest},#{mState},NOW())
+	</insert>
+	
+	<!-- EDIT -->
+	<update id="editMenu" parameterType="dto">
+		UPDATE _rjkx_sys_menu SET
+			_name = #{mName},
+			_icon = #{mIcon},
+			_sortno = #{mSortNo},
+			_desc = #{mDesc},
+			_type = #{mType},
+			_request = #{mRequest},
+			_state = #{mState}
+		WHERE _mid = #{mId}
+	</update>
+	
+	<!-- DELETE -->
+	<delete id="delMenu" parameterType="dto">
+		DELETE FROM _rjkx_sys_menu WHERE _mid = #{mId}
+	</delete>
+	
+	<!-- EDIT LEAF -->
+	<select id="editLeaf" parameterType="dto">
+		UPDATE _rjkx_sys_menu SET _leaf = #{leaf} WHERE _mid = #{pId}
+	</select>
+</mapper>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="OrderManager">
+
+	<select id="LoadOrderInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._id AS oId,
+			_rjkx_patient_order._order_id AS oNum,
+			_rjkx_patient_order._amount AS oAmount,
+			_rjkx_patient_order._order_status AS oStatus,
+			_rjkx_patient_order._pay_time AS oPaytime,
+			_rjkx_patient_order._pay_msg AS oPayMsg,
+			_rjkx_patient_order._pay_type AS oPayType,
+			_rjkx_patient_order._out_order_id AS oPayOutNum,
+			_rjkx_patient_order._refund AS oRefund,
+			_rjkx_patient_order._refund_type AS oRefundType,
+			_rjkx_patient_order._ctime AS oCtime
+		FROM _rjkx_patient_order
+		WHERE
+			_rjkx_patient_order._id = #{oId}
+	</select>
+	
+	<select id="loadDocInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor._id AS docId,
+			_rjkx_doctor._hospital_name AS hName,
+			_rjkx_doctor._name AS docName,
+			_rjkx_doctor._sex AS docSex,
+			_rjkx_doctor._age AS docAge,
+			_rjkx_doctor._phone AS docPhone,
+			_rjkx_doctor._telephone AS docTel,
+			_rjkx_doctor._icon AS docIcon,
+			_rjkx_doctor._good_at AS docGoodAt,
+			_rjkx_doctor._email AS docEmail,
+			_rjkx_hospital_department._name AS docDept,
+			_rjkx_doctor._rank AS docRank,
+			_rjkx_doctor._dept_rank AS docDeptRank,
+			GROUP_CONCAT(DISTINCT _rjkx_sickness._name) AS docSickNames
+		FROM _rjkx_doctor
+		INNER JOIN _rjkx_hospital_department ON _rjkx_hospital_department._id = _rjkx_doctor._depid
+		LEFT JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor._id
+		LEFT JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_doctor_sickness._sickness_id
+		WHERE
+			_rjkx_doctor._id = #{docId}
+		GROUP BY _rjkx_doctor._id
+	</select>
+	
+	<select id="loadPatientInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient._id AS pId,
+			_rjkx_patient._turename AS pTrueName,
+			_rjkx_patient._loginname AS pLoginName,
+			_rjkx_patient._identity_id AS pIdCard,
+			_rjkx_patient._mobile AS pMobile,
+			_rjkx_patient._age AS pAge,
+			_rjkx_patient._sex AS pSex
+		FROM _rjkx_patient
+		WHERE
+			_rjkx_patient._id = #{pId}
+	</select>
+	
+	<select id="loadSchInfo" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_order_schedule._id AS oScId,
+			_rjkx_order_schedule._schedule_id AS dScId,
+			_rjkx_order_schedule._start_time AS scStime,
+			_rjkx_order_schedule._end_time AS scEtime,
+			_rjkx_order_schedule._address AS scAddr,
+			_rjkx_patient_sickness._desc AS sickDesc,
+			GROUP_CONCAT(DISTINCT _rjkx_sickness._name) AS sickNames
+		FROM _rjkx_order_schedule
+		INNER JOIN _rjkx_patient_sickness ON _rjkx_patient_sickness._id = _rjkx_order_schedule._p_s_id
+		INNER JOIN _rjkx_r_p_s_sickness ON _rjkx_r_p_s_sickness._p_s_id = _rjkx_patient_sickness._id
+		INNER JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_p_s_sickness._sickness_id
+		WHERE
+			_rjkx_order_schedule._id = #{oScId}
+	</select>
+	
+	<update id="editSchInfo" parameterType="dto">
+		UPDATE _rjkx_order_schedule SET
+			_rjkx_order_schedule._schedule_id = #{docSchId},
+			_rjkx_order_schedule._doctor_id = #{docId},
+			_rjkx_order_schedule._start_time = #{sTime},
+			_rjkx_order_schedule._end_time = #{eTime},
+			_rjkx_order_schedule._address = #{addrStr}
+		WHERE
+			_rjkx_order_schedule._id = #{oScId}
+	</update>
+	
+	<select id="queryDoc" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_doctor_schedule._doctor_id AS qDocId,
+			_rjkx_doctor._name AS qDocName,
+			_rjkx_doctor._hospital_name AS qHname,
+			GROUP_CONCAT(DISTINCT _rjkx_sickness._name) AS qsickNames,
+			_rjkx_doctor_schedule._start_time AS qsTime,
+			_rjkx_doctor_schedule._end_time AS qeTime,
+			_rjkx_doctor_schedule._id AS qdSchId,
+			_rjkx_doctor_schedule._address AS qAddr
+		FROM _rjkx_doctor_schedule
+		INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_doctor_schedule._doctor_id
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+		INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor_schedule._doctor_id
+		INNER JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_doctor_sickness._sickness_id
+		LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id
+		WHERE
+			_rjkx_doctor_schedule._start_time <![CDATA[>=]]>#{sTime}
+			AND _rjkx_doctor_schedule._end_time <![CDATA[<=]]>#{eTime}
+			AND _rjkx_hospital._area_id = #{cityId}
+			AND _rjkx_sickness._name LIKE '%${sicknessName}%'
+			AND _rjkx_order_schedule._id IS NULL
+		GROUP BY _rjkx_doctor._id,_rjkx_doctor_schedule._id
+	</select>
+	
+	<select id="queryDocCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM
+		(SELECT
+			_rjkx_doctor_schedule._id
+		FROM _rjkx_doctor_schedule
+		INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_doctor_schedule._doctor_id
+		INNER JOIN _rjkx_hospital ON _rjkx_hospital._id = _rjkx_doctor._hospital_id
+		INNER JOIN _rjkx_r_doctor_sickness ON _rjkx_r_doctor_sickness._doctor_id = _rjkx_doctor_schedule._doctor_id
+		INNER JOIN _rjkx_sickness ON _rjkx_sickness._id = _rjkx_r_doctor_sickness._sickness_id
+		LEFT JOIN _rjkx_order_schedule ON _rjkx_order_schedule._schedule_id = _rjkx_doctor_schedule._id
+		WHERE
+			_rjkx_doctor_schedule._start_time <![CDATA[>=]]>#{sTime}
+			AND _rjkx_doctor_schedule._end_time <![CDATA[<=]]>#{eTime}
+			AND _rjkx_hospital._area_id = #{cityId}
+			AND _rjkx_sickness._name LIKE '%${sicknessName}%'
+			AND _rjkx_order_schedule._id IS NULL
+		GROUP BY _rjkx_doctor._id,_rjkx_doctor_schedule._id) tempa
+	</select>
+	
+</mapper>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="group">
+	
+	<select id="listGroupAll" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_group_news.id AS nId,
+			_rjkx_group_news._type AS nType,
+			(SELECT _text from _rjkx_sys_code WHERE _list='GROUP_CONTENT_TYPE' AND _code=_rjkx_group_news._type) as nTypeText,
+			_rjkx_group_news._title AS nTitle,
+			_rjkx_group_news._content AS nContent,
+			_rjkx_group_news._media_url AS nMovieUrl,
+			_rjkx_group_news._img AS nImg,
+			_rjkx_group_news._status AS nStatus,
+			(SELECT _text from _rjkx_sys_code WHERE _list='STATE' AND _code=_rjkx_group_news._status) as nStatusText,
+			_rjkx_group_news._read AS nRead,
+			_rjkx_group_news._optype AS nOptype,
+			(SELECT _text from _rjkx_sys_code WHERE _list='GROUP_OPTION_TYPE' AND _code=_rjkx_group_news._optype) as nOptypeText,
+			_rjkx_group_news._opid AS nOpId,
+			_rjkx_group_news._opname AS nOpName,
+			_rjkx_group_news._ctime AS ctime,
+			(SELECT count(1)  from _rjkx_group_news_fav WHERE news_id= _rjkx_group_news.id) AS favNo,
+			(SELECT count(1)  from _rjkx_group_news_reply WHERE news_id= _rjkx_group_news.id) AS reply,
+			(SELECT count(1)  from _rjkx_group_news_zan WHERE news_id= _rjkx_group_news.id) AS zan
+		FROM
+			_rjkx_group_news 
+		WHERE
+			1=1
+			<if test="queryContent != null and queryContent != ''">
+				AND _title LIKE '%${queryContent}%'
+			</if>
+			<if test="nType != null and nType != ''">
+				AND _type =#{nType}
+			</if>
+			<if test="nOptype != null and nOptype != ''">
+				AND _optype =#{nOptype}
+			</if>
+		ORDER BY _rjkx_group_news._ctime
+		LIMIT ${start},${limit}
+	</select>
+	
+	<select id="listGroupAllCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_group_news
+		WHERE 
+			1=1
+			<if test="queryContent != null and queryContent != ''">
+				AND _title LIKE '%${queryContent}%'
+			</if>
+			<if test="nType != null and nType != ''">
+				AND _type =#{nType}
+			</if>
+			<if test="nOptype != null and nOptype != ''">
+				AND _optype =#{nOptype}
+			</if>
+	</select>
+	
+	<select id="queryGroup" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_group_news.id AS nId,
+			_rjkx_group_news._type AS nType,
+			_rjkx_group_news._title AS nTitle,
+			_rjkx_group_news._content AS nContent,
+			_rjkx_group_news._media_url AS nMovieUrl,
+			_rjkx_group_news._img AS nImg,
+			_rjkx_group_news._status AS nStatus,
+			_rjkx_group_news._read AS nRead,
+			_rjkx_group_news._optype AS nOptype,
+			_rjkx_group_news._opid AS nOpId,
+			_rjkx_group_news._opname AS nOpName,
+			_rjkx_group_news._ctime AS ctime,
+			(SELECT count(1)  from _rjkx_group_news_fav WHERE news_id= _rjkx_group_news.id) as favNo
+		FROM
+			_rjkx_group_news 
+		WHERE
+		     id=#{nId}
+	</select>
+	
+	<insert id="addGroup" parameterType="dto" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO _rjkx_group_news(_type,_title,_content,_media_url,_img,_status,_optype,_opId,_opname,_cTime) 
+		VALUES(#{msgtype},#{gTitle},#{gContent},#{gMediaUrl},#{gImg},#{gStatus},1,#{opId},#{opName},NOW())
+	</insert>
+	
+	<update id="editGroup" parameterType="dto">
+		UPDATE _rjkx_group_news SET
+			_rjkx_group_news._type = #{gType},
+			_rjkx_group_news._title = #{gTitle},
+			_rjkx_group_news._content = #{gContent},
+			_rjkx_group_news._media_url = #{gMediaUrl},
+			_rjkx_group_news._img = #{gImg},
+			_rjkx_group_news._status = #{gStatus},
+			_rjkx_group_news._ctime = NOW()
+		WHERE
+			  id=#{nId}
+	</update>
+	
+	<delete id="deleteGroup" parameterType="dto">
+		DELETE FROM _rjkx_group_news WHERE id=#{nId}
+	</delete>
+	
+	<delete id="deleteReply" parameterType="dto">
+		DELETE from _rjkx_group_news_reply WHERE news_id=#{nId}
+	</delete>
+	
+	<delete id="deleteFav" parameterType="dto">
+		DELETE FROM _rjkx_group_news_fav WHERE news_id=#{nId}
+	</delete>
+	
+	<delete id="deleteZan" parameterType="dto">
+		DELETE from _rjkx_group_news_zan WHERE news_id=#{nId}
+	</delete>
+	
+	<delete id="deleteReplyById" parameterType="dto">
+		DELETE from _rjkx_group_news_reply WHERE id=#{rId}
+	</delete>
+	<select id="queryReply" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_group_news_reply.id AS replyId,
+			_rjkx_group_news_reply.content AS replyContent,
+			_rjkx_group_news_reply.ctime AS replyTime,
+			_rjkx_group_news_reply.user_id AS replyUserId,
+			_rjkx_group_news_reply.user_type AS replyUserType,
+			IF(_rjkx_group_news_reply.user_type = 1,
+				(SELECT _name FROM _rjkx_sys_user WHERE _uid = _rjkx_group_news_reply.user_id),
+				(
+					IF(_rjkx_group_news_reply.user_type = 2,
+					(SELECT _name FROM _rjkx_doctor WHERE _id = _rjkx_group_news_reply.user_id),
+					(SELECT _turename FROM _rjkx_patient WHERE _id= _rjkx_group_news_reply.user_id)))
+				) AS replyUserName
+		FROM
+			_rjkx_group_news_reply 
+		WHERE _rjkx_group_news_reply.news_id=#{nId} 
+		<if test="queryReplyContent != null and queryReplyContent != ''">
+			AND replyUserName LIKE '%${queryReplyContent}%'
+		</if>
+		<if test="nOptype != null and nOptype != ''">
+			AND user_type =#{nOptype} 
+		</if>
+		ORDER BY _rjkx_group_news_reply.ctime DESC
+	</select>
+	
+	<update id="editReply" parameterType="dto">
+		UPDATE _rjkx_group_news_reply SET
+			_rjkx_group_news_reply.content=#{content} 
+		WHERE id=#{rId}
+	</update>
+</mapper>

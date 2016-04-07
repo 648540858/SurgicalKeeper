@@ -1,0 +1,340 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+
+<title>精准预约管理</title>
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/bootstrap/css/bootstrap.min.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/zTree/css/zTreeStyle/zTreeStyle.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/include/manager/css/base.css" />
+<link rel="stylesheet" type="text/css" href="<%=request.getContextPath()%>/include/manager/om/css/apptOrderManager.css" />
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/jquery/jquery.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/artTemplate/artTemplate.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/zTree/js/jquery.ztree.all-3.5.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/jqueryValidate/jquery.validate.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/bootstrap-datetimepicker/js/bootstrap-datetimepicker.zh-CN.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/resources/jquery_raty/lib/jquery.raty.min.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/js/commonUtils.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/js/dateUtils.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath()%>/include/manager/om/js/apptOrderManager.js"></script>
+<script type="text/javascript">
+	var root="<%=request.getContextPath()%>";
+	var codeArray=${applicationScope.APPLICATION_SYSTEM_CODE_VAR};
+</script>
+</head>
+<body>
+ <div class="center_query " >	
+		<div class="center-block btn_all">
+			<div class="center_btn_1 clearfix" >
+	          <div class="controls">
+			  <label class="control-label">订单状态:&nbsp;</label>
+	            <select class="input-xlarge valtype myselect" id="orderStatus">
+	            </select>
+	           <button class="btn btn-success " type="button" id="btn_query" id="btn_query">
+		        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>&nbsp;查询
+		       </button>
+	          </div>
+			</div>
+			<div class="center_btn_2 clearfix" >
+			</div>
+		</div>		
+	</div>
+	
+<div class="center_table"id='center_table' >
+	<div class="table_btn clearfix" >
+		<div class="btn-1">
+		</div>
+		<div class="btn-2" >
+		  <div class="btn-group" role="group" aria-label="...">
+		  <button type="button" class="btn btn-success btn-sm" id="btn_view" >
+		  	<span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span>&nbsp查看
+		  </button>
+		</div>
+		</div>
+	</div>
+	
+	<div class="table_show center-block ">
+	 <table class="table table-hover ">
+	   <thead>
+     <tr>
+       <th></th>
+       <th>就诊人</th>
+       <th>就诊人联系电话</th>
+       <th>申请人联系电话</th>
+       <th>期望就诊时间</th>
+       <th>申请时间</th>
+       <th>状态</th>
+     </tr>
+   </thead>
+   <tbody id="content" ></tbody>
+	<script id="list" type="text/html">
+ 		{{each ROOT as value i}}
+     		<tr>
+				<td ><input type="checkbox" name="grup" id="grup{{value.apptId}}"  value="{{value.apptId}}"/></td>
+				<td>{{value.patName}}</td>
+				<td>{{value.patMobile}}</td>
+				<td>{{value.patMobile2}}</td>
+				<td>{{value.sTime}}---{{value.eTime}}</td>
+				<td>{{value.cTime}}</td>
+				<td>{{value.apptStatus}}</td>
+			</tr>
+		{{/each}}
+   </script>
+					
+	 </table>
+	</div>
+	<div class="fanye_show">
+		<div class="into_show">
+			<b>记录总条数:</b><font id="allContent">0</font>
+		</div>
+		<ul class="pagination pagination-sm">
+		  <li id="firstPag" class=""><a href="#">&laquo;&laquo;</a></li>
+		  <li id="lastPag"class=""><a href="#">&laquo;上一页</a></li>
+		  <li id="Pag_1" class="" value="1"><a href="#">1</a></li>
+		  <li id="Pag_2" class="" value="2"><a href="#" >2</a></li>
+		  <li id="Pag_3" class="" value="3"><a href="#" >3</a></li>
+		  <li id="nextPag" class=""><a href="#">下一页&raquo;</a></li>
+		  <li  id="finalPag" class=""><a href="#">&raquo;&raquo;</a></li>
+		</ul>
+		<input type="hidden" id="page_now" value="1"/> 
+		<input type="hidden" id="total" value="1"/> 
+	</div>
+</div>
+<!-- 详情页面 -->
+<div class="modal fade" id="modal_addEdit" >
+	<div class="modal-dialog" >
+		<div class="modal-content">
+        	<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">
+					<span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+				</button>
+				<h4 class="modal-title" id="modalTitle">订单详情</h4>
+			</div>
+			
+			<div class="modal-body" style="height:80%;overflow :auto;">
+					
+					<div style="width:100%;">
+					<!-- 订单信息 -->
+					<div style="float: left;width:50%;">
+						<b>订单信息</b>
+							<div style="height:120px;border:1px solid #c8c8c8;background:rgb(246, 246, 246);">
+							<input type="hidden" id="oId">
+								订单编号：<span id="oNum"></span><br/>
+								支付金额：<span id="oPay"></span><br/>
+								支付方式：<span id="oPayType"></span><br/>
+								订单状态：<span id="oStatus"></span><br/>
+								创建时间：<span id="cTime"></span><br/>
+								结束时间：<span id="finishTime"></span><br/>
+							</div>
+						</div>
+					
+					<!-- 退款信息 -->
+						<div style="float: right;width:50%;">
+								<b>退款信息</b>
+							  <div style="height:120px;border:1px solid #c8c8c8;background:rgb(246, 246, 246);">
+									退款时间：<span id="refundTime"></span><br/>
+									退款金额：<span id="refund"></span><br/>
+									退款类型：<span id="refundType"></span><br/>
+							</div>
+						</div>
+					</div>
+					<div style="width:100%;">
+					<!-- 评价信息 -->
+						<div style="float: left;width:50%;">
+							<b>评价信息</b>
+								<div style="height:100px;border:1px solid #c8c8c8;background:rgb(246, 246, 246);">
+								<input type="hidden" id="oId">
+									被评价医生：<span id="apprDoc"></span><br/>
+									评价等级：<span id="apprLevel"></span><br/>
+									评价内容：<span id="apprContent"></span><br/>
+									是否购买礼物：<span id="getGift"></span><br/>
+									购买礼物时间：<span id="gift_cTime"></span><br/>
+								</div>
+						</div>
+						<!-- 礼物信息 -->
+						<div style="float: right;width:50%;">
+								<b>礼物信息</b>
+							  <div style="height:100px;border:1px solid #c8c8c8;background:rgb(246, 246, 246);">
+									礼物类别：<span id="giftType"></span><br/>
+									礼物价格：<span id="giftPrice"></span><br/>
+							</div>
+						</div>
+						
+					</div>
+					<!-- 用户信息 -->
+					<div style="width:100%;">
+						<div style="float: left;width:100%;">
+							<b>患者信息</b>
+						</div>
+						<div style="width:100%;"> 	
+							<div class="form-group" style="width:90%;height:90px;border:1px solid #c8c8c8;float:left;background:rgb(246, 246, 246);">
+								联系方式（申请人）：<span id="patMobile2"></span><br/>
+								联系方式（就诊人）：<span id="patMobile"></span><br/>
+								就诊人姓名：<span id="patName"></span><br/>
+							</div>
+							<div  style="width:10%;height:90px;float:right;">
+								<div style="width:100%;height:4%;">	
+								</div>
+								<div style="width:100%;height:92%;margin:0 auto;">
+									<button type="button" class="btn btn-default" id="btn-edit1" style=" font-size: 13px; width: 50px;height:100% ; background: #0D9675; color: #ffffff;  white-space: normal;">病患详情</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- 预约信息 -->
+					<div style="width:100%;margin-top: -18px;">
+						<div style="float: left;width:100%;">
+							<b>预约信息</b>
+						</div>
+						  <div style="width:100%;">
+							<div class="form-group" style="width:90%;height:80px;border:1px solid #c8c8c8;float:left;background:rgb(246, 246, 246);">
+								医生：<span id="docName"></span><br/>
+								地址：<span id="apptAddress"></span><br/>
+								时间：<span id="apptTime"></span><br/>
+								备注：<span id="apptDesc"></span><br/>
+							</div>
+							<div style="width:10%;height:80px;float:right;">
+								<div style="width:100%;height:4%;">
+								</div>
+								<div style="width:100%;height:92%;margin:0 auto;">
+									<button type="button" class="btn btn-default" id="btn-edit2" style=" font-size: 13px; width: 50px; height: 100%; background: #0D9675; color: #ffffff;  white-space: normal;">更改</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- 回访信息 -->
+					<div style="width:100%;margin-top: -18px;">
+						<div style="float: left;width:100%;">
+							<b>回访信息</b>
+						</div>
+						<div style="width:100%;">
+							<div class="form-group" style="width:90%;height:90px;border:1px solid #c8c8c8;float:left;background:rgb(246, 246, 246);">
+								满意度：<span id="satisfaction"></span><br/>
+								备注：<textarea id="remark" class="form-control" rows="3" readonly style="height:50px"></textarea><br/>
+							</div>
+							<div  style="width:10%;height:90px;float:right;">
+								<div style="width:100%;height:4%;">
+								</div>
+								<div style="width:100%;height:92%;margin:0 auto;">
+									<button type="button" class="btn btn-default" id="btn-visit-save" style=" font-size: 13px; width: 50px; height: 100%; background: #0D9675; color: #ffffff;  white-space: normal;">提交</button>
+								</div>
+							</div>
+						</div>
+					</div>
+			</div>
+			<div class="modal-footer" >
+				<div style="width:100%;margin:0 auto;float: left ;">
+					<button type="button" class="btn btn-default " id="btn-closePage"data-dismiss="modal">关闭页面</button>
+					<button type="button" class="btn btn-default" id="btn-sendSms" >发送预约更改短信</button>
+					<button type="button" class="btn btn-default" id="btn-cancelOrder">取消订单并退款</button>
+					<button type="button" class="btn btn-default" id="btn-verifyOrder">审核通过订单</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- 隐藏域 -->
+	<!-- 更改预约信息-->
+	<div class="hide">
+	    <div id="edit_appt" style="overflow: auto; max-height:340px;">
+	     <div class="edit_content"style="max-height:340px;">
+	      <form id="edit_appt" role="form" >
+	        <div class="form-group">
+	          <label for="appt_doc_name">医生</label>
+	          <input id="doc_name" class="form-control" type="text" value="" readonly>
+	          <input id="doc_name_id"  type="hidden" >
+	        </div>
+	        <div class="form-group">
+	          <label for="appt_area">地点</label>
+	          <input id="area" class="form-control" type="text" value="" >
+	        </div>
+	        <div class="input-append date form_datetime">
+	          <label for="appt_sTime">开始时间:</label>
+	          <input id="appt_sTime" class="form-control" type="text" value="" readonly>
+	        </div>
+	        <div class="form-group">
+	          <label for="appt_eTime">结束时间</label>
+	          <input id="appt_eTime" class="form-control" type="text" value="" readonly>
+	        </div>
+	        <div class="form-group">
+	          <label for="appt_remark">备注</label>
+	           <input id="appt_remark" class="form-control" type="text" value="" >
+	        </div>
+	      </form>
+	      </div>
+	    </div>
+	</div>
+<!-- 医生树 -->
+	<div class="hide " >
+	      <div id="docTree"  class="zTree"></div>
+	</div>
+<!-- city树 -->
+	<div class="hide ">
+	      <div id="cityTree"  class="zTree" style="height:70%;overflow :auto;" ></div>
+	</div>
+	<!-- 填写患者信息-->
+	<div class="hide">
+	      <div id="patient_detail" style="overflow: auto; max-height:340px;">
+	      	<div class="edit_content"style="max-height:340px;">
+		      <form id="detailform" role="form">
+		        <b>患者信息</b>
+		        <div class="detail_basic" >
+		        	<div class="form-group detail_basic_1">
+		        		<div class="con-1">
+			        		<label >姓名： </label>
+				          	<input type="text" class="form-control" id="username">
+			         		<label >性别:</label>
+			          		<input type="radio" name="detail_gender"  id="gender_1" value="1" >男
+					   		<input type="radio" name="detail_gender" id="gender_2" value="2" >女
+		        		</div>
+		        		<div class="con-2">
+		        			<label >出生年月： </label>
+			          		<input type="text" class="form-control" id="birthday" readonly>
+			          		<label >地区：</label>
+					        <input type="text" class="form-control" id="detail_area" readonly>
+					        <input type="hidden" class="form-control" id="detail_area_id" readonly>
+		        		</div>
+		        		<div class="con-3">
+		        			 <label >民族：</label>
+		        			 <input type="text" class="form-control" id="detail_ethnic" >
+		          	 		 <label >来源</label>
+		          	 		 <textarea  class="form-control" id="source"></textarea>
+		        		</div>
+			        </div>
+		        </div>
+	        	<b>就诊信息</b>
+		        <div class="detail_treatment" >
+		        	<div class="form-group detail_treatment_1">
+			          <label >拟手术：
+				      <input type="radio" name="readme_surgery_is" id="surgery_1 " value="1" >是
+				      <input type="radio" name="readme_surgery_is"  id="surgery_0 " value="0" >否
+				      </label><br>
+			          <label >确诊：
+			          <input type="text" class="form-control" id="diagnose" >
+			          </label>
+			        </div>
+			          
+			        <div>
+			          <label class="form-group detail_treatment_2">
+			          	病史：<textarea  class="form-control" id="detail_history"></textarea>
+			          </label>
+			        </div>
+		        </div>
+	        	<b>病情描述</b>
+		        <div class="detail_readme" >
+		        	<div class="form-group detail_readme_1">
+			          <label >主述：
+			          <textarea  class="form-control" id="sick_desc"></textarea>
+			          </label>
+			        </div>
+		        </div>
+		      </form>
+		      </div>
+	    </div>
+	</div>
+</body>
+</html>

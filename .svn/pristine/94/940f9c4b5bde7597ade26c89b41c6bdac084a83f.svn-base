@@ -1,0 +1,82 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>                                                                                                                                               
+<head>                                                                                                                                               
+<title>了解病情 选对医生</title>
+<c:set var="root"
+	value="${pageContext.request.contextPath}/resources/wx" />
+<c:set var="ctx" value="${pageContext.request.contextPath}" />                                                                                                                                   
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />                                                                                
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0 , maximum-scale=1.0, user-scalable=0">                       
+<meta http-equiv="X-UA-Compatible" content="IE=edge">                                                                                                
+<meta name="robots" content="noindex, nofollow" />                                                                                                   
+<link rel="stylesheet" type="text/css" href="${root}/css/style.css">
+<script type="text/javascript" src="${root}/js/jquery-1.10.1.min.js"></script>
+<script type="text/javascript" src="${root}/js/jquery.validate.min.js"></script>
+<script type="text/javascript" src="${root}/js/validate-methods.js"></script>                                                                              
+<script type="text/javascript">
+var ajaxRoot = '<%=request.getContextPath() %>';
+jQuery(document).ready(function($){                                                                                                                  
+	                                                                                                                                                   
+	$(".doc_top li") .click(function(){                                                                                                                
+		$(this).addClass("nav_bor").siblings().removeClass("nav_bor");                                                                                   
+		//alert($(this).index());	                                                                                                                       
+		$(".doc_intro .intro_jj").eq($(this).index()).show().siblings().hide();                                                                          
+	});                                                                                                                                                
+});
+
+	function addFeedback() {
+		if ($("#feedback").val().length < 16) {
+			alert('反馈内容需大于15字！');
+		} else {
+			
+			$.post(ajaxRoot + "/wxItf/addFeedback.freda", {
+				loginId : $("#loginId").val(),
+				content : $("#feedback").val(),
+				appToken : '123'
+			}, function(data) {
+				if (data.success == true) {
+					if ($(".add_ceng").is(":hidden")) {
+						$(".add_ceng,.cover").fadeIn();
+					}
+					$('#toMycenter').submit();
+				}
+
+			}, "json");
+		}
+
+	}
+</script>                                                                                                                                            
+                                                                                                                                                     
+                                                                                                                                                     
+</head>                                                                                                                                              
+<body class="body_bgone">                                                                                                                            
+	                                                                                                                                                   
+    <div class="help_top">                                                                                                                           
+    	<ul>                                                                                                                                           
+        	<li><div class="help_img"><img src="${root}/images/d_pic36.png" /></div><p>关于我们</p></li>                                                           
+            <li><div class="help_img"><img src="${root}/images/d_pic37.png" /></div><p>常见问题</p></li>                                                         
+            <li><div class="help_img"><img src="${root}/images/d_pic39.png" /></div><p class="font_color">客服反馈</p></li>                                      
+            <div class="cb"></div>                                                                                                                   
+        </ul>                                                                                                                                        
+    </div> 
+    <form action="${ctx}/wxItf/myCenterPageInit.freda" method="post"
+		id="toMycenter">                                                                                              
+    <div class="help_title"><p class="title_font">拨打客服电话</p></div>                                                                                  
+    <div class="bin_nav mb3">
+    	<a href="tel:4009958591" style="text-decoration: none;"><p class="btn_nav">联系客服</p></a>
+    </div>
+    <div class="help_title"><p class="title_font">意见反馈</p></div>                                                                                     
+    <div class="help_input">                                                                                                                         
+    	<textarea name="feedback" id = "feedback" cols="" rows="" placeholder="请描述您的问题，让我们更好的为您服务，需大于15字" class="inputfour"> </textarea>                                       
+    </div>
+    <input type="hidden" id="loginId" name="loginId" value="${loginId}"> 
+    <input type="hidden" name="appToken" id="appToken" value="123" />                                                                                                                                         
+    <div class="bin_nav mb3"><input name="feedbackSubmit" id="feedbackSubmit" type="button" value="提交反馈" onclick="addFeedback()" class="btn_navtwo"></div>
+    </form> 
+     <div class="cover"></div>
+   <div class="add_ceng"><p>提交完成！</p></div>                                                     
+</body>                                                                                                                                              
+</html>                                                                                                                                              

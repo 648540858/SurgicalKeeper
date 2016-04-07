@@ -1,0 +1,278 @@
+package com.rjkx.sk.manager.basedata.controller;
+
+import java.io.File;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import com.rjkx.sk.manager.base.ManagerBaseController;
+import com.rjkx.sk.manager.basedata.service.HospDepartmentService;
+import com.rjkx.sk.manager.common.utils.BasicUtils;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+import com.rjkx.sk.system.utils.SystemCons;
+
+/**
+ * 
+ *
+ * @ClassName: HospitalDepartmentController
+ * @Description: 医院.科室
+ * @author 潘林林
+ * @date 2016年1月21日 下午8:20:10
+ * @version V2
+ */
+
+@Controller
+@RequestMapping(value = "/hospDept")
+public class HospDepartmentController extends ManagerBaseController {
+	@Autowired
+	@Resource(name="hospDepartmentServiceImpl")
+	private HospDepartmentService hospDepartmentService;
+
+	/**
+	 * LIST HOS
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:02:58
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listHospital")
+	public String listHospital(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		List<?> data = super.getFredaReader().queryForList("Hospital_Dept.listHospital", pDto);
+
+		super.write("{\"ROOT\":"+JsonHelper.encodeObject2Json(data, SystemCons.DATE_TIME_FORMART)+"}", response);
+
+		return null;
+	}
+
+	/**
+	 * 添加医院
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:04
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/addHospital")
+	public String addHospital(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		hospDepartmentService.addHospital(super.getParamsAsDto(request));
+
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+
+		return null;
+	}
+
+	/**
+	 * EDIT HOSP
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:12
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/editHospital")
+	public String editHospital(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		hospDepartmentService.editHospital(super.getParamsAsDto(request));
+
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+
+		return null;
+	}
+
+	/**
+	 * DELETE HOS
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:18
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/delHospital")
+	public String delHospital(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		hospDepartmentService.delHospital(super.getParamsAsDto(request));
+
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+
+		return null;
+	}
+
+	/**
+	 * 查询单条医院信息
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:27
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getHosp")
+	public String getHosp(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		Dto pDto = super.getParamsAsDto(request);
+
+		Dto data = (Dto) super.getFredaReader().queryForObject("Hospital_Dept.getHospital", pDto);
+
+		super.write(JsonHelper.encodeObject2Json(data, SystemCons.DATE_TIME_FORMART), response);
+
+		return null;
+	}
+	
+	/**
+	 * LIST HOS DEPT
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:27
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/listHosDept")
+	public String listHosDept(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		List<?> data = super.getFredaReader().queryForList("Hospital_Dept.listHosDept", pDto);
+
+		Integer count = (Integer) super.getFredaReader().queryForObject("Hospital_Dept.listHosDeptCount", pDto);
+
+		super.write(JsonHelper.encodeList2PageJson(data, count, SystemCons.DATE_TIME_FORMART), response);
+
+		return null;
+	}
+
+	/**
+	 * 查询单条科室信息
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:27
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/hosDept")
+	public String hosDept(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+		Dto pDto = super.getParamsAsDto(request);
+
+		Dto data = (Dto) super.getFredaReader().queryForObject("Hospital_Dept.hosDept", pDto);
+
+		super.write(JsonHelper.encodeObject2Json(data, SystemCons.DATE_TIME_FORMART), response);
+
+		return null;
+	}
+
+	/**
+	 * ADD HOS DEPT
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:36
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/addHosDept")
+	public String addHosDept(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		hospDepartmentService.addHosDept(super.getParamsAsDto(request));
+
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+
+		return null;
+	}
+
+	/**
+	 * EDIT HOS DEPT
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:45
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/editHosDept")
+	public String editHosDept(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		hospDepartmentService.editHosDept(super.getParamsAsDto(request));
+
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+
+		return null;
+	}
+
+	/**
+	 * DELETE HOS DEPT
+	 * 
+	 * @author 潘林林
+	 * @date 2016年1月21日 下午9:03:58
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/delHosDept")
+	public String delHosDept(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		hospDepartmentService.delHosDept(super.getParamsAsDto(request));
+
+		super.setOkTipMsg(SystemCons.TIPS_SUCCESS_MSG, response);
+
+		return null;
+	}
+
+	/**
+	 * 上传LOGO
+	 * 
+	 * @author 潘林林
+	 * @date 2015年10月15日 下午3:53:58
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/uploadPhoto")
+	public String uploadPhoto(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+
+		CommonsMultipartFile file = (CommonsMultipartFile) multipartRequest.getFile("fileIcon");
+		String fileLastName = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."), file.getOriginalFilename().length());
+		if (BasicUtils.isImg(fileLastName)) {
+			String newFileName = "hos_" + System.nanoTime();
+			String dateDir = FredaUtils.getCurDate();
+			String realPath = appProperties.getValue("app.hos.log.dir");
+			File filePath = new File(realPath +File.separatorChar+ dateDir);
+			if (!filePath.exists()) {
+				filePath.mkdirs();
+			}
+			File outFile = new File(realPath +File.separatorChar+ dateDir +File.separatorChar+ newFileName + fileLastName);
+
+			FileCopyUtils.copy(file.getBytes(), outFile);
+			super.setOkTipMsg(appProperties.getValue("app.hos.log.saveDir") +"/"+ dateDir +"/"+ newFileName + fileLastName, response);
+		} else {
+			super.setErrTipMsg(SystemCons.TIPS_ERROR_FILE_TYPE_MSG, response);
+		}
+		return null;
+	}
+
+}

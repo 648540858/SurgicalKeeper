@@ -1,0 +1,155 @@
+package com.rjkx.sk.manager.order.service.impl;
+
+import org.springframework.stereotype.Service;
+
+import com.rjkx.sk.manager.base.ManagerBaseServiceImpl;
+import com.rjkx.sk.manager.common.context.FredaContext;
+import com.rjkx.sk.manager.order.service.ApptOrderServiceItf;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.datastructure.impl.BaseDto;
+import com.rjkx.sk.system.json.JsonHelper;
+import com.rjkx.sk.system.utils.FredaUtils;
+
+/**
+ * 精准预约订单管理
+ * 
+ * @ClassName: ApptOrderServiceImpl
+ * @Description:
+ * @author panlinlin
+ * @date 2015年2月21日
+ * @version V2.0
+ */
+@Service(value = "apptOrderServiceImpl")
+public class ApptOrderServiceImpl extends ManagerBaseServiceImpl implements ApptOrderServiceItf {
+
+	// 更改预约信息
+	@Override
+	public void updateAppt(Dto pDto) throws Exception {
+		int i = super.getFredaDao().update("ApptOrder.updateAppt", pDto);
+		if (i > 0) {
+			super.getFredaContext().getLogService().addOpLogForC(pDto.getAsInteger("oId"), 0, pDto.getAsInteger("opId"), pDto.getAsString("opName"), pDto.getAsString("opInfo")); // 添加操作日志
+		} else {
+			throw (new Exception());
+		}
+	};
+
+	// 审核订单通过
+	@Override
+	public void verifyOrder(Dto pDto) throws Exception {
+		int i = super.getFredaDao().update("ApptOrder.updateOrder", pDto);
+		if (i > 0) {
+			super.getFredaContext().getLogService().addOpLogForC(pDto.getAsInteger("oId"), 0, pDto.getAsInteger("opId"), pDto.getAsString("opName"), pDto.getAsString("opInfo")); // 添加操作日志
+		} else {
+			throw (new Exception());
+		}
+	}
+
+	// 余额支付时加余额
+	@Override
+	public void addBalance(Dto pDto) throws Exception {
+		if (super.getFredaDao().update("ApptOrder.addUserBalance", pDto) == 0) {
+			throw new Exception();
+		}
+	}
+
+	// 取消订单
+	@Override
+	public void cancelOrder(Dto pDto) throws Exception {
+		if (super.getFredaDao().update("ApptOrder.cancelOrder", pDto) == 0) {
+			throw (new Exception());
+		}
+		super.getFredaContext().getLogService().addOpLogForC(pDto.getAsInteger("oId"), 0, pDto.getAsInteger("opId"), pDto.getAsString("opName"), pDto.getAsString("opInfo")); // 添加操作日志
+	};
+
+	// 发送预约信息
+	@SuppressWarnings("unchecked")
+	@Override
+	public void sendApptSms(Dto pDto) throws Exception {
+		// 发信息通知医生预约成功
+		this.sendDocMessage(pDto);
+		//添加推送消息
+		Dto data=new BaseDto();
+		data.put("msgtype", 1);
+		data.put("title", "新的患者精准预约");
+		
+		Dto rDto=(Dto)super.getFredaDao().queryForObject("ApptOrder.getOrderDocid",pDto);
+		if(FredaUtils.isNotEmpty(rDto)){
+			Dto tDto=new BaseDto();
+			tDto.put("toid",rDto.getAsLong("docId"));//用户id
+			tDto.put("totype", 3);//医生，如为患者：4
+			tDto.put("clientid", "");
+			tDto.put("tagname", "tag_userid_"+rDto.getAsLong("docId"));//医生
+			tDto.put("title", "新预约");
+			tDto.put("msg", JsonHelper.encodeObject2Json(data));
+			FredaContext.getInstance().getMsgPushService().pushMessage(tDto);
+		}
+		// 发信息通知患者预约成功
+		this.sendPatMessage(pDto);
+	};
+
+	//发消息通知医生预约成功
+	@SuppressWarnings("unchecked")
+	private void sendDocMessage(Dto pDto) {
+
+		Dto smsDto = (Dto) super.getFredaDao().queryForObject("ApptOrder.getDocSmsInfo", pDto);
+		super.getFredaContext().getSmsService().sendSystemSMS(smsDto.getAsString("smsName"), smsDto.getAsString("smsAddr"), 6, smsDto.getAsString("smsKeyWord"), 5);
+	}
+
+	//发送短信 用于Pat预约成功
+	@SuppressWarnings("unchecked")
+	public void sendPatMessage(Dto pDto) {
+		Dto smsDto = (Dto) super.getFredaDao().queryForObject("ApptOrder.getPatSmsInfo", pDto);
+		smsDto.put("smsKeyWord", smsDto.getAsString("smsKeyWord")+"。请按时完成预约，超过时间预约将失效");
+		super.getFredaContext().getSmsService().sendSystemSMS(smsDto.getAsString("smsName"), smsDto.getAsString("smsAddr"), 2, smsDto.getAsString("smsKeyWord"), 5);
+	}
+
+	//添加问诊情况
+	@SuppressWarnings("unchecked")
+	@Override
+	public void addDetail(Dto pDto) throws Exception {
+		// 判断传送内容
+		Dto DDto = (Dto) super.getFredaDao().queryForObject("ApptOrder.queryDetail", pDto);
+		Dto PDto = (Dto) super.getFredaDao().queryForObject("ApptOrder.queryPatient", pDto);
+		if (DDto != null) {
+			if (pDto.getAsString("pGender") == null || pDto.getAsString("pGender") == "") {
+				pDto.put("pGender", PDto.getAsString("pGender"));
+			}
+			if (pDto.getAsString("pBirth") == null || pDto.getAsString("pBirth") == "") {
+				pDto.put("pBirth", PDto.getAsString("pBirth"));
+			}
+			if (pDto.getAsString("pAreaId") == null || pDto.getAsString("pAreaId") == "") {
+				pDto.put("pAreaId", PDto.getAsInteger("pAreaId"));
+			}
+			if (pDto.getAsString("pSurgery") == null || pDto.getAsString("pSurgery") == "") {
+				pDto.put("pCategory", 1);
+			}
+			if (pDto.getAsString("pDesc") == null || pDto.getAsString("pDesc") == "") {
+				pDto.put("pDesc", PDto.getAsString("pDesc"));
+			}
+			if (pDto.getAsString("pEthnic") == null || pDto.getAsString("pEthnic") == "") {
+				pDto.put("pEthnic", DDto.getAsDate("pEthnic"));
+			}
+			if (pDto.getAsString("pSurgery") == null || pDto.getAsString("pSurgery") == "") {
+				pDto.put("pSurgery", DDto.getAsDate("pSurgery"));
+			}
+			if (pDto.getAsString("pDiagnose") == null || pDto.getAsString("pDiagnose") == "") {
+				pDto.put("pDiagnose", DDto.getAsDate("pDiagnose"));
+			}
+			if (pDto.getAsString("pHistory") == null || pDto.getAsString("pHistory") == "") {
+				pDto.put("pHistory", DDto.getAsDate("pHistory"));
+			}
+			if (super.getFredaDao().update("ApptOrder.updateDetail", pDto) > 0) {
+				super.getFredaDao().update("ApptOrder.updatepatient", pDto);
+			} else {
+				throw (new Exception());
+			}
+			;
+		} else {
+			if (super.getFredaDao().insert("ApptOrder.insertDetail", pDto) > 0) {
+				super.getFredaDao().update("ApptOrder.updatepatient", pDto);
+			} else {
+				throw (new Exception());
+			}
+		}
+	}
+}

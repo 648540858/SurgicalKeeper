@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SicknessSet">
+	
+	<select id="listSicknessSet" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_r_sickness_attr._id AS ssaId,
+			_rjkx_r_sickness_attr._sickness_id AS sId,
+			_rjkx_r_sickness_attr._attr_id AS saId,
+			_rjkx_r_sickness_attr._status AS ssaStatus,
+			_rjkx_sickness_attr._name AS saName,
+			_rjkx_r_sickness_attr._ltime AS lTime,
+			'双击查看内容' AS content
+		FROM _rjkx_r_sickness_attr
+		INNER JOIN _rjkx_sickness_attr ON _rjkx_sickness_attr._id = _rjkx_r_sickness_attr._attr_id
+		WHERE
+			_rjkx_r_sickness_attr._sickness_id = #{sId}
+			<if test="queryContent != null">
+				AND _rjkx_sickness_attr._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="listSicknessSetCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_r_sickness_attr
+		INNER JOIN _rjkx_sickness_attr ON _rjkx_sickness_attr._id = _rjkx_r_sickness_attr._attr_id
+		WHERE
+			_rjkx_r_sickness_attr._sickness_id = #{sId}
+			<if test="queryContent != null">
+				AND _rjkx_sickness_attr._name LIKE '%${queryContent}%'
+			</if>
+	</select>
+	
+	<select id="loadContent" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_r_sickness_attr._content AS content,
+			_rjkx_r_sickness_attr._id AS ssaId,
+			_rjkx_r_sickness_attr._sickness_id AS sId,
+			_rjkx_r_sickness_attr._attr_id AS saId,
+			_rjkx_r_sickness_attr._status AS ssaStatus
+		FROM _rjkx_r_sickness_attr
+		WHERE
+			_rjkx_r_sickness_attr._id = #{ssaId}
+	</select>
+	
+	<insert id="addSicknessSet" parameterType="dto">
+		INSERT INTO _rjkx_r_sickness_attr(
+			_rjkx_r_sickness_attr._sickness_id,
+			_rjkx_r_sickness_attr._attr_id,
+			_rjkx_r_sickness_attr._status,
+			_rjkx_r_sickness_attr._content,
+			_rjkx_r_sickness_attr._ltime
+		)VALUES(#{sId},#{saId},#{ssaStatus},#{dContent},NOW())
+	</insert>
+	
+	<update id="editSicknessSet" parameterType="dto">
+		UPDATE _rjkx_r_sickness_attr
+		SET
+			_rjkx_r_sickness_attr._status = #{ssaStatus},
+			_rjkx_r_sickness_attr._attr_id = #{saId},
+			_rjkx_r_sickness_attr._content = #{dContent},
+			_rjkx_r_sickness_attr._ltime = NOW()
+		WHERE
+			_rjkx_r_sickness_attr._id = #{ssaId}
+	</update>
+	
+	<delete id="delSicknessSet" parameterType="dto">
+		DELETE FROM _rjkx_r_sickness_attr WHERE _rjkx_r_sickness_attr._id = #{id}
+	</delete>
+	
+	<select id="listAllAttr" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sickness_attr._id AS code,
+			_rjkx_sickness_attr._name AS name
+		FROM _rjkx_sickness_attr
+		WHERE
+			_rjkx_sickness_attr._status = 1
+		ORDER BY _rjkx_sickness_attr._ctime ASC
+	</select>
+	
+</mapper>

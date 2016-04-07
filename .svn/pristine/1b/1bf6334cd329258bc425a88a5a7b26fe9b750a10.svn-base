@@ -1,0 +1,1954 @@
+package com.rjkx.sk.itf.weixin.controller;
+
+import static com.rjkx.sk.itf.weixin.utils.WeiXinUtils.createRandom;
+
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.rjkx.sk.admin.common.context.FredaContext;
+import com.rjkx.sk.admin.common.utils.OrderCons;
+import com.rjkx.sk.itf.common.web.WeiXinItfBaseController;
+import com.rjkx.sk.itf.weixin.service.WeiXinItfServiceItf;
+import com.rjkx.sk.itf.weixin.utils.WeiXinCons;
+import com.rjkx.sk.itf.weixin.utils.WeiXinTokenThread;
+import com.rjkx.sk.itf.weixin.utils.WeiXinUtils;
+import com.rjkx.sk.system.datastructure.Dto;
+import com.rjkx.sk.system.datastructure.impl.BaseDto;
+import com.rjkx.sk.system.utils.FredaUtils;
+
+/**
+ * 微信接口
+ * 
+ * @author rally
+ *
+ */
+@Controller
+@RequestMapping(value = "/wxItf")
+public class WeiXinItfController extends WeiXinItfBaseController {
+
+	private WeiXinItfServiceItf wxItfService;
+
+	/**
+	 * 页面初始化
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/keeperCarePageInit")
+	public String keeperCarePageInit(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		String openid=wxItfService.getOpenID(pDto.getAsString("code"));
+		request.setAttribute("openId", openid);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			List<Dto> sicknessDto = new LinkedList<>();
+			List<Dto> allSicknessDto =  super.getFredaReader().queryForList("WeiXin.allSicknesses");
+			List<Dto> removeDto = new ArrayList<>();
+			if(StringUtils.isNotBlank(pDto.getAsString("keyWord"))){
+				List<Dto> searchDto = super.getFredaReader().queryForList("WeiXin.searchSicknesses",pDto);
+				if(searchDto!= null && searchDto.size() > 0){
+					sicknessDto.addAll(searchDto);
+					for(Dto dto : sicknessDto){
+						for(Dto adto : allSicknessDto){
+							if(adto.getAsLong("sId") == dto.getAsLong("sId")){
+								removeDto.add(adto);
+							}
+								
+						}
+					}
+					allSicknessDto.removeAll(removeDto);
+					sicknessDto.addAll(allSicknessDto);
+					request.setAttribute("data",sicknessDto);
+				}else{
+					request.setAttribute("data",allSicknessDto);
+				}
+			}else{
+				
+				request.setAttribute("data",allSicknessDto);
+			}
+			
+			return WeiXinCons.WX_PAGE_KEEPER_CARE;
+			
+		} else {
+			request.setAttribute("data", null);
+
+			return WeiXinCons.WX_PAGE_ERROR_NO_AUTH;
+		}
+	}
+
+	/**
+	 * 点击疾病获取属性及第一个制约文章
+	 * 
+	 * @author wkgi-Rally
+	 * @date 2015年10月8日 上午9:53:10
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getCareInfo1")
+	public String getCareInfo1(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			super.setResultData(super.getFredaReader().queryForObject("WeiXin.getAttrAndText", pDto), response);
+		} else {
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 先获取病情的属性,然后获取双向制约的内容
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getCareInfo2")
+	public String getCareInfo2(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			super.setResultData(super.getFredaReader().queryForObject("WeiXin.getText", pDto), response);
+		} else {
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+		return null;
+	}
+
+	/**
+	 * 管家服务 -------------------------
+	 */
+
+	/*************** 健康课堂 ***************/
+	/**
+	 * 健康课堂页面初始化
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/lecturesList")
+	public String lecturesList(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		
+		String openid=wxItfService.getOpenID(pDto.getAsString("code"));
+		pDto.put("openId", openid);
+		Long patientId=(Long)super.getFredaReader().queryForObject("WeiXin.findPatientId",pDto);
+		pDto.put("uId",patientId);
+		
+		if (FredaUtils.isNotEmpty(pDto)) {
+			request.setAttribute("lecturesList",super.getFredaReader().queryForList("WeiXin.getLecturesList", pDto));
+			request.setAttribute("uId", pDto.getAsLong("uId"));
+		} else {
+			request.setAttribute("lecturesList", null);
+		}
+		return WeiXinCons.WX_LECTURES_LIST;
+	}
+
+	/**
+	 * 
+	 * 获取讲座详情
+	 * 
+	 * @author wkgi-ligen
+	 * @date 2015年10月9日 下午1:56:18
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getLectureDetail")
+	public String getLectureDetail(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			request.setAttribute("lecture", super.getFredaReader().queryForObject("WeiXin.getLectureDetail", pDto));
+		} else {
+			request.setAttribute("lecture", null);
+		}
+		return WeiXinCons.WX_LECTURE_DETAIL;
+	}
+
+	/**
+	 * 报名
+	 * 
+	 * @param request
+	 *            { uId : 患者Id lId : 讲堂Id }
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/enrollCourse")
+	public void enrollCourse(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			int result = wxItfService.enrollCourse(pDto);
+
+			if (result == 1) {
+				
+				super.setResultData((Integer)super.getFredaReader().queryForObject("WeiXin.getEnRollLectureCountById", pDto), response);
+				
+			} else if (result == 2) {
+				
+				super.setErrTipMsg(WeiXinCons.WX_ERROR_ENROLLED_MSG, response);
+				
+			} else {
+				
+				super.setErrTipMsg(WeiXinCons.WX_ERROR_MSG, response);
+			}
+		} else {
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+
+	}
+
+	/**
+	 * 查看重播(查出具体视频地址)
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getCourseInfo")
+	public String getCourseInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/*************** 骨科动态 ***************/
+
+	/**
+	 * 这方面还无设计.但是先预留接口
+	 */
+	/**
+	 * 动态列表
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String listGuKeNews(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/**
+	 * 获取动态内容
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String getGuKeNewsInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	
+
+	/**
+	 * 读取个人所有订单
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String getOrderCount(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/**
+	 * 绑定用户..对用户表进行查询.如果有.则绑定..无则创建新的用户顺便进行绑定
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String bindingUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/**
+	 * 根据订单状态查询订单列表
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String listOrder(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/**
+	 * 获取订单内容
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String getOrderInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/**
+	 * 获取余额
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String getMyBalance(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/**
+	 * 亲属(就诊人)列表
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String listMyParents(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/**
+	 * 添加亲属(就诊人)
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	public String addParents(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		return null;
+	}
+
+	/**
+	 * 病例查询
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/myCaseList")
+	public String myCaseList(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		if (FredaUtils.isNotEmpty(pDto)) {
+			request.setAttribute("mySickNesses", super.getFredaReader().queryForList("WeiXin.mySickNesses", pDto));
+		} else {
+			request.setAttribute("mySickNesses", null);
+		}
+		return WeiXinCons.WX_MY_CENTER;
+	}
+
+	public WeiXinItfServiceItf getWxItfService() {
+		return wxItfService;
+	}
+
+	@Resource(name = "weiXinItfServiceImpl")
+	public void setWxItfService(WeiXinItfServiceItf wxItfService) {
+		this.wxItfService = wxItfService;
+	}
+	
+
+	/**
+	 * 
+	 * 自主选医页面
+	 * 
+	 * @author wkgi-ligen
+	 * @date 2015年10月13日 下午4:16:18
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/selectDoctorsCriteria")
+	public String selectDoctorsCriteria(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			request.setAttribute("sicknessList", super.getFredaReader().queryForList("WeiXin.getSicknessList", pDto));
+
+			request.setAttribute("departmentList",
+					super.getFredaReader().queryForList("WeiXin.getDepartmentList", pDto));
+			
+			request.setAttribute("loginId", pDto.getAsString("loginId"));
+			
+			request.setAttribute("hospitalList", super.getFredaReader().queryForList("WeiXin.getHospitalList", pDto));
+
+			request.setAttribute("areaList", super.getFredaReader().queryForList("WeiXin.commonAreaList", pDto));
+		} else {
+			request.setAttribute("sicknessList", null);
+
+			request.setAttribute("departmentList", null);
+
+			request.setAttribute("hospitalList", null);
+
+			request.setAttribute("areaList", null);
+			
+			request.setAttribute("loginId", null);
+		}
+		return WeiXinCons.WX_SELECT_DOCTOR_CRITERIA;
+	}
+
+	/**
+	 * 
+	 * 匹配医生
+	 * 
+	 * @author wkgi-ligen
+	 * @date 2015年10月14日 下午9:48:13
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/getDoctorList")
+	public String getDoctorList(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		//如果没有选择城市，默认为北京
+		if(StringUtils.isBlank(pDto.getAsString("aId"))){
+			pDto.put("aId", 2);
+		}
+		if (FredaUtils.isNotEmpty(pDto)) {
+			request.setAttribute("doctorList", super.getFredaReader().queryForList("WeiXin.selectDoctors", pDto));
+			request.setAttribute("loginId", pDto.getAsString("loginId"));
+			request.setAttribute("areaList", super.getFredaReader().queryForList("WeiXin.commonAreaList", pDto));
+			request.setAttribute("aId", pDto.getAsInteger("aId"));
+		} 
+		
+		return WeiXinCons.WX_PICK_DOCTORS;
+	}
+
+	/**
+	 * 
+	 * 进入绑定手机页
+	 * 
+	 * @author wkgi-ligen
+	 * @date 2015年10月16日 上午8:29:57
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/bindingMobile")
+	public String bindingMobile(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			String openid=wxItfService.getOpenID(pDto.getAsString("code"));
+			/*Map<String, String> ret = new HashMap<>();
+			 ret = WeiXinUtils.getJsSignMap(WeiXinTokenThread.JS_TICKET,"http://test.waikegj.com/SurgicalKeeper/wxItf/bindingMobile.freda?code="+pDto.getAsString("code")+"&appToken=123");
+			 ret.put("appId", WeiXinCons.WX_APP_ID);
+			 request.setAttribute("jssdk", ret);*/
+			request.setAttribute("openId", openid);
+			return WeiXinCons.WX_BINDING_MOBILE;
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * 获取验证码并发送短信通知
+	 * 
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/verify")
+	public void verify(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		String verifyCode = createRandom(true, 4);
+		pDto.put("verifyCode", verifyCode);
+		pDto.put("status", WeiXinCons.WX_BINDING_STATUS_NO);
+
+		Integer count = (Integer) super.getFredaReader().queryForObject("WeiXin.getPatientCountByMobile", pDto);
+
+		Dto bindingDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getBindingInfo", pDto);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			if (count > 0) {
+
+				super.setErrTipMsg(WeiXinCons.WX_ERROR_MOBILE_BINDING_MSG, response);
+				
+			} else {
+				
+				super.setResultData(verifyCode, response);
+				//发送验证码
+				FredaContext.getInstance().getSmsService().sendVerCodeSMS(pDto.getAsString("mobile"), verifyCode);
+				
+				if (bindingDto != null) {
+
+					wxItfService.editPatientBinding(pDto);
+
+				} else {
+
+					wxItfService.addPatientBinding(pDto);
+
+				}
+
+			}
+
+		} else {
+
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+
+		}
+
+	}
+
+	/**
+	 * 
+	 * 进入添加病人页面
+	 * 
+	 * @author wkgi-ligen
+	 * @date 2015年10月16日 上午8:30:30
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/toAddPatient")
+	public String toAddPatient(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		
+		if (FredaUtils.isNotEmpty(pDto)) {
+			//判断是否为个人中心的跳转
+			if(pDto.getAsInteger("mycenter")==null){
+				pDto.put("mycenter", 0);
+			}
+			if(pDto.getAsInteger("mycenter")==1){
+				Dto patientDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getPatientInfo", pDto);
+				request.setAttribute("patient", patientDto);
+			}
+			request.setAttribute("mobile", pDto.getAsString("mobile"));
+			request.setAttribute("patientId", pDto.getAsString("patientId"));
+			request.setAttribute("sicknessList", super.getFredaReader().queryForList("WeiXin.getSicknessList", pDto));
+			request.setAttribute("pDto", pDto);
+			
+			// 判断添加就诊人入口处为VIP会诊页
+			if (StringUtils.isNotBlank(pDto.getAsString("vipInTreatment"))) {
+
+				request.setAttribute("vipInTreatment", pDto.getAsBoolean("vipInTreatment"));
+
+				if (pDto.getAsBoolean("vipInTreatment")) {
+					
+					if (StringUtils.isNotBlank(pDto.getAsString("patientId"))
+							&& StringUtils.isNotBlank(pDto.getAsString("loginId"))) {
+						Dto patientDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getPatientInfo", pDto);
+						request.setAttribute("patient", patientDto);
+						request.setAttribute("patientId", patientDto.getAsInteger("uId"));
+						request.setAttribute("mobile", patientDto.getAsString("mobile"));
+
+					}
+					if (StringUtils.isBlank(pDto.getAsString("patientId"))
+							&& StringUtils.isNotBlank(pDto.getAsString("loginId"))) {
+
+						request.setAttribute("vipInTreatment", true);
+
+					}
+					
+					return WeiXinCons.WX_ADD_PATIENT;
+				}
+			}
+			
+			//判断入口处为手机绑定页
+			if (StringUtils.isNotBlank(pDto.getAsString("mobile"))) {
+				//
+				int areaId=2;
+				String cityName=WeiXinUtils.getMobileInfo(pDto.getAsString("mobile"));
+				pDto.put("cityName", cityName);
+				Dto rdto=(Dto)super.getFredaReader().queryForObject("WeiXin.findCityId",pDto);
+				if(FredaUtils.isNotEmpty(rdto)&&rdto!=null){
+					areaId=rdto.getAsInteger("cityId");
+				}
+				request.setAttribute("areaId", areaId);
+				pDto.put("areaId",areaId);
+
+				Dto bindingDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getBindingInfo", pDto);
+
+				if (bindingDto != null && pDto.getAsString("verifyCode").equals(bindingDto.getAsString("verifyCode"))) {
+
+					pDto.put("status", WeiXinCons.WX_BINDING_STATUS_YES);
+
+					wxItfService.editPatientBinding(pDto);
+
+					if ( StringUtils.isNotBlank(pDto.getAsString("loginId"))) {
+
+						pDto.put("uId", pDto.getAsString("loginId"));
+						wxItfService.editPatient(pDto);
+						pDto.put("loginId", pDto.getAsInteger("loginId"));
+
+					} else {
+
+						wxItfService.addPatient(pDto);
+						pDto.put("loginId", pDto.getAsInteger("patientId"));
+
+					}
+					return WeiXinCons.WX_ADD_PATIENT;
+
+				}
+
+			}
+			
+			if(StringUtils.isNotBlank(pDto.getAsString("loginId"))){
+				
+				request.setAttribute("loginId", pDto.getAsInteger("loginId"));
+				
+				return WeiXinCons.WX_ADD_PATIENT;
+				
+			}
+
+		}
+
+		return null;
+
+	}
+
+	/**
+	 * 
+	  * 添加就诊人信息
+	  * @author wkgi-ligen
+	  * @date 2015年10月19日 下午1:56:39
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/addPatient")
+	public void addPatient(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			pDto.put("loginName", pDto.getAsString("mobile"));
+			pDto.put("status", 1);
+			wxItfService.addPatientInfo(pDto);
+			
+			super.setResultData(pDto, response);
+
+		} else {
+
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+
+		}
+	
+	}
+	
+	/**
+	 * 
+	 *匹配医生
+	 * 
+	 * @author wkgi-ligen
+	 * @date 2015年10月16日 上午8:31:09
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/searchDoctors")
+	public String searchDoctors(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		
+		//如果没有选择城市，默认为北京
+		if(pDto.getAsInteger("aId")==null)
+			pDto.put("aId", 2);
+		if (FredaUtils.isNotEmpty(pDto)) {
+			request.setAttribute("doctorList", super.getFredaReader().queryForList("WeiXin.selectDoctors", pDto));
+			request.setAttribute("loginId", pDto.getAsString("loginId"));
+			request.setAttribute("areaList", super.getFredaReader().queryForList("WeiXin.commonAreaList", pDto));
+			request.setAttribute("aId", pDto.getAsInteger("aId"));	
+			request.setAttribute("patientSicknessId", pDto.getAsInteger("patientSicknessId"));
+			
+			
+		} else {
+			request.setAttribute("doctorList", null);
+			request.setAttribute("loginId", null);
+			request.setAttribute("areaList", null);
+			return null;
+		}
+		return WeiXinCons.WX_PICK_DOCTORS;
+	}	
+
+	/**
+	 * 获取用户中心订单数量
+	 * 
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/getPatientOrderStatusCount")
+	public void getPatientOrderStatusCount(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			pDto.put("type", 3);
+			super.setResultData(FredaContext.getInstance().getOrderService().orderQuery(pDto).getData(), response);
+		} else {
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	/**
+	 * 
+	  * 预约医生入口
+	  * @author wkgi-ligen
+	  * @date 2015年10月20日 下午12:46:10
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/toOrderDoctor")
+	public String toOrderDoctor(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		
+		if (FredaUtils.isNotEmpty(pDto)) {
+			Dto patientDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getPatientInfo", pDto);
+			Dto loginDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getLoginUserInfo", pDto);
+			request.setAttribute("open_id", loginDto.getAsString("openId"));
+			request.setAttribute("doctor", super.getFredaReader().queryForObject("WeiXin.getDoctorInfoById", pDto));
+			request.setAttribute("patients", patientDto);
+		
+			pDto.put("patientId", patientDto.getAsInteger("uId"));
+			List<Dto> patientSicknessesDto = super.getFredaReader().queryForList("WeiXin.findPatientSicknesses", pDto);
+			if(StringUtils.isBlank(pDto.getAsString("patientSicknessId"))){
+				request.setAttribute("patientSicknessId", patientSicknessesDto.get(0).getAsLong("psId"));
+			}else{
+				request.setAttribute("patientSicknessId", pDto.getAsString("patientSicknessId"));
+			}
+			
+			request.setAttribute("scheduleType", pDto.getAsString("scheduleType"));
+			request.setAttribute("loginId", pDto.getAsString("loginId"));
+			request.setAttribute("patientList", super.getFredaReader().queryForList("WeiXin.findPatientsByLoginId", pDto));
+			request.setAttribute("orderPrice", (BigDecimal)super.getFredaReader().queryForObject("WeiXin.getOrderPriceByScheduleType", pDto));
+			
+
+		} else {
+			
+			request.setAttribute("doctor", null);
+			request.setAttribute("patient", null);
+			request.setAttribute("scheduleType", null);
+			request.setAttribute("orderPrice", null);
+			
+			return null;
+
+		}
+		return WeiXinCons.WX_ORDER_DOCTOR;
+	}
+	
+	/**
+	 * 
+	  * 获取医生评价列表
+	  * @author wkgi-ligen
+	  * @date 2015年10月20日 下午12:46:41
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/getDoctorReviews")
+	public void getDoctorReviews(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			super.setResultData(super.getFredaReader().queryForList("WeiXin.getDoctorReviewList", pDto), response);
+			
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	/**
+	 * 
+	  * 获取医生的时间片段
+	  * @author wkgi-ligen
+	  * @date 2015年10月20日 下午12:48:55
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/getDoctorTimeSlice")
+	public void getDoctorTimeSlice(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			super.setResultData(super.getFredaReader().queryForList("WeiXin.getDoctorTimeSlice", pDto), response);
+			
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	/**
+	 * 获取碎片信息详情
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getTimeSliceById")
+	public void getTimeSliceById(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			super.setResultData(super.getFredaReader().queryForObject("WeiXin.getTimeSliceById", pDto), response);
+			
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	/**
+	 * 患者提交订单
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/submitPatientOrder")
+	public void submitPatientOrder(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			if((Integer)super.getFredaReader().queryForObject("WeiXin.findOrderScheduleCountByScheduleId", pDto) > 0)
+			{
+				super.setErrTipMsg(WeiXinCons.WX_ERROR_ORDER_SCHEDULE_MSG, response);
+			}
+			
+			if(FredaContext.getInstance().getOrderService().orderCreate(pDto))
+			{
+				super.setResultData(pDto, response);
+			}
+			else
+			{
+				super.setErrTipMsg(WeiXinCons.WX_ERROR_CREATE_ORDER_MSG, response);
+			}
+			
+			
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+		
+	}
+	/**
+	 * 支付页面
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/toPayOrder")
+	public String toPayOrder(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			pDto.put("subject", "患者支付订单");
+			pDto.put("body", "患者预约医生支付账单");			
+			request.setAttribute("orderInfo", pDto);
+		} else {
+			request.setAttribute("orderInfo", null);
+			return null;
+		}
+		return WeiXinCons.WX_PAY_ORDER;
+	}
+	/**
+	 * 根据患者病情查询医生（快速挂号）
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/fastRegDoctors")
+	public String fastRegDoctors(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);	
+		String openid=wxItfService.getOpenID(pDto.getAsString("code"));
+		pDto.put("openId", openid);
+		request.setAttribute("openId", openid);
+		//如果没有选择城市，默认为北京
+		if(pDto.getAsInteger("aId")==null)
+			pDto.put("aId", 2);
+		if (FredaUtils.isNotEmpty(pDto)) {
+			Dto loginDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getLoginUserInfo",pDto);
+			if (loginDto == null) {
+				
+				return WeiXinCons.WX_BINDING_MOBILE;
+
+			}else if(loginDto !=null && StringUtils.isBlank(loginDto.getAsString("mobile"))){
+				
+				return WeiXinCons.WX_BINDING_MOBILE;
+				
+			}else{
+				pDto.put("scheduleType", WeiXinCons.WX_SCHEDULE_TYPE_FAST_REG);
+				pDto.put("loginId",loginDto.getAsInteger("loginId"));
+				request.setAttribute("doctorList", super.getFredaReader().queryForList("WeiXin.findDoctorsByPatientSickness", pDto));
+				request.setAttribute("loginId", loginDto.getAsInteger("loginId"));
+				request.setAttribute("areaList", super.getFredaReader().queryForList("WeiXin.commonAreaList", pDto));
+				request.setAttribute("aId", pDto.getAsInteger("aId"));
+			}			
+			
+		} else {
+			request.setAttribute("doctorList", null);
+			request.setAttribute("loginId", null);
+			request.setAttribute("areaList", null);
+			return null;
+
+		}
+		return WeiXinCons.WX_PICK_DOCTORS;
+	}
+	
+	/**
+	 * 根据患者病情查询医生（快速预约）
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/fastOrderDoctors")
+	public String fastOrderDoctors(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);	
+		String openid=wxItfService.getOpenID(pDto.getAsString("code"));
+		pDto.put("openId", openid);
+		request.setAttribute("openId", openid);
+		//如果没有选择城市，默认为北京
+		if(pDto.getAsInteger("aId")==null)
+			pDto.put("aId", 2);
+		if (FredaUtils.isNotEmpty(pDto)) {
+			Dto loginDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getLoginUserInfo",pDto);
+			if (loginDto == null) {
+				
+				return WeiXinCons.WX_BINDING_MOBILE;
+
+			}else if(loginDto !=null && StringUtils.isBlank(loginDto.getAsString("mobile"))){
+				
+				return WeiXinCons.WX_BINDING_MOBILE;
+				
+			}else{
+				pDto.put("scheduleType", WeiXinCons.WX_SCHEDULE_TYPE_FAST_ORDER);
+				pDto.put("loginId",loginDto.getAsInteger("loginId"));
+				request.setAttribute("doctorList", super.getFredaReader().queryForList("WeiXin.findDoctorsByPatientSickness", pDto));
+				request.setAttribute("loginId", loginDto.getAsInteger("loginId"));
+				request.setAttribute("areaList", super.getFredaReader().queryForList("WeiXin.commonAreaList", pDto));
+				request.setAttribute("aId", pDto.getAsInteger("aId"));
+			}			
+			
+		} else {
+			request.setAttribute("doctorList", null);
+			request.setAttribute("loginId", null);
+			request.setAttribute("areaList", null);
+			return null;
+
+		}
+		return WeiXinCons.WX_PICK_DOCTORS;
+	}
+	/**
+	 * 根据区域查询医院
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/findHostpitalByAreaId")
+	public void findHostpitalByAreaId(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			super.setResultData(super.getFredaReader().queryForList("WeiXin.getHospitalList", pDto), response);
+			
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	/**
+	 * vip会诊入口
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/toAddVIPConsultation")
+	public String toAddVIPConsultation(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		
+		String openid=wxItfService.getOpenID(pDto.getAsString("code"));
+		pDto.put("openId", openid);
+		Dto loginDto  = (Dto) super.getFredaReader().queryForObject("WeiXin.getLoginUserInfo", pDto);
+		
+//		Dto patientDto  = (Dto) super.getFredaReader().queryForObject("WeiXin.findPatientByLoginIdAndPatientId", pDto);
+		String sickNessIds = pDto.getAsString("sickNessIds");
+		String sickNessStr = "";
+		if(sickNessIds != null && sickNessIds.length() > 0){
+			Dto dto = null;
+			for(String sId : sickNessIds.split(",")){
+				dto = new BaseDto();
+				dto.put("sicknessId", sId);
+				Dto sicknessDto  = (Dto) super.getFredaReader().queryForObject("WeiXin.getSicknessById", dto);
+				sickNessStr += sicknessDto.getAsString("name") + ",";
+			}
+			pDto.put("sickness", sickNessStr.substring(0, sickNessStr.length() -1));		
+		}
+		request.setAttribute("patientDto", pDto);
+		request.setAttribute("loginId", pDto.getAsString("loginId"));
+		request.setAttribute("isBinding", pDto.getAsString("isBinding"));
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			if(loginDto == null || StringUtils.isBlank(loginDto.getAsString("mobile"))){
+				
+				request.setAttribute("isBinding", false);
+				
+			}else{
+				
+				request.setAttribute("loginId", loginDto.getAsString("loginId"));
+				request.setAttribute("isBinding", true);
+			}
+			
+			
+			
+		} else {
+			
+			request.setAttribute("openId", null);
+			
+			request.setAttribute("isBinding", null);
+						
+			request.setAttribute("loginId", null);
+		}
+		
+		return WeiXinCons.WX_VIP_IN_TREATMENT;
+	}
+	
+	/**
+	 * 选择患者页面
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/toChoosePatient")
+	public String toChoosePatient(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+			
+		if (FredaUtils.isNotEmpty(pDto)) {	
+	    	//判断是否为个人中心的跳转
+			if(pDto.getAsInteger("mycenter")==null){
+				pDto.put("mycenter", 0);
+			}
+			
+			if(pDto.getAsInteger("mycenter")==1&&pDto.getAsBoolean("isBinding")==null){
+				pDto.put("isBinding", true);
+			}
+			request.setAttribute("pDto", pDto);
+			if(pDto.getAsBoolean("isBinding")){
+				
+				request.setAttribute("patientList", super.getFredaReader().queryForList("WeiXin.findPatientsByLoginId", pDto));
+						
+				return WeiXinCons.WX_CHOOSE_PATIENT;
+			}else{
+				request.setAttribute("openId", pDto.getAsString("openId"));
+				
+				return WeiXinCons.WX_BINDING_MOBILE;
+			}
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 添加vip会诊记录
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/addVIPConsultation")
+	public void addVIPConsultation(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			if(wxItfService.addVIPConsultation(pDto)){
+				super.setOkTipMsg(WeiXinCons.WX_SUCCESS_MSG, response);
+			}
+		} else {
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	/**
+	 * 跳转到会诊审批页
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/toVipInTreatmentAuditing")
+	public String toVipInTreatmentAuditing(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {	
+			return WeiXinCons.WX_VIP_IN_TREATMENT_AUDITING;
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 个人中心信息
+	 * 
+	 * @author wkgi-ligen
+	 * @date 2015年10月12日 上午11:14:37
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings({ "unchecked", "unused" })
+	@RequestMapping(value = "/myCenterPageInit")
+	public String myCenterPageInit(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		String openid=wxItfService.getOpenID(pDto.getAsString("code"));
+		pDto.put("openId", openid);
+		request.setAttribute("openId", openid);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			Dto loginUserDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getLoginUserInfo", pDto);
+			if (loginUserDto == null) {
+				
+				return WeiXinCons.WX_BINDING_MOBILE;
+
+			}
+			if (loginUserDto != null) {
+				request.setAttribute("pDto", loginUserDto);
+				request.setAttribute("loginId", loginUserDto.getAsString("loginId"));
+
+				if (StringUtils.isBlank(loginUserDto.getAsString("mobile"))) {
+					
+					return WeiXinCons.WX_BINDING_MOBILE;
+
+				}else{
+					
+					request.setAttribute("loginUser", loginUserDto);
+					request.setAttribute("isBinding", true);
+
+					return WeiXinCons.WX_MY_CENTER;
+				}
+				
+			}
+
+		} else {
+
+			request.setAttribute("patient", null);
+
+			return null;
+
+		}
+		return null;
+
+	}
+	/**
+	 * 获取账号余额
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/getMyAccountBalance")
+	public String getMyAccountBalance(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+
+			Dto loginDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getLoginUserInfo", pDto);
+			request.setAttribute("loginUser", loginDto);
+			request.setAttribute("pDto", pDto);
+			return WeiXinCons.WX_MY_ACCOUNT_BALANCE;
+			
+		} else {
+			return null;
+		}
+	}
+	/**
+	 * 我的病历列表
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/getMySicknessCase")
+	public String getMySicknessCase(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+				
+			if(StringUtils.isNotBlank(pDto.getAsString("patientId"))){
+				pDto.put("uId", pDto.getAsString("patientId"));
+				pDto.put("patientId", pDto.getAsString("patientId"));
+			}else{
+				pDto.put("uId", pDto.getAsString("loginId"));
+				pDto.put("patientId", pDto.getAsString("loginId"));
+			}
+			Dto patientDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getPatientInfo", pDto);
+			request.setAttribute("loginId", pDto.getAsString("loginId"));
+			request.setAttribute("patient", patientDto);
+			request.setAttribute("patientList", super.getFredaReader().queryForList("WeiXin.findPatientsByLoginId", pDto));
+			request.setAttribute("mySicknessList", super.getFredaReader().queryForList("WeiXin.findPatientSicknessCase", pDto));
+			
+			return WeiXinCons.WX_MY_SICKNESS_CASE;
+			
+		} else {
+			return null;
+		}
+		
+	}
+	
+	/**
+	 * 帮助与意见反馈
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/toHelpAndFeedback")
+	public String toHelpAndFeedback(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			request.setAttribute("loginId", pDto.getAsString("loginId"));
+			return WeiXinCons.WX_HELP_AND_FEEDBACK;
+			
+			
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 意见反馈提交
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/addFeedback")
+	public void addFeedback(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			if(wxItfService.addFeedback(pDto)){
+				
+				super.setOkTipMsg(WeiXinCons.WX_FEEDBACK_SUCCESS_MSG, response);
+				
+			}else{
+				
+				super.setErrTipMsg(WeiXinCons.WX_FEEDBACK_ERROR_MSG, response);
+			}
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	/**
+	 * 查询个人订单
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/queryMyOrders")
+	public String queryMyOrders(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			pDto.put("isNeedPatient", 1);
+			pDto.put("loginId", pDto.getAsInteger("loginId"));
+			
+			if(StringUtils.isNotBlank( pDto.getAsString("orderState"))){
+				pDto.put("orderStatus", pDto.getAsString("orderState"));
+			}
+			
+			List<Dto> dtoList = (List<Dto>) FredaContext.getInstance().getOrderService().orderQuery(pDto).getData();
+			List<Dto> orderList = new ArrayList<>();
+			if(dtoList != null && dtoList.size() > 0){
+				for(Dto info : dtoList){
+					info.put("orderDate", WeiXinUtils.formatDateTimeToMd(info.getAsDate("schStartTime")));
+					info.put("orderWeekDate", WeiXinUtils.getWeekOfDate(info.getAsDate("schStartTime")));
+					info.put("orderStartTime", WeiXinUtils.formatDateTimeToHm(info.getAsDate("schStartTime")));
+					info.put("orderEndTime", WeiXinUtils.formatDateTimeToHm(info.getAsDate("schEndTime")));
+					orderList.add(info);
+				}
+				
+			}
+
+			request.setAttribute("orderList", orderList);
+			request.setAttribute("orderPageInfo", pDto);
+			
+			return WeiXinCons.WX_ORDER_LIST;
+		} else {
+			return WeiXinCons.WX_NOT_FOUND_PAGE;
+		}
+	}
+	
+	
+	 /**
+     * 绑定微信服务器
+     *
+     * @param request 请求
+     * @return 响应内容
+     */
+    @RequestMapping(value = "/weixinBind",method = RequestMethod.GET)
+    @ResponseBody
+    protected final String bind(HttpServletRequest request) {
+        if (isLegal(request)) {
+            //绑定微信服务器成功
+            return request.getParameter("echostr");
+        } else {
+            //绑定微信服务器失败
+            return "";
+        }
+    }
+    /**
+     * 医生评价页面
+     * @param request
+     * @param response
+     * @return
+     * @throws Exception
+     */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/toDoctorReview")
+	public String toDoctorReview(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		
+		Dto rdto=(Dto)super.getFredaReader().queryForObject("WeiXin.getPatientInfo", pDto);
+		if(FredaUtils.isNotEmpty(pDto)){
+			pDto.put("loginName", rdto.getAsString("tureName"));
+		}
+		
+		if (FredaUtils.isNotEmpty(pDto)) {
+			pDto.put("orderState", OrderCons.ORDER_STATE_END);
+			pDto.put("logInfo", "医生评价");
+			request.setAttribute("orderInfo", pDto);
+			pDto.put("isNeedSch", 1);
+			Dto orderDto =  (Dto) super.getFredaReader().queryForObject("Order.queryOrderInfo", pDto);
+			request.setAttribute("orderDto", orderDto);
+			request.setAttribute("giftList", super.getFredaReader().queryForList("WeiXin.getDoctorGiftList"));
+			
+			return WeiXinCons.WX_DOCTOR_REVIEW;
+			
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 医生评价提交
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/addDoctorReview")
+	public void addDoctorReview(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			if(FredaContext.getInstance().getOrderService().orderToNext(pDto)){
+				
+				super.setOkTipMsg(WeiXinCons.WX_DCOTOR_REVIEW_SUCCESS_MSG, response);
+				
+			}else{
+				
+				super.setErrTipMsg(WeiXinCons.WX_DCOTOR_REVIEW_ERROR_MSG, response);
+			}
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	
+	/**
+	 * 跳转到评价成功页面
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/toDoctorReviewSuccess")
+	public String toDoctorReviewSuccess(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			request.setAttribute("pDto", pDto);
+			return WeiXinCons.WX_DOCTOR_REVIEW_SUCCESS;
+			
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 取消订单操作
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月3日 上午10:35:02
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/cancelOrder")
+	public void cancelOrder(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			if(FredaContext.getInstance().getOrderService().orderCancel(pDto)){
+				
+				super.setOkTipMsg(WeiXinCons.WX_CANCLE_ORDER_SUCCESS_MSG, response);
+				
+			}else{
+				
+				super.setErrTipMsg(WeiXinCons.WX_CANCLE_ORDER_ERROR_MSG, response);
+			}
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	/**
+	 * 退款操作
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月3日 下午2:37:28
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/refundOrder")
+	public void refundOrder(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			if(FredaContext.getInstance().getOrderService().orderToNext(pDto)){
+				
+				super.setOkTipMsg(WeiXinCons.WX_REFUND_ORDER_SUCCESS_MSG, response);
+				
+			}else{
+				
+				super.setErrTipMsg(WeiXinCons.WX_REFUND_ORDER_ERROR_MSG, response);
+			}
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	@RequestMapping(value = "/findPatientSicknesses")
+	public void findPatientSicknesses(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+
+			@SuppressWarnings("unchecked")
+			List<Dto> patientSicknessesDto = super.getFredaReader().queryForList("WeiXin.findPatientSicknesses", pDto);
+
+			if (patientSicknessesDto != null && patientSicknessesDto.size() > 0) {
+
+				super.setResultData(patientSicknessesDto.get(0), response);
+
+			} else {
+				
+				super.setErrTipMsg(WeiXinCons.WX_ERROR_MSG, response);
+			}
+
+		} else {
+
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+
+	}	
+	
+	/**
+	 * 根据openId获取订单数量
+	 * 
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/getOrderStatusCountByOpenId")
+	public void getOrderStatusCountByOpenId(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			Dto loginDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getLoginUserInfo",pDto);
+			if(loginDto != null){
+				pDto.put("patientId", loginDto.getAsInteger("loginId"));
+				pDto.put("type", 3);	
+				super.setResultData(FredaContext.getInstance().getOrderService().orderQuery(pDto).getData(), response);
+			}else{
+				super.setResultData('0', response);
+			}
+			
+		} else {
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	/**
+	  * to分享有礼
+	   * 
+	   * @author wkgi-ligen
+	   * @date 2015年11月9日 上午10:37:19
+	   * @param request
+	   * @param response
+	   * @return
+	   * @throws Exception
+	  */
+	@RequestMapping(value = "/toshareOrder")
+	public String toshareOrder(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		
+		request.setAttribute("code", pDto.getAsString("code"));
+		return WeiXinCons.WX_TO_SHARE_ORDER;
+	}
+	
+	 /**
+	  * 分享有礼
+	   * 
+	   * @author wkgi-ligen
+	   * @date 2015年11月9日 上午10:37:19
+	   * @param request
+	   * @param response
+	   * @return
+	   * @throws Exception
+	  */
+	@RequestMapping(value = "/shareOrder")
+	public String shareOrder(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+		
+		if (FredaUtils.isNotEmpty(pDto)) {
+			 Map<String, String> ret = new HashMap<>();
+			 ret = WeiXinUtils.getJsSignMap(WeiXinTokenThread.JS_TICKET,"http://test.waikegj.com/SurgicalKeeper/wxItf/shareOrder.freda?code="+pDto.getAsString("code")+"&appToken=123");
+			 ret.put("appId", WeiXinCons.WX_APP_ID);
+			if (ret != null) {
+				request.setAttribute("pDto", ret);
+				return WeiXinCons.WX_SHARE_ORDER;
+			}
+		} else {
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+		return null;
+	}
+	
+	
+	
+	/**
+	 * 支付修改状态信息
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月10日 下午1:54:47
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/payOrder")
+	public void payOrder(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			pDto.put("orderState", OrderCons.ORDER_STATE_WAITING);
+			pDto.put("payMsg", "支付成功！");
+			pDto.put("payType", WeiXinCons.WX_PAY_TYPE_WEIXIN);
+			pDto.put("outOrderId",pDto.getAsString("outOrderId"));
+			
+			if(FredaContext.getInstance().getOrderService().orderToNext(pDto)){
+				/*发送支付成功预约提醒短信*/
+//				Long orderId=pDto.getAsLong("orderId");//订单号
+				Dto rdto=(Dto)super.getFredaReader().queryForObject("WeiXin.findOrderSms", pDto);
+				if(FredaUtils.isNotEmpty(rdto)){
+					String[] wd={"周一","周 二","周三","周四","周五","周六","周日"};
+					String smscontent=rdto.getAsString("doctorName")+","+rdto.getAsString("days")+"("+wd[rdto.getAsInteger("wd")]+")"+rdto.getAsString("stime")+"~"+rdto.getAsString("etime")+","+rdto.getAsString("_address");
+					FredaContext.getInstance().getSmsService().sendSystemSMS(rdto.getAsString("_turename"), rdto.getAsString("_mobile"), 2, smscontent, 5);
+				}
+				
+				super.setOkTipMsg(WeiXinCons.WX_ORDER_PAY_SUCCESS_MSG, response);
+				
+			}else{
+				
+				super.setErrTipMsg(WeiXinCons.WX_ORDER_PAY_ERROR_MSG, response);
+			}
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	/**
+	 * 跳转到支付结果页
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月10日 下午1:55:13
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/toOrderResult")
+	public String toOrderResult(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			pDto.put("isNeedSch", 1);
+			Dto orderDto =  (Dto) super.getFredaReader().queryForObject("Order.queryOrderInfo", pDto);
+			orderDto.put("orderDate", WeiXinUtils.formatDateTimeToMd(orderDto.getAsDate("schStartTime")));
+			orderDto.put("orderWeekDate", WeiXinUtils.getWeekOfDate(orderDto.getAsDate("schStartTime")));
+			orderDto.put("orderStartTime", WeiXinUtils.formatDateTimeToHm(orderDto.getAsDate("schStartTime")));
+			orderDto.put("orderEndTime", WeiXinUtils.formatDateTimeToHm(orderDto.getAsDate("schEndTime")));
+			request.setAttribute("orderDto", orderDto);
+			
+
+		} else {
+			
+			request.setAttribute("orderDto", null);
+			
+			return null;
+
+		}
+		return WeiXinCons.WX_ORDER_RESULT;
+	}
+	
+	/**
+	 * 退款成功处理
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月16日 下午3:19:13
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/refundOrderSuccess")
+	public void refundOrderSuccess(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			pDto.put("orderState", OrderCons.ORDER_STATE_END2);
+			
+			if(FredaContext.getInstance().getOrderService().orderToNext(pDto)){
+				
+				super.setOkTipMsg(WeiXinCons.WX_ORDER_REFUND_SUCCESS_MSG, response);
+				
+			}else{
+				
+				super.setErrTipMsg(WeiXinCons.WX_ORDER_REFUND_ERROR_MSG, response);
+			}
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	/**
+	 * TO充值页面
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月11日 上午10:56:53
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/toAccountRecharge")
+	public String toAccountRecharge(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			pDto.put("subject", "用户充值");
+			pDto.put("body", "医愿用户充值");
+			request.setAttribute("pDto", pDto);
+			
+		} else {
+			
+			request.setAttribute("pDto", null);
+			
+			return null;
+
+		}
+		return WeiXinCons.WX_ACCOUNT_RECHARGE;
+	}
+	/**
+	 * TO提现页面
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月11日 上午10:57:15
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/toAccountWithdraw")
+	public String toAccountWithdraw(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			request.setAttribute("pDto", pDto);
+			
+		} else {
+			
+			request.setAttribute("pDto", null);
+			
+			return null;
+
+		}
+		return WeiXinCons.WX_ACCOUNT_WITHDRAW;
+	}
+	/**
+	 * 账号提现
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月11日 下午12:22:02
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/accountWithdraw")
+	public String accountWithdraw(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+		if (pDto != null) {
+			return "redirect:/pingpp/withdrawCash.freda?appToken=123&amount=" + pDto.getAsString("amount")
+					+ "&order_no=" + pDto.getAsString("order_no") + "&open_id=" + pDto.getAsString("openId") + "&description=" + URLEncoder.encode("账户提现", "UTF-8");
+		}
+
+		return null;
+	}
+	
+	
+	
+	/**
+	 * 新建资金日志表（支入支）
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月11日 下午2:42:58
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/addCapitalLog")
+	public void addCapitalLog(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			FredaContext.getInstance().getLogService().addCapitalLog(pDto.getAsInteger("opId"), null, pDto.getAsInteger("type"), ((double)Double.parseDouble(pDto.getAsString("amount"))),pDto.getAsString("orderNo"));
+			super.setOkTipMsg(WeiXinCons.WX_ORDER_REFUND_SUCCESS_MSG, response);
+			
+		} else {
+			
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+		}
+	}
+	
+	/**
+	 * 修改用户信息
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月11日 下午3:40:24
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/editePatient")
+	public void editePatient(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			if(wxItfService.editPatient(pDto)){
+				
+				super.setOkTipMsg(WeiXinCons.WX_SUCCESS_MSG, response);
+				
+			}else{
+				
+				super.setErrTipMsg(WeiXinCons.WX_ERROR_MSG, response);
+				
+			}
+			
+
+		} else {
+
+			super.setErrTipMsg(WeiXinCons.WX_ERROR_AUTH_MSG, response);
+
+		}
+	
+	}
+	
+	/**
+	 * 跳转到提现结果页
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月11日 下午3:58:17
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/toAccountWithdrawResult")
+	public String toAccountWithdrawResult(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			Dto loginDto = (Dto) super.getFredaReader().queryForObject("WeiXin.getLoginUserInfo",pDto);
+			if(loginDto != null){
+				
+				request.setAttribute("pDto", pDto);
+				request.setAttribute("loginDto", loginDto);
+			}
+			
+			
+		} else {
+			
+			request.setAttribute("pDto", null);
+			return null;
+
+		}
+		return WeiXinCons.WX_ACCOUNT_WITHDRAW_RESULT;
+	}
+	
+	/**
+	 * 获取订单NO
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月12日 上午8:57:43
+	  * @param request
+	  * @param response
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/getOrderNo")
+	public void getOrderNo(HttpServletRequest request, HttpServletResponse response) throws Exception
+	{
+		Dto pDto = super.getParamsAsDto(request);
+		
+		String order_no = FredaUtils.getCurrentTime("yyyyMMddHHmmss")
+		+ String.format("%5d", WeiXinUtils.getNum()).replace(" ", "0");
+		
+		switch (pDto.getAsInteger(WeiXinCons.WX_ORDER_TYPE)) {
+		
+		case WeiXinCons.WX_CAPITAL_TYPE_RECHARGE:
+			
+			super.setResultData("R"+order_no, response);
+			break;
+		case WeiXinCons.WX_CAPITAL_TYPE_ORDER_GIFT:
+			
+			super.setResultData("G"+order_no, response);
+			break;
+		case WeiXinCons.WX_CAPITAL_TYPE_WITHDRAW:
+			
+			super.setResultData("W"+order_no, response);
+			break;
+
+		default:
+			break;
+		}
+	}
+	
+	/**
+	 * 退款后跳转到退款成功页面
+	  * 
+	  * @author wkgi-ligen
+	  * @date 2015年11月16日 上午10:36:31
+	  * @param request
+	  * @param response
+	  * @return
+	  * @throws Exception
+	 */
+	@RequestMapping(value = "/toRefundSuccess")
+	public String toRefundSuccess(HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		Dto pDto = super.getParamsAsDto(request);
+
+		if (FredaUtils.isNotEmpty(pDto)) {
+			
+			request.setAttribute("pDto", pDto);
+			return WeiXinCons.WX_REFUND_SUCCESS;
+			
+		} else {
+
+			return null;
+		}
+
+	}
+	
+	
+	
+	
+	
+	
+}

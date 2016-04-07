@@ -1,0 +1,140 @@
+package com.rjkx.sk.itf.weixin.utils;
+
+public class WeiXinCons 
+{
+	public static final String WX_APP_ID = "wx21449a3c51607b9f";
+	
+	public static final String WX_APP_SECRET = "862ad0c423fec681a2f4276209bdf4cc";
+	
+	public static final String WX_GRANT_TYPE = "client_credential";
+	
+	public static final String WX_TOKEN = "ruijikangxing";
+	
+	public static final String WX_ENCODING_AESKEY ="gEqB4Q2i2CIek7cwP9xwLjZKJfalMEYR2UU7j4yXjp5";
+	
+	public static final String WX_SUCCESS_MSG = "恭喜:操作成功!";
+	
+	public static final String WX_ERROR_MSG = "抱歉:操作失败!";
+	
+	public static final String WX_ERROR_ENROLLED_MSG = "抱歉:请勿重复报名!";
+	
+	public static final String WX_ERROR_AUTH_MSG = "抱歉:您无权访问..";
+	
+	public static final String WX_ERROR_CREATE_ORDER_MSG = "抱歉:您的订单创建失败！";
+	
+	public static final String WX_ERROR_ORDER_SCHEDULE_MSG = "抱歉:您选择的预约时间已被预约";
+	
+	public static final String WX_ERROR_MOBILE_BINDING_MSG = "抱歉:您的手机号已绑定!";
+	
+	public static final String WX_FEEDBACK_SUCCESS_MSG = "恭喜:意见反馈提交成功!";
+	
+	public static final String WX_FEEDBACK_ERROR_MSG = "抱歉:意见反馈提交失败!";
+	
+	public static final String WX_DCOTOR_REVIEW_SUCCESS_MSG = "恭喜:医生评价提交成功!";
+	
+	public static final String WX_DCOTOR_REVIEW_ERROR_MSG = "抱歉:医生评价提交失败!";
+	
+    public static final String WX_CANCLE_ORDER_SUCCESS_MSG = "取消订单成功!";
+	
+	public static final String WX_CANCLE_ORDER_ERROR_MSG = "取消订单失败!";
+	
+	public static final String WX_REFUND_ORDER_SUCCESS_MSG = "订单退款成功!";
+		
+	public static final String WX_REFUND_ORDER_ERROR_MSG = "订单退款失败!";
+	
+	public static final String WX_ORDER_PAY_SUCCESS_MSG = "恭喜:支付成功!";
+	
+	public static final String WX_ORDER_PAY_ERROR_MSG = "恭喜:支付失败!";
+	
+	public static final String WX_ORDER_REFUND_SUCCESS_MSG = "退款成功!";
+	
+	public static final String WX_ORDER_REFUND_ERROR_MSG = "退款失败!";
+	
+	public static final Integer WX_BINDING_STATUS_YES = 1;
+	
+	public static final Integer WX_BINDING_STATUS_NO = 0;
+	//微信支付
+	public static final Integer WX_PAY_TYPE_WEIXIN = 0;
+	//支付宝支付
+	public static final Integer WX_PAY_TYPE_ALIPAY = 1;
+	
+	//1,充值2,订单消费3,订单退款4,礼物消费5,返现6,提现'
+	public static final int WX_CAPITAL_TYPE_RECHARGE = 1;
+	
+	public static final int WX_CAPITAL_TYPE_ORDER_PAY = 2;
+	
+	public static final int WX_CAPITAL_TYPE_ORDER_REFUND = 3;
+	
+	public static final int WX_CAPITAL_TYPE_ORDER_GIFT = 4;
+	
+	public static final int WX_CAPITAL_TYPE_WITHDRAW = 6;
+	
+	public static final String WX_TEMPLATEMESSAGE_SEND_URL="https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=";/*微信模板消息发送URL*/
+	
+	/********PAGE******/
+	public static final String WX_PAGE_KEEPER_CARE = "/WEB-INF/pages/wx/keeperCare";
+	
+	public static final String WX_PAGE_ERROR_NO_AUTH = "";
+	
+	public static final String WX_LECTURES_LIST = "/WEB-INF/pages/wx/lecturesList";
+	
+	public static final String WX_LECTURE_DETAIL = "/WEB-INF/pages/wx/lectureDetail";
+	
+	public static final String WX_MY_CENTER = "/WEB-INF/pages/wx/myCenter";
+	
+	public static final String WX_SELECT_DOCTOR_CRITERIA = "/WEB-INF/pages/wx/selectDoctorCriteria";
+	
+	public static final String WX_PICK_DOCTORS =  "/WEB-INF/pages/wx/pickDoctors";
+	
+	public static final String WX_BINDING_MOBILE = "/WEB-INF/pages/wx/bindingMobile";
+	
+	public static final String WX_ADD_PATIENT ="/WEB-INF/pages/wx/addPatient";
+	
+	public static final String WX_BASE_API_URL = "https://api.weixin.qq.com/";
+	
+	public static final String WX_ORDER_DOCTOR  = "/WEB-INF/pages/wx/orderDoctor";
+	
+	public static final String WX_PAY_ORDER  = "/WEB-INF/pages/wx/payOrder";
+	
+	public static final String WX_VIP_IN_TREATMENT  = "/WEB-INF/pages/wx/vipInTreatment";
+	
+	public static final String WX_CHOOSE_PATIENT  = "/WEB-INF/pages/wx/choosePatient";
+	
+	public static final String WX_VIP_IN_TREATMENT_AUDITING  = "/WEB-INF/pages/wx/vipInTreatmentAuditing";
+	
+	public static final String WX_MY_ACCOUNT_BALANCE  = "/WEB-INF/pages/wx/myAccountBalance";
+	
+	public static final String WX_MY_SICKNESS_CASE  = "/WEB-INF/pages/wx/mySicknessCase";
+	
+	public static final String WX_HELP_AND_FEEDBACK  = "/WEB-INF/pages/wx/helpAndFeedback";
+	
+	public static final String WX_ORDER_LIST = "/WEB-INF/pages/wx/orderList";
+	
+	public static final String WX_DOCTOR_REVIEW = "/WEB-INF/pages/wx/doctorReview";
+	
+	public static final String WX_DOCTOR_REVIEW_SUCCESS = "/WEB-INF/pages/wx/doctorReviewSuccess";
+	
+	public static final String WX_TO_SHARE_ORDER = "/WEB-INF/pages/wx/toshareOrder";
+	
+	public static final String WX_SHARE_ORDER = "/WEB-INF/pages/wx/shareOrder";
+	
+	public static final String WX_ORDER_RESULT = "/WEB-INF/pages/wx/orderResult";
+	
+	public static final String WX_ACCOUNT_RECHARGE = "/WEB-INF/pages/wx/accountRecharge";
+	
+	public static final String WX_ACCOUNT_WITHDRAW = "/WEB-INF/pages/wx/accountWithdraw";
+	
+	public static final String WX_ACCOUNT_WITHDRAW_RESULT = "/WEB-INF/pages/wx/withdrawResult";
+	
+	public static final String WX_NOT_FOUND_PAGE= "/WEB-INF/pages/wx/nopage";
+	
+	public static final String WX_REFUND_SUCCESS= "/WEB-INF/pages/wx/refundSuccess";
+	
+	public static final Integer WX_SCHEDULE_TYPE_FAST_REG = 1;
+	
+	public static final Integer WX_SCHEDULE_TYPE_FAST_ORDER = 2;
+	
+	public static final String WX_PAY_CHANNEL= "wx";
+	
+	public static final String WX_ORDER_TYPE= "orderType";
+}

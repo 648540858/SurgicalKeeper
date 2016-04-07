@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Index">
+
+	<!-- SESSION中保存的用户VO -->
+	<resultMap type="com.rjkx.sk.admin.core.vo.AdminUserVo" id="AdminUser">
+		<result property="uId" column="uId"/>
+		<result property="uName" column="uName"/>
+		<result property="uAccount" column="uAccount"/>
+		<result property="deptId" column="deptId"/>
+		<result property="uSex" column="uSex"/>
+		<result property="uType" column="uType"/>
+		<result property="uLocked" column="uLocked"/>
+		<result property="uState" column="uState"/>
+	</resultMap>
+
+	<!-- 登录查询 -->
+	<select id="queryUser" parameterType="dto" resultMap="AdminUser">
+		SELECT
+			_rjkx_sys_user._uid AS uId,_rjkx_sys_user._name AS uName,
+			_rjkx_sys_user._account AS uAccount,_rjkx_sys_user._did AS deptId,
+			_rjkx_sys_user._sex AS uSex,_rjkx_sys_user._type AS uType,
+			_rjkx_sys_user._locked AS uLocked,_rjkx_sys_user._state AS uState
+		FROM _rjkx_sys_user
+		WHERE
+			_rjkx_sys_user._account = #{account}
+			AND _rjkx_sys_user._pwd = #{pwd}
+	</select>
+	<!-- 权限管理菜单显示 -->
+	<select id="queryMenuItems" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_menu._mid AS id,_rjkx_sys_menu._parentid AS parendid,
+			_rjkx_sys_menu._name AS text,_rjkx_sys_menu._leaf AS leaf,
+			_rjkx_sys_menu._icon AS icon
+		FROM _rjkx_sys_menu
+		<if test="opType != 1">
+			INNER JOIN _rjkx_sys_role_menu ON _rjkx_sys_role_menu._mid = _rjkx_sys_menu._mid
+			INNER JOIN _rjkx_sys_role ON _rjkx_sys_role._state = 1 AND _rjkx_sys_role._rid = _rjkx_sys_role_menu
+			INNER JOIN _rjkx_sys_user_role ON _rjkx_sys_user_role._rid = _rjkx_sys_role._rid AND _rjkx_sys_user_role._uid = #{opId}			
+		</if>
+		WHERE
+			_rjkx_sys_menu._state = 1
+			AND _rjkx_sys_menu._type = 1
+			AND _rjkx_sys_menu._parentid = #{pId}
+		ORDER BY _rjkx_sys_menu._sortno,_rjkx_sys_menu._mid ASC
+	</select>
+	
+	<select id="getMenuRequest" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_menu._request AS mUrl,_rjkx_sys_menu._remark AS mRemark
+		FROM _rjkx_sys_menu
+		WHERE
+			_rjkx_sys_menu._mid = #{mId}
+	</select>
+	
+</mapper>

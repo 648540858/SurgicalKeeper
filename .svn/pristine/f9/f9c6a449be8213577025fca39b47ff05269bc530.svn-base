@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Basic">
+	
+	<select id="sicknessTreeInit" parameterType="dto" resultType="dto">
+		SELECT
+			CONCAT(_rjkx_sickness._id,'-0') AS id,
+			1 AS parentid,
+			_rjkx_sickness._name AS text,
+			0 AS leaf,
+			'' AS icon
+		FROM _rjkx_sickness
+		WHERE
+			_rjkx_sickness._status = 1
+	</select>
+	
+	<select id="cityTreeInit" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_area._id AS id,
+			_rjkx_area._parent_id AS parentid,
+			_rjkx_area._area_name AS text,
+			_rjkx_area._leaf AS leaf,
+			'' AS icon
+		FROM _rjkx_area
+		WHERE
+			_rjkx_area._status = 1
+			AND _rjkx_area._parent_id = #{pId}
+	</select>
+	
+	<select id="listHosByCity" parameterType="dto" resultType="dto">
+		SELECT
+			CONCAT('h-',_rjkx_hospital._id) AS id,
+			_rjkx_hospital._name AS text,
+			${pId} AS parentid,
+			1 AS leaf,
+			'' AS icon
+		FROM _rjkx_hospital
+		WHERE
+			_rjkx_hospital._area_id = #{pId}
+	</select>
+	
+	<select id="sicknessSubTreeInit" parameterType="dto" resultType="dto">
+		SELECT
+			CONCAT(_rjkx_sickness_sub._s_id,'-',_rjkx_sickness_sub._id) AS id,
+			_rjkx_sickness_sub._name AS text,
+			_rjkx_sickness_sub._parentid AS parentid,
+			_rjkx_sickness_sub._leaf AS leaf,
+			'' AS icon
+		FROM _rjkx_sickness_sub
+		WHERE
+			_rjkx_sickness_sub._parentid = #{pId}
+			AND _rjkx_sickness_sub._s_id = #{sId}
+			AND _rjkx_sickness_sub._status = 1
+	</select>
+	
+	<select id="sicknessSubTreeInitForManager" parameterType="dto" resultType="dto">
+		SELECT
+			CONCAT(_rjkx_sickness_sub._s_id,'-',_rjkx_sickness_sub._id) AS id,
+			_rjkx_sickness_sub._name AS text,
+			_rjkx_sickness_sub._parentid AS parentid,
+			_rjkx_sickness_sub._leaf AS leaf,
+			'' AS icon
+		FROM _rjkx_sickness_sub
+		WHERE
+			_rjkx_sickness_sub._parentid = #{pId}
+			AND _rjkx_sickness_sub._s_id = #{sId}
+	</select>
+	
+	<select id="listCityForTotalTree" parameterType="dto" resultType="dto">
+		SELECT
+			CONCAT('c-' , _rjkx_area._id) AS id,
+			CONCAT('c-' , _rjkx_area._parent_id) AS parentid,
+			_rjkx_area._area_name AS text,
+			_rjkx_area._leaf AS leaf,
+			'' AS icon
+		FROM _rjkx_area
+		WHERE
+			_rjkx_area._status = 1
+			AND _rjkx_area._parent_id = #{pId}
+	</select>
+	
+	<select id="listHosForTotalTree" parameterType="dto" resultType="dto">
+		SELECT
+			CONCAT('h-' , _rjkx_hospital._id) AS id,
+			_rjkx_hospital._name AS text,
+			CONCAT('c-' , '${pId}') AS parentid,
+			0 AS leaf,
+			'application_homeIcon' AS iconCls
+		FROM _rjkx_hospital
+		WHERE
+			_rjkx_hospital._area_id = #{pId}
+			AND _rjkx_hospital._status = 1
+	</select>
+	
+	<select id="listDocForTotalTree" parameterType="dto" resultType="dto">
+		SELECT
+			CONCAT('d-' , _rjkx_doctor._id) AS id,
+			_rjkx_doctor._name AS text,
+			CONCAT('h-' , ${pId}) AS parentid,
+			1 AS leaf,
+			'userIcon' AS iconCls
+		FROM _rjkx_doctor
+		WHERE
+			_rjkx_doctor._hospital_id = #{pId}
+			AND _rjkx_doctor._status = 1
+	</select>
+	
+</mapper>

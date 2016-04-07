@@ -1,0 +1,156 @@
+package com.rjkx.sk.system.ehcache;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
+
+/**
+ * Ehcache 
+  * @ClassName: EhcacheHelper
+  * @Description:
+  * @author yiyuan-Rally
+  * @date 2015年11月25日 上午9:20:27 
+  * @version V1.0
+ */
+public class EhcacheHelper 
+{
+	/**
+	 * LOG
+	 */
+	private static final Log log = LogFactory.getLog(EhcacheHelper.class);
+	/**
+	 * XML配置文件地址
+	 */
+	private static final String apponintPath = "configs/ehcache.xml";
+	/**
+	 * CACHE 对象
+	 */
+	private CacheManager cacheManager;
+	/**
+	 * 实例
+	 */
+	private static EhcacheHelper instance;
+	/**
+	 * 键值对存活时间
+	 */
+	private static final int REMOVE_SECONDS = 1 * 60 * 60;
+	
+	private EhcacheHelper(String apponintPath)
+	{
+		cacheManager = CacheManager.create();
+	}
+	/**
+	 * 获取实例
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月25日 上午9:31:56
+	  * @return
+	 */
+	public static EhcacheHelper getInstance()
+	{
+		if(instance == null)
+		{
+			synchronized (EhcacheHelper.class) 
+			{
+				if(instance == null)
+				{
+					log.info("[EhcacheHelper]单例模式实例化!");
+					
+					instance = new EhcacheHelper(apponintPath);
+				}
+			}
+		}
+		return instance;
+	}
+	/**
+	 * 放入内存中
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月25日 上午10:17:18
+	  * @param cacheName
+	  * @param key
+	  * @param value
+	 */
+	public void put(String cacheName,Object key,Object value)
+	{
+		Cache cache = cacheManager.getCache(cacheName);
+		
+		if(cache == null)
+		{
+			cache = new Cache(cacheName , 10000000 , true , false , REMOVE_SECONDS , REMOVE_SECONDS);
+			
+			cacheManager.addCache(cache);
+		}
+		cache.put(new Element(key , value));
+	}
+	/**
+	 * 取出
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月25日 上午10:36:36
+	  * @param cacheName
+	  * @param key
+	  * @return
+	 */
+	public Object get(String cacheName,Object key)
+	{
+		Cache cache = cacheManager.getCache(cacheName);
+		
+		if(cache != null)
+		{
+			Element element = cache.get(key);
+			
+			return element == null ? null : element.getObjectValue();
+		}
+		return null;
+	}
+	/**
+	 * 获取Cache
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月25日 上午10:39:42
+	  * @param cacheName
+	  * @return
+	 */
+	public Cache getCache(String cacheName)
+	{
+		return cacheManager.getCache(cacheName);
+	}
+	/**
+	 * 删除某个Element
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月25日 上午10:46:21
+	  * @param cacheName
+	  * @param key
+	 */
+	public void removeElement(String cacheName,Object key)
+	{
+		Cache cache = cacheManager.getCache(cacheName);
+		
+		if(cache != null)
+		{
+			cache.remove(key);
+		}
+	}
+	/**
+	 * 删除Cache
+	  * 
+	  * @author yiyuan-Rally
+	  * @date 2015年11月25日 上午10:48:59
+	  * @param cacheName
+	 */
+	public void removeCache(String cacheName)
+	{
+		Cache cache = cacheManager.getCache(cacheName);
+		
+		if(cache != null)
+		{
+			cacheManager.removeCache(cacheName);
+		}
+		
+	}
+}

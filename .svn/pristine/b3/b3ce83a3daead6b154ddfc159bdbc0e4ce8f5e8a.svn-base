@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<typeAliases>
+		<typeAlias type="com.rjkx.sk.system.datastructure.impl.BaseDto" alias="dto"/>
+	</typeAliases>
+	<!-- <plugins>
+		<plugin interceptor="com.rjkx.sk.system.interceptor">
+	    	<property name="dialect" value="mysql"/>
+	    	<property name="rowBoundsWithCount" value="true"/>
+	    </plugin>
+	</plugins> -->
+	<mappers>
+		<!-- 系统架构平台   START-->
+			<!-- 系统基础 -->
+			<mapper resource="com/rjkx/sk/admin/core/sqlmap/Index.xml"/>
+			<!-- 树 -->
+			<mapper resource="com/rjkx/sk/admin/setting/sqlmap/TreeLoad.xml"/>
+			<!-- 菜单 -->
+			<mapper resource="com/rjkx/sk/admin/setting/sqlmap/Menu.xml"/>
+			<!-- 组织机构 -->
+			<mapper resource="com/rjkx/sk/admin/setting/sqlmap/Organization.xml"/>
+			<!-- 权限 -->
+			<mapper resource="com/rjkx/sk/admin/setting/sqlmap/Authority.xml"/>
+			<!-- 数据字典 -->
+			<mapper resource="com/rjkx/sk/admin/setting/sqlmap/Code.xml"/>
+			<!-- 系统参数 -->
+			<mapper resource="com/rjkx/sk/admin/setting/sqlmap/Params.xml"/>
+		<!-- 系统架构平台  END-->
+		<!-- 应用 START -->
+			<!-- COMMON -->
+				<!-- 订单 -->
+				<mapper resource="com/rjkx/sk/admin/common/sqlmap/Order.xml"/>
+				<!-- BasicData -->
+				<mapper resource="com/rjkx/sk/admin/common/sqlmap/BasicData.xml"/>
+				<!-- LOG -->
+				<mapper resource="com/rjkx/sk/admin/common/sqlmap/Log.xml"/>
+				<!-- SMS -->
+				<mapper resource="com/rjkx/sk/admin/common/sqlmap/SMS.xml"/>
+			<!-- BASIC -->
+				<!-- 疾病与疾病属性 -->
+				<mapper resource="com/rjkx/sk/admin/basic/sqlmap/Sickness.xml"/>
+				<!-- 医院及科室 -->
+				<mapper resource="com/rjkx/sk/admin/basic/sqlmap/HospitalAndDept.xml"/>
+				<!-- 医生与时间 -->
+				<mapper resource="com/rjkx/sk/admin/basic/sqlmap/Doctor.xml"/>
+				<!-- 关联关系 -->
+				<mapper resource="com/rjkx/sk/admin/basic/sqlmap/Correlation.xml"/>
+			<!-- CMS -->
+				<!-- 管家关爱 -->
+				<mapper resource="com/rjkx/sk/admin/cms/sqlmap/SicknessSet.xml"/>
+				<!-- 健康讲堂 -->
+				<mapper resource="com/rjkx/sk/admin/cms/sqlmap/Lecture.xml"/>
+			<!-- OM -->
+				<!-- VIP会诊 -->
+				<mapper resource="com/rjkx/sk/admin/om/sqlmap/Consultation.xml"/>
+				<!-- 订单 -->
+				<mapper resource="com/rjkx/sk/admin/om/sqlmap/OrderManager.xml"/>
+		<!-- 应用 END -->
+		
+		<!-- v2 admin-->
+		<mapper resource="com/rjkx/sk/manager/index/sqlmap/Index.xml"/>
+		
+		<mapper resource="com/rjkx/sk/manager/basedata/sqlmap/Hospital_Dept.xml"/>
+		<mapper resource="com/rjkx/sk/manager/basedata/sqlmap/Interrelation.xml"/>
+		<mapper resource="com/rjkx/sk/manager/basedata/sqlmap/SicknessAttr.xml"/>
+		<mapper resource="com/rjkx/sk/manager/basedata/sqlmap/Doctor.xml"/>
+		<mapper resource="com/rjkx/sk/manager/cms/sqlmap/Lecture.xml"/>
+		<mapper resource="com/rjkx/sk/manager/cms/sqlmap/SickAttrContent.xml"/>
+		<mapper resource="com/rjkx/sk/manager/sys/sqlmap/Code.xml"/>
+		<mapper resource="com/rjkx/sk/manager/sys/sqlmap/Organization.xml"/>
+		<mapper resource="com/rjkx/sk/manager/sys/sqlmap/Authority.xml"/>
+		<mapper resource="com/rjkx/sk/manager/sys/sqlmap/Params.xml"/>
+		<mapper resource="com/rjkx/sk/manager/sys/sqlmap/Menu.xml"/>
+		<mapper resource="com/rjkx/sk/manager/common/sqlmap/Tree.xml"/>
+		<mapper resource="com/rjkx/sk/manager/common/sqlmap/Log.xml"/>
+		<mapper resource="com/rjkx/sk/manager/common/sqlmap/Order.xml"/>
+		<mapper resource="com/rjkx/sk/manager/common/sqlmap/SMS.xml"/>
+		<mapper resource="com/rjkx/sk/manager/order/sqlmap/VipOrder.xml"/>
+		<!-- v2 admin end -->
+		
+		<!-- 微信相关接口  START -->
+		<mapper resource="com/rjkx/sk/itf/weixin/sqlmap/WxV2.xml"/>
+		<!-- 微信相关接口  END -->
+	</mappers>
+</configuration>

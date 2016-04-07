@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Order">
+	<!-- 订单 -->
+	<insert id="addOrder" parameterType="dto" useGeneratedKeys="true" keyProperty="orderId">
+		INSERT INTO _rjkx_patient_order(
+			_rjkx_patient_order._patient_id,
+			_rjkx_patient_order._patient_id2,
+			_rjkx_patient_order._subscribe_id,
+			_rjkx_patient_order._order_id,
+			_rjkx_patient_order._amount,
+			_rjkx_patient_order._order_status,
+			_rjkx_patient_order._ctime
+			)VALUES(#{patientId},#{myPatientId},#{subscribeId},#{orderNum},#{amount},1,NOW())
+	</insert>
+	<!-- 修改订单状态 -->
+	<update id="editOrderState" parameterType="dto">
+		UPDATE _rjkx_patient_order SET _rjkx_patient_order._order_status = #{orderState}
+		WHERE
+			_rjkx_patient_order._id = #{orderId}
+	</update>
+	
+	<!-- 修改订单状态 -->
+	<update id="editOrderInfo" parameterType="dto">
+		UPDATE _rjkx_patient_order SET 
+		<if test="orderState != null and orderState == 2">
+		_rjkx_patient_order._out_order_id = #{outOrderId}
+		,_rjkx_patient_order._pay_time = NOW()
+		,_rjkx_patient_order._pay_msg = #{payMsg}
+		,_rjkx_patient_order._pay_type = #{payType}				
+		</if>
+		<if test="orderState != null and orderState == 4">
+		_rjkx_patient_order._finish_time = NOW()				
+		</if>	
+		WHERE
+			_rjkx_patient_order._id = #{orderId}
+	</update>
+	
+	
+	<!-- 添加订单历史 -->
+	<insert id="addOrderLog" parameterType="dto">
+		INSERT INTO _rjkx_patient_order_log(
+			_rjkx_patient_order_log._order_id,
+			_rjkx_patient_order_log._log_info,
+			_rjkx_patient_order_log._log_status,
+			_rjkx_patient_order_log._operator_id,
+			_rjkx_patient_order_log._operator,
+			_rjkx_patient_order_log._operator_type,
+			_rjkx_patient_order_log._ctime
+		)VALUES(#{orderId},
+		<choose>
+			<when test="logInfo == null">
+				'',
+			</when>
+			<otherwise>
+				#{logInfo},
+			</otherwise>
+		</choose>
+		#{orderState},#{opId},#{opName},#{opType},NOW())
+	</insert>
+	
+	<!-- 修改历史完成时间 -->
+	<update id="editOrderLogFTime" parameterType="dto">
+		UPDATE _rjkx_patient_order_log 
+		SET 
+			_rjkx_patient_order_log._ftime = NOW() 
+		WHERE 
+			_rjkx_patient_order_log._order_id = #{orderId}
+		ORDER BY _rjkx_patient_order_log._ctime DESC
+		LIMIT 1
+	</update>
+	<!-- 添加预约信息 -->
+	<insert id="addOrderSchedule" parameterType="dto" useGeneratedKeys="true" keyProperty="subscribeId">
+		INSERT INTO _rjkx_order_schedule(
+			_rjkx_order_schedule._schedule_id,
+			_rjkx_order_schedule._doctor_id,
+			_rjkx_order_schedule._start_time,
+			_rjkx_order_schedule._end_time,
+			_rjkx_order_schedule._address,
+			_rjkx_order_schedule._status,
+			_rjkx_order_schedule._ctime,
+			_rjkx_order_schedule._utime,
+			_rjkx_order_schedule._p_s_id
+			
+		) 
+		SELECT
+			_rjkx_doctor_schedule._id,
+			_rjkx_doctor_schedule._doctor_id,
+			_rjkx_doctor_schedule._start_time,
+			_rjkx_doctor_schedule._end_time,
+			_rjkx_doctor_schedule._address,
+			1,NOW(),NOW(),
+			<choose>
+			<when test="psId == null or psId == ''">
+				null
+			</when>
+			<otherwise>
+				${psId}
+			</otherwise>
+		</choose>
+		FROM _rjkx_doctor_schedule
+		WHERE
+			_rjkx_doctor_schedule._id = #{docScId} 
+	</insert>
+	<!-- 添加资金流动信息 -->
+	<insert id="addOrderFundLog" parameterType="dto">
+		INSERT INTO _rjkx_patient_order_fund_log(
+			_rjkx_patient_order_fund_log._order_id,
+			_rjkx_patient_order_fund_log._amount,
+			_rjkx_patient_order_fund_log._log_info,
+			_rjkx_patient_order_fund_log._log_status,
+			_rjkx_patient_order_fund_log._operator_id,
+			_rjkx_patient_order_fund_log._operator,
+			_rjkx_patient_order_fund_log._ctime
+		)VALUES(#{orderId},#{amount},
+		<choose>
+			<when test="fundLogInfo != null">
+				#{fundLogInfo},
+			</when>
+			<otherwise>
+				'',
+			</otherwise>
+		</choose>
+		0,#{opId},#{opName},NOW())
+	</insert>
+	<!-- 修改资金流动状态 -->
+	<update id="editOrderFundLogStatus" parameterType="dto">
+		UPDATE _rjkx_patient_order_fund_log 
+		SET 
+			_rjkx_patient_order_fund_log._log_status = #{fundLogStatus},
+			_rjkx_patient_order_fund_log._ftime = NOW()
+		WHERE
+			_rjkx_patient_order_fund_log._order_id = #{orderId}
+		ORDER BY _rjkx_patient_order_fund_log._ctime DESC
+		LIMIT 1
+	</update>
+	<!-- 添加退款日志 -->
+	<insert id="addCallBackLog" parameterType="dto">
+		INSERT INTO _rjkx_patient_order_refund_log(
+			_rjkx_patient_order_refund_log._order_id,
+			_rjkx_patient_order_refund_log._patient_id,
+			_rjkx_patient_order_refund_log._refund,
+			_rjkx_patient_order_refund_log._refund_id,
+			_rjkx_patient_order_refund_log._refund_status,
+			_rjkx_patient_order_refund_log._ctime,
+			_rjkx_patient_order_refund_log._operator_id,
+			_rjkx_patient_order_refund_log._operator,
+			_rjkx_patient_order_refund_log._ftime
+		)VALUES(#{orderId},#{patientId},#{refund},#{refundNum},1,NOW(),#{opId},#{opName},NOW())	
+	</insert>
+	<!-- 修改退款日志状态 -->
+	<update id="editCallBackLog" parameterType="dto">
+		UPDATE _rjkx_patient_order_refund_log 
+		SET
+			_rjkx_patient_order_refund_log._refund_status = 1,
+			_rjkx_patient_order_refund_log._operator_id = #{opId},
+			_rjkx_patient_order_refund_log._operator = #{opName},
+			_rjkx_patient_order_refund_log._ftime = NOW()
+		WHERE
+			_rjkx_patient_order_refund_log._order_id = #{orderId}
+		ORDER BY _rjkx_patient_order_refund_log._ctime DESC
+		LIMIT 1
+	</update>
+	<!-- 添加评论 -->
+	<insert id="addDoctorReview" parameterType="dto">
+		INSERT INTO _rjkx_doctor_review(        
+			 _rjkx_doctor_review._doctor_id,  
+			 _rjkx_doctor_review._patient_id, 
+			 _rjkx_doctor_review._order_id,   
+			 _rjkx_doctor_review._gift_id,    
+			 _rjkx_doctor_review._content,    
+			 _rjkx_doctor_review._level,      
+			 _rjkx_doctor_review._ctime,      
+			 _rjkx_doctor_review._status     	       
+		)VALUES(
+			#{doctorId},
+			#{patientId},
+			#{orderId},
+			<choose>
+				<when test="giftId == null or giftId == ''">
+					null,
+				</when>
+				<otherwise>
+					#{giftId},
+				</otherwise>
+			</choose>
+			#{content},
+			#{level},
+			NOW(),
+			1)
+	</insert>
+	
+	<!-- 订单取消 -->
+	<delete id="delOrder" parameterType="dto">
+		DELETE FROM _rjkx_patient_order WHERE _rjkx_patient_order._id = #{orderId}
+	</delete>
+	<delete id="delOrderLog" parameterType="dto">
+		DELETE FROM _rjkx_patient_order_log WHERE _rjkx_patient_order_log._order_id = #{orderId}
+	</delete>
+	<delete id="delOrderSch" parameterType="dto">
+		DELETE FROM _rjkx_order_schedule WHERE _rjkx_order_schedule._id = #{scheduleId}
+	</delete>
+	<delete id="delOrderFund" parameterType="dto">
+		DELETE FROM _rjkx_patient_order_fund_log WHERE _rjkx_patient_order_fund_log._order_id = #{orderId}
+	</delete>
+	
+	<!-- 订单查询 -->
+	<select id="queryOrderInfo" parameterType="dto" resultType="dto">
+		SELECT
+			/*订单信息*/
+			_rjkx_patient_order._id AS orderId,
+			_rjkx_patient_order._order_id AS orderNum,
+			_rjkx_patient_order._amount AS orderAmount,
+			_rjkx_patient_order._ctime AS orderCtime,
+			_rjkx_patient_order._order_status AS orderStatus,
+			_rjkx_patient_order._out_order_id AS outOrderId,
+			<if test="isNeedSch == 1">
+				/*预约时间信息*/
+				_rjkx_order_schedule._id AS schId,
+				_rjkx_order_schedule._schedule_id AS scheduleId,
+				_rjkx_order_schedule._start_time AS schStartTime,
+				_rjkx_order_schedule._end_time AS schEndTime,
+				_rjkx_order_schedule._address AS schAddr,				
+			</if>
+			<if test="isNeedPatient == 1">
+				/*患者信息*/
+				_rjkx_patient_order._patient_id AS patientId,
+				_rjkx_patient._loginname AS patientLoginName,
+				_rjkx_patient._turename AS patientTrueName,
+				_rjkx_patient._mobile AS patientTel,				
+			</if>
+			/*医生信息*/
+			_rjkx_doctor._id AS doctorId,
+			_rjkx_doctor._name AS doctorName,
+			_rjkx_doctor._icon AS doctorIcon,
+			_rjkx_doctor._hospital_id AS hosId,
+			_rjkx_doctor._hospital_name AS hosName,
+			CONCAT(_rjkx_doctor._phone,'[',_rjkx_doctor._telephone,']') AS doctorPhone
+		FROM _rjkx_patient_order
+		INNER JOIN _rjkx_order_schedule ON _rjkx_order_schedule._id = _rjkx_patient_order._subscribe_id
+		INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_order_schedule._doctor_id 
+		INNER JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_patient_order._patient_id			
+		WHERE
+			1=1
+			<if test="patientId != null and patientId != ''">
+				AND _rjkx_patient_order._patient_id = #{patientId}				
+			</if>
+			<if test="myPatientId != null and myPatientId != ''">
+				AND _rjkx_patient_order._patient_id2 = #{myPatientId}				
+			</if>
+			<if test="patientIdCard != null and patientIdCard != ''">
+				AND _rjkx_patient_order._identity_id = #{patientIdCard}				
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				AND _rjkx_patient_order._order_status = #{orderStatus}				
+			</if>
+			<if test="orderNum != null and orderNum != ''">
+				AND _rjkx_patient_order._order_id LIKE '%${orderNum}%'			
+			</if>
+			<if test="doctorId != null and doctorId != ''">
+				AND _rjkx_order_schedule._doctor_id = #{doctorId}				
+			</if>
+			<if test="patientTrueName != null and patientTrueName != ''">
+				AND _rjkx_patient._turename LIKE '%${patientTrueName}%'		
+			</if>
+			<if test="patientLoginName != null and patientLoginName != ''">
+				AND _rjkx_patient._loginname LIKE '%${patientLoginName}%'			
+			</if>
+			<if test="patientMobile != null and patientMobile != ''">
+				AND _rjkx_patient._mobile = #{patientMobile}			
+			</if>
+			<if test="doctorName != null and doctorName != ''">
+				AND _rjkx_doctor._name LIKE	'%${doctorName}%'		
+			</if>
+			<if test="doctorPhone != null and doctorPhone != ''">
+				AND (_rjkx_doctor._phone = #{doctorPhone} OR _rjkx_doctor._telephone = #{doctorPhone})	
+			</if>
+			<if test="ssTime != null and ssTime != ''">
+				AND _rjkx_order_schedule._start_time<![CDATA[>=]]>#{ssTime} 				
+			</if>
+			<if test="seTime != null and seTime!= ''">
+				AND _rjkx_order_schedule._end_time <![CDATA[<=]]>#{seTime}			
+			</if>
+			<if test="csTime != null and csTime != ''">
+				AND _rjkx_patient_order._ctime<![CDATA[>=]]>#{csTime}
+			</if>
+			<if test="ceTime != null and ceTime != ''">
+				AND _rjkx_patient_order._ctime<![CDATA[<=]]>#{ceTime}
+			</if>
+			<if test="orderId != null and orderId != ''">
+				AND _rjkx_patient_order._id = #{orderId}				
+			</if>
+		GROUP BY _rjkx_patient_order._id
+		ORDER BY _rjkx_patient_order._ctime DESC
+	</select>
+	
+	<select id="queryOrderInfoCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_patient_order
+		INNER JOIN _rjkx_order_schedule ON _rjkx_order_schedule._id = _rjkx_patient_order._subscribe_id
+		INNER JOIN _rjkx_doctor ON _rjkx_doctor._id = _rjkx_order_schedule._doctor_id 
+		INNER JOIN _rjkx_patient ON _rjkx_patient._id = _rjkx_patient_order._patient_id			
+		WHERE
+			1=1
+			<if test="patientId != null and patientId != ''">
+				AND _rjkx_patient_order._patient_id = #{patientId}				
+			</if>
+			<if test="myPatientId != null and myPatientId != ''">
+				AND _rjkx_patient_order._patient_id2 = #{myPatientId}				
+			</if>
+			<if test="patientIdCard != null and patientIdCard != ''">
+				AND _rjkx_patient_order._identity_id = #{patientIdCard}				
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				AND _rjkx_patient_order._order_status = #{orderStatus}				
+			</if>
+			<if test="orderNum != null and orderNum != ''">
+				AND _rjkx_patient_order._order_id LIKE '%${orderNum}%'			
+			</if>
+			<if test="doctorId != null and doctorId != ''">
+				AND _rjkx_order_schedule._doctor_id = #{doctorId}				
+			</if>
+			<if test="patientTrueName != null and patientTrueName != ''">
+				AND _rjkx_patient._turename LIKE '%${patientTrueName}%'		
+			</if>
+			<if test="patientLoginName != null and patientLoginName != ''">
+				AND _rjkx_patient._loginname LIKE '%${patientLoginName}%'			
+			</if>
+			<if test="patientMobile != null and patientMobile != ''">
+				AND _rjkx_patient._mobile = #{patientMobile}			
+			</if>
+			<if test="doctorName != null and doctorName != ''">
+				AND _rjkx_doctor._name LIKE	'%${doctorName}%'		
+			</if>
+			<if test="doctorPhone != null and doctorPhone != ''">
+				AND (_rjkx_doctor._phone = #{doctorPhone} OR _rjkx_doctor.telephone = #{doctorPhone})	
+			</if>
+			<if test="ssTime != null and ssTime != ''">
+				AND _rjkx_order_schedule._start_time<![CDATA[>=]]>#{ssTime} 				
+			</if>
+			<if test="seTime != null and seTime!= ''">
+				AND _rjkx_order_schedule._end_time =<![CDATA[<=]]>#{seTime}			
+			</if>
+			<if test="csTime != null and csTime != ''">
+				AND _rjkx_patient_order._ctime<![CDATA[>=]]>#{csTime}
+			</if>
+			<if test="ceTime != null and ceTime != ''">
+				AND _rjkx_patient_order._ctime<![CDATA[<=]]>#{ceTime}
+			</if>
+	</select>
+	
+	<select id="queryOrderLog" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order_log._order_id AS orderId,
+			_rjkx_patient_order_log._ctime AS startTime,
+			_rjkx_patient_order_log._ftime AS endTime,
+			TIMESTAMPDIFF(MINUTE,_rjkx_patient_order_log._ctime,_rjkx_patient_order_log._ftime) AS timeDiff,
+			_rjkx_patient_order_log._operator_id AS opId,
+			_rjkx_patient_order_log._operator AS opName,
+			_rjkx_patient_order_log._operator_type AS opType,
+			_rjkx_patient_order_log._log_info AS logInfo,
+			_rjkx_patient_order_log._log_status AS orderStatus
+		FROM _rjkx_patient_order_log
+		WHERE
+			_rjkx_patient_order_log._order_id = #{orderId}
+		ORDER BY _rjkx_patient_order_log._ctime DESC 
+	</select>
+	<select id="queryOrderLogCount" parameterType="dto" resultType="java.lang.Integer">
+		SELECT
+			COUNT(1)
+		FROM _rjkx_patient_order_log
+		WHERE
+			_rjkx_patient_order_log._order_id = #{orderId}
+	</select>
+	
+	<select id="queryOrderStatusCount" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_patient_order._order_status AS orderStatus,
+			COUNT(_rjkx_patient_order._id) AS orderCount
+		FROM _rjkx_patient_order
+		WHERE
+			1=1
+			<if test="patientId != null">
+			AND _rjkx_patient_order._patient_id2 = #{patientId}				
+			</if>
+		GROUP BY _rjkx_patient_order._order_status
+	</select>
+	
+	<update id="editOrderPayInfo" parameterType="dto">
+		UPDATE _rjkx_patient_order 
+		SET 
+			_rjkx_patient_order._pay_msg = #{payMsg},
+			_rjkx_patient_order._pay_type = #{payType},
+			_rjkx_patient_order._pay_time = now()
+		WHERE
+			_rjkx_patient_order._id = #{orderId}
+	</update>
+	
+	<update id="editOrderRefundInfo" parameterType="dto">
+		
+	</update>
+</mapper>

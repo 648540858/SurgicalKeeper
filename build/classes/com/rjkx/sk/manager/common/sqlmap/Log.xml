@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="LogV2">
+	<insert id="addCapitalLog" parameterType="dto">
+		INSERT INTO _rjkx_capital_log(
+			_rjkx_capital_log._type,
+			_rjkx_capital_log._operator,
+			_rjkx_capital_log._operator_id,
+			_rjkx_capital_log._amount,
+			_rjkx_capital_log._order_no,
+			_rjkx_capital_log._ctime) VALUES(#{capType},
+		<choose>
+			<when test="opName == null or opName == ''">
+				null,
+			</when>
+			<otherwise>
+				${opName},
+			</otherwise>
+		</choose>
+		#{opId},#{amount},#{orderNo},NOW())
+	</insert>
+	
+	<insert id="addOpLogForOrder" parameterType="dto">
+		INSERT INTO _rjkx_kefu_op_log(
+			_rjkx_kefu_op_log._o_type,
+			_rjkx_kefu_op_log._o_id,
+			_rjkx_kefu_op_log._status,
+			_rjkx_kefu_op_log._op_id,
+			_rjkx_kefu_op_log._op_name,
+			_rjkx_kefu_op_log._op_time,
+			_rjkx_kefu_op_log._op_info) 
+		VALUES(#{type},#{id},#{status},#{opId},#{opName},NOW(),#{opInfo})
+	</insert>
+</mapper>

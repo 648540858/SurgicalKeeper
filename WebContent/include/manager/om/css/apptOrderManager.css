@@ -1,0 +1,25 @@
+@charset "utf-8";
+
+
+/* 填写患者信息 */
+.patient_detail{}
+.detail_basic{width:100%;height:200px;border:1px solid gray;}
+
+.detail_basic {
+	width: 100%;
+	height: 160px;
+	border: 1px solid #dad7d7;
+	background-color: #f0f0f0;
+}
+.con-1{width: 30%;height:30%;float: left}
+.con-2{width: 30%;height:30%;float: left}
+.con-3{width: 30%;height:30%;float: left}
+label {
+	color: black;
+}
+.detail_treatment{width:100%;height:120px;border:1px solid #dad7d7;}
+.detail_treatment_1{width:50%;float: left;height:100%;border:1px solid #dad7d7;background:#f0f0f0;}
+.detail_treatment_2{width:50%;float: right;height:100%;border:1px solid #dad7d7;background:#f0f0f0;}
+
+.detail_readme{width:100%;height:120px;border:1px solid gray;}
+.detail_readme_1{width:100%;float: left;height:100%;border:1px solid #dad7d7;background:#f0f0f0;}

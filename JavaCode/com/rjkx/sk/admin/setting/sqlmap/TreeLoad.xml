@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="TreeLoad">
+	
+	<!-- 菜单树 -->
+	<select id="menuTreeInit" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_menu._mid AS id,_rjkx_sys_menu._parentid AS parentid,
+			_rjkx_sys_menu._name AS text,_rjkx_sys_menu._leaf AS leaf,
+			_rjkx_sys_menu._icon AS icon
+		FROM _rjkx_sys_menu
+		WHERE
+			_rjkx_sys_menu._parentid = #{pId}
+		ORDER BY _rjkx_sys_menu._sortno,_rjkx_sys_menu._mid ASC
+	</select>
+	
+	<!-- 部门树 -->
+	<select id="deptTreeInit" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_dept._did AS id,_rjkx_sys_dept._parentid AS parentid,
+			_rjkx_sys_dept._name AS text,_rjkx_sys_dept._leaf AS leaf,
+			'' AS icon
+		FROM _rjkx_sys_dept
+		WHERE
+			_rjkx_sys_dept._parentid = #{pId}
+		ORDER BY _rjkx_sys_dept._sortno,_rjkx_sys_dept._did ASC
+	</select>
+	
+	<!-- 菜单附带角色绑定 -->
+	<select id="menuTreeWithRole" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_menu._mid AS id,_rjkx_sys_menu._parentid AS parentid,
+			_rjkx_sys_menu._name AS text,_rjkx_sys_menu._leaf AS leaf,
+			_rjkx_sys_menu._icon AS icon,_rjkx_sys_role_menu._rid AS rId
+		FROM _rjkx_sys_menu
+		LEFT JOIN _rjkx_sys_role_menu ON _rjkx_sys_role_menu._mid = _rjkx_sys_menu._mid AND _rjkx_sys_role_menu._rid = #{rId}
+		WHERE
+			_rjkx_sys_menu._state = 1
+			AND _rjkx_sys_menu._parentid = #{pId}
+		ORDER BY _rjkx_sys_menu._sortno,_rjkx_sys_menu._mid ASC
+	</select>
+	
+	<!-- 角色附带用户绑定 -->
+	<select id="roleTreeWithUser" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_role._rid AS id,${pId} AS parentid,
+			_rjkx_sys_role._name AS text,1 AS leaf,
+			'' AS icon,_rjkx_sys_user_role._uid AS uId
+		FROM _rjkx_sys_role
+		LEFT JOIN _rjkx_sys_user_role ON _rjkx_sys_user_role._rid = _rjkx_sys_role._rid AND _rjkx_sys_user_role._uid = #{uId}
+		ORDER BY _rjkx_sys_role._rid ASC
+	</select>
+	
+	<!-- 用户+部门附带角色绑定 -->
+	<select id="userTreeWithRole" parameterType="dto" resultType="dto">
+		SELECT
+			_rjkx_sys_user._uid AS id,_rjkx_sys_user._name AS text,
+			${pId} AS parentid,1 AS leaf,
+			'userIcon' AS iconCls,_rjkx_sys_user_role._rid AS rId
+		FROM _rjkx_sys_user
+		LEFT JOIN _rjkx_sys_user_role ON _rjkx_sys_user_role._uid = _rjkx_sys_user._uid AND _rjkx_sys_user_role._rid = #{rId}
+		WHERE
+			_rjkx_sys_user._did = #{pId}
+	</select>
+	
+</mapper>
